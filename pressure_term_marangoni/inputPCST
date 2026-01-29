@@ -1,0 +1,65 @@
+# Parallelization
+Partition : 1 1 1
+
+# Options
+Monitor File Name : PressureTesting_PCST
+# 1 For Default, 2 for all Mom, 3 for all Poisson, 4 for Conservative with Default
+Surface Tension Option : 4
+# 1 for periodic, 2 for neumann on all walls, 3 for Neumann Top and Bottom, 4 For Neumann Left and Right
+Boundary Condition Option: 1
+# Curvature Option: 1 for default, 2 for height function
+Curvature Option : 1
+# Reconstruction Option: 1 for Lvira, 2 for Elvira, 3 for Youngs
+Reconstruction Option : 1
+# PU Scale
+Partition Of Unity Scale : 1.0
+PU Spread : 2.0
+
+# Mesh definition
+Lx :	1.0
+Ly :	1.0
+#Lz :    0.02
+nx :    32
+ny :	32
+nz :	1
+
+# SolveEdge Options
+Marangoni :                  0.0 0 0
+Pressure :                   1
+# Droplet definiton
+Droplet diameter :           4.0e-1
+# DV FOR 1,2,3 :           0.4472135955 0.894427191 0
+Droplet velocity :           0.4472135955 0.894427191 0
+Droplet Center :             0 0 0
+# Fluid properties
+# Liquid dynamic viscosity :    1.0e-3
+# Gas dynamic viscosity :       1.0e-3
+# We pick Liquid Viscosity = Gas Viscosity = whatever is needed to fit Laplace Number
+Liquid density :              1
+Gas density :                 1
+Surface tension coefficient : 1
+# Dimensionless Numbers
+Laplace Number :              120.0
+Min Viscous Time :            1.0 # Changes Max Time
+Min Capillary Time :          1.0 # This will almost never matter, as the viscous time is so much longer, but it is fine
+
+# Time integration
+Max timestep size : 2.e-3 # Default Values, Overriden
+Max time :          0.08  # Default Values, Overriden
+
+Timestep factor : 0.5 # Scale on Delta t_max. That is to say, we scale sqrt(rho*delta^3/(pi*sigma)), which is the max time step, by this value to get our Max time step.
+Max cfl number :    0.5 # Changes Time Step
+
+# Inner Iterations
+Inner Time Iterations : 2
+
+# Pressure solver
+Pressure tolerance : 1e-12
+Pressure iteration : 1000
+
+# Implicit velocity solver
+Implicit tolerance : 1e-12
+Implicit iteration : 1000
+
+# Ensight output
+Ensight output period : 1e-12

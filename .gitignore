@@ -73,6 +73,11 @@ Testing/
 
 # All files in vtk directories
 .vscode
-*/vtk*
+**/vtk*
 AE598MultiphaseFlow
-*/ensight*
+**/ensight*
+**/monitor*
+**.png
+**.csv
+**/DataVisualization*
+**/Other 

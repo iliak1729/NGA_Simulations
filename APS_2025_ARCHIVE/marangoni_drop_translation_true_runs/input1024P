@@ -1,0 +1,60 @@
+# Parallelization
+Partition : 2 4 1
+
+# Options
+Monitor File Name : PU_Marangoni_1024x1536_Jibben
+# 1 For Default, 2 for all Mom, 3 for all Poisson, 4 for Conservative with Default
+Surface Tension Option : 4
+# 1 for periodic, 2 for neumann on all walls, 3 for Neumann Top and Bottom, 4 For Neumann Left and Right
+Boundary Condition Option: 3
+# Curvature Option: 1 for default, 2 for height function
+Curvature Option : 1
+# Reconstruction Option: 1 for Lvira, 2 for Elvira, 3 for Youngs, 4 for Jibben
+Reconstruction Option : 4
+# PU Scale
+Partition Of Unity Scale : 1.0
+PU Spread : 2.0
+
+# Mesh definition
+Lx :	5
+Ly :	7.5
+#Lz :    0.02
+nx :    1024
+ny :	1536
+nz :	3
+
+# SolveEdge Options
+Marangoni :                  0 0.133 -0.1
+Pressure :                   0
+# Droplet definiton
+Droplet diameter :           1
+Droplet velocity :           0 0 0
+Droplet Center :             0 -2.25 0
+# Fluid properties
+Liquid Viscosity :            0.1
+Gas Viscosity :               0.1
+# We pick Liquid Viscosity = Gas Viscosity = whatever is needed to fit Laplace Number
+Liquid density :              0.2
+Gas density :                 0.2
+Surface tension coefficient : 0.1
+
+
+# Time integration
+Max timestep size : 8e-5
+Max time :          25
+
+Max cfl number :    0.5 # Changes Time Step
+
+# Inner Iterations
+Inner Time Iterations : 2
+
+# Pressure solver
+Pressure tolerance : 1e-12
+Pressure iteration : 1000
+
+# Implicit velocity solver
+Implicit tolerance : 1e-12
+Implicit iteration : 1000
+
+# Ensight output
+Ensight output period : 1e-2
