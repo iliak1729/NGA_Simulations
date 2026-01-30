@@ -70,7 +70,8 @@ module simulation
    ! They are equivalent to Pjx and Pjy in the current code, but I have them here for clearer use.
    ! We will be designing a new 
    real(WP), dimension(:,:,:), allocatable :: Fst_x,Fst_y,Fst_z,PjxD,PjyD,PjzD
-   real(WP), dimension(:,:,:), allocatable :: grad_vf_x, grad_vf_y,grad_vf_z,tot_grad_vf_x,tot_grad_vf_y
+   real(WP), dimension(:,:,:), allocatable :: grad_vf_x, grad_vf_y,grad_vf_z
+   integer, dimension(:,:,:), allocatable :: x_smoothing_tracker,y_smoothing_tracker
    real(WP), dimension(:,:,:), allocatable :: SurfaceTensionDiv
 
 contains
@@ -290,8 +291,8 @@ contains
          allocate(grad_vf_x(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(grad_vf_y(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(grad_vf_z(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         allocate(tot_grad_vf_x(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         allocate(tot_grad_vf_y(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
+         allocate(x_smoothing_tracker(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
+         allocate(y_smoothing_tracker(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
 
          allocate(PjxD(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(PjyD(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
@@ -1131,8 +1132,6 @@ contains
          call vtk_out%add_scalar('grad_vf_x',grad_vf_x)
          call vtk_out%add_scalar('grad_vf_y',grad_vf_y)
          call vtk_out%add_scalar('grad_vf_z',grad_vf_z)
-         call vtk_out%add_scalar('tot_grad_vf_x',tot_grad_vf_x)
-         call vtk_out%add_scalar('tot_grad_vf_y',tot_grad_vf_y)
 
 
          call vtk_out%add_scalar('Fst_x',Fst_x)
@@ -2389,19 +2388,30 @@ contains
 
       class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
       class(vfs), intent(inout) :: vf ! Volume Fraction Solver
-      integer :: i,j,k,ii,jj,kk
-      real(WP) :: tot_grad_x,tot_grad_y
+      integer :: i,j,k,ii,jj,kk,negativeIndex,positiveIndex
+      real(WP) :: tot_grad_x,tot_grad_y,tot_force
 
       Fst_x = 0.0_WP;
       Fst_y = 0.0_WP;
       Fst_z = 0.0_WP;
-
+      
+      negativeIndex = -1
+      positiveIndex = 1
       ! Calculate Gradients
       do k=cfg%kmin_,cfg%kmax_
          do j=cfg%jmin_,cfg%jmax_
             do i=cfg%imin_,cfg%imax_
                grad_vf_x(i,j,k) = abs((vf%VF(i  ,j  ,k) - vf%VF(i-1,j  ,k))  * vf%cfg%dxi(i))
                grad_vf_y(i,j,k) = abs((vf%VF(i  ,j  ,k) - vf%VF(i  ,j-1,k)) * vf%cfg%dyi(j))
+               ! While we are looping everything, also check to see if everything has been processed
+               if(abs(fs%Pjx(i,j,k)) .gt. 1e-12) then
+                  x_smoothing_tracker(i,j,k) = 1 ! Mark as needing smoothing
+               endif
+
+               if(abs(fs%Pjy(i,j,k)) .gt. 1e-12) then
+                  y_smoothing_tracker(i,j,k) = 1 ! Mark as needing smoothing
+               endif
+
             end do
          end do
       end do
@@ -2409,43 +2419,100 @@ contains
       do k=cfg%kmin_,cfg%kmax_
          do j=cfg%jmin_,cfg%jmax_
             do i=cfg%imin_,cfg%imax_
-
+               tot_grad_x = 0.0_WP
+               tot_grad_y = 0.0_WP
                ! X Direction
-               if(abs(fs%Pjx(i,j,k)) .gt. 1e-12) then  
-                  do ii = -1,1
-                     do jj = 0,0
-                        do kk = 0,0
-                           ! Spread out based on gradient magnitude
-                           Fst_x(i,j,k) = Fst_x(i,j,k) + grad_vf_x(i+ii,j+jj,k+kk)*fs%Pjx(i,j,k)
-                        enddo
-                     enddo
-                  enddo
-
-                  Fst_x(i,j,k) = Fst_x(i,j,k)/tot_grad_vf_x(i,j,k) ! Divide by total of weights to keep force "the same"
-               endif 
-
+               if(abs(fs%Pjx(i,j,k)) .gt. 1e-12 .and. x_smoothing_tracker(i,j,k) == 1) then  ! This checks to see if we are in a mixed cell that has not yet been smoothed
+                  ! Current Cell
+                  tot_grad_x = grad_vf_x(i,j,k)
+                  tot_force = fs%Pjx(i,j,k)
+                  ! Going Left
+                  do while(abs(fs%Pjx(i+negativeIndex,j,k)) .gt. 1e-12 .and. (i+negativeIndex) .ge. cfg%imin_)
+                     tot_grad_x = tot_grad_x + grad_vf_x(i+negativeIndex,j,k)
+                     tot_force = tot_force + fs%Pjx(i+negativeIndex,j,k)
+                     negativeIndex = negativeIndex -1
+                  end do
+                  ! Going Right
+                  do while(abs(fs%Pjx(i+positiveIndex,j,k)) .gt. 1e-12 .and. (i+positiveIndex) .le. cfg%imax_)
+                     tot_grad_x = tot_grad_x + grad_vf_x(i+positiveIndex,j,k)
+                     tot_force = tot_force + fs%Pjx(i+positiveIndex,j,k)
+                     positiveIndex = positiveIndex +1
+                  end do
+                  ! Now Reassign Force Values in between 
+                  do ii = negativeIndex,positiveIndex
+                     Fst_x(i+ii,j,k) = grad_vf_x(i+ii,j,k)*tot_force/tot_grad_x ! Summing Components
+                     
+                     ! Mark as Smoothed
+                     x_smoothing_tracker(i+ii,j,k) = 0
+                  end do
+                  ! Reset Indicies
+                  negativeIndex = -1
+                  positiveIndex = 1
+                  tot_force = 0.0_WP
+               endif
+               
                ! Y Direction
-               if(grad_vf_y(i,j,k) .gt. 1e-12) then  
-                  do ii = -1,1
-                     do jj = -1,1
-                        do kk = 0,0
-                           Fst_y(i,j,k) = Fst_y(i,j,k) + grad_vf_y(i+ii,j+jj,k+kk)*fs%Pjy(i+ii,j+jj,k+kk) ! Summing Components
-                        enddo
-                     enddo
-                  enddo
-                  Fst_y(i,j,k) = Fst_y(i,j,k)/tot_grad_vf_y(i,j,k) ! Divide by total of weights to keep force "the same"
+               if(abs(fs%Pjy(i,j,k)) .gt. 1e-12 .and. y_smoothing_tracker(i,j,k) == 1) then  
+                  ! Current Cell
+                  tot_grad_y = grad_vf_y(i,j,k)
+                  tot_force = fs%Pjy(i,j,k)
+                  ! Going Down
+                  do while(abs(fs%Pjy(i,j+negativeIndex,k)) .gt. 1e-12 .and. (j+negativeIndex) .ge. cfg%jmin_)
+                     tot_grad_y = tot_grad_y + grad_vf_y(i,j+negativeIndex,k)
+                     tot_force = tot_force + fs%Pjy(i,j+negativeIndex,k)
+                     negativeIndex = negativeIndex -1
+                  end do
+                  ! Going Up
+                  do while(abs(fs%Pjy(i,j+positiveIndex,k)) .gt. 1e-12 .and. (j+positiveIndex) .le. cfg%jmax_)
+                     tot_grad_y = tot_grad_y + grad_vf_y(i,j+positiveIndex,k)
+                     tot_force = tot_force + fs%Pjy(i,j+positiveIndex,k)
+                     positiveIndex = positiveIndex +1
+                  end do
+                  ! Now Reassign Force Values in between 
+                  do jj = negativeIndex,positiveIndex
+                     Fst_y(i,j+jj,k) = grad_vf_y(i,j+jj,k)*tot_force/tot_grad_y ! Summing Components
+                     ! Mark as Smoothed
+                     y_smoothing_tracker(i,j+jj,k) = 0
+                  end do
+                  ! Reset Indicies
+                  negativeIndex = -1
+                  positiveIndex = 1
+                  tot_force = 0.0_WP
                endif 
 
-            end do
+            end do 
          end do
       end do
-
+      write(*,'(A)') 'Gradient Smoothing Complete'
       fs%Pjx = Fst_x 
       fs%Pjy = Fst_y
       fs%Pjz = Fst_z
       
    end subroutine applyGradientSmoothing
 
+   subroutine applyPoissonSmoothing(fs,vf)
+      use irl_fortran_interface
+      use f_PUNeigh_RectCub_class
+      use f_SeparatorVariant_class
+      use f_PUSolve_RectCub_class
+
+      class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
+      class(vfs), intent(inout) :: vf ! Volume Fraction Solver
+      integer :: i,j,k,ii,jj,kk
+      real(WP) :: tot_grad_x,tot_grad_y
+
+      Fst_x = 0.0_WP;
+      Fst_y = 0.0_WP;
+      Fst_z = 0.0_WP;
+      ! First Calculate Divergence of Forces
+      
+
+      fs%Pjx = Fst_x 
+      fs%Pjy = Fst_y
+      fs%Pjz = Fst_z
+      
+   end subroutine applyPoissonSmoothing
+   
 
    subroutine updatePartitionOfUnity(vf,fs)
       use irl_fortran_interface
