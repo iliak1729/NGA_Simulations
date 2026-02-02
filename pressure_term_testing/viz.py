@@ -32,7 +32,7 @@ data6 = np.loadtxt(datafile6, skiprows=2)
 # datafile8 = "APS_2025_ARCHIVE/drop_translation/monitor/A_PUTesting_TranslatingDrop_La120_CSS_Jibben"
 # data8 = np.loadtxt(datafile8, skiprows=2)
 
-datafile9 = "pressure_term_testing/monitor/A_PUTesting_TranslatingDrop_La120_CSS"
+datafile9 = "pressure_term_testing/monitor/PressureTesting_LaplacianSmoothing"
 data9 = np.loadtxt(datafile9, skiprows=2)
 
 datafile10 = "pressure_term_testing/monitor/A_PUTesting_TranslatingDrop_La1200_CSS"
@@ -124,28 +124,28 @@ y = data9[0::50,5]
 output = np.array([x,y])
 output = np.transpose(output)
 # np.savetxt("CSF120J.csv",output,delimiter=",",fmt="%g")
-plt.semilogy(x,y,label = "CSS120_P",color='#023e8a')
+plt.semilogy(x,y,label = "PoissonSmoothing",color='#023e8a')
 # plt.savefig("drop_translation/graphs/La120CSF_Jibben.png")
 
-# plt.figure()
-# plt.title(datafile8)
-x = data10[0::50,1]/data10[1,3]
-y = data10[0::50,5]
-output = np.array([x,y])
-output = np.transpose(output)
-# np.savetxt("CSS120J.csv",output,delimiter=",",fmt="%g")
-plt.semilogy(x,y,label = "CSS1200_P",color='#00b4d8')
-# plt.savefig("drop_translation/graphs/La120CSS_Jibben.png")
+# # plt.figure()
+# # plt.title(datafile8)
+# x = data10[0::50,1]/data10[1,3]
+# y = data10[0::50,5]
+# output = np.array([x,y])
+# output = np.transpose(output)
+# # np.savetxt("CSS120J.csv",output,delimiter=",",fmt="%g")
+# plt.semilogy(x,y,label = "CSS1200_P",color='#00b4d8')
+# # plt.savefig("drop_translation/graphs/La120CSS_Jibben.png")
 
-# plt.figure()
-# plt.title(datafile8)
-x = data11[0::50,1]/data11[1,3]
-y = data11[0::50,5]
-output = np.array([x,y])
-output = np.transpose(output)
-# np.savetxt("CSS120J.csv",output,delimiter=",",fmt="%g")
-plt.semilogy(x,y,label = "CSS1200_P",color='#90e0ef')
-# plt.savefig("drop_translation/graphs/La120CSS_Jibben.png")
+# # plt.figure()
+# # plt.title(datafile8)
+# x = data11[0::50,1]/data11[1,3]
+# y = data11[0::50,5]
+# output = np.array([x,y])
+# output = np.transpose(output)
+# # np.savetxt("CSS120J.csv",output,delimiter=",",fmt="%g")
+# plt.semilogy(x,y,label = "CSS1200_P",color='#90e0ef')
+# # plt.savefig("drop_translation/graphs/La120CSS_Jibben.png")
 
 
 plt.ylabel("RMS Velocity")

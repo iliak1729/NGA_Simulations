@@ -66,6 +66,7 @@ module simulation
    real(WP), dimension(:,:,:), allocatable :: sigma_xx,sigma_yy,sigma_xy,sigma_yx 
    real(WP), dimension(:,:,:), allocatable :: sigma_xx_P,sigma_yy_P,sigma_xy_P,sigma_yx_P 
    real(WP), dimension(:,:,:), allocatable :: sigma_xx_NoP,sigma_yy_NoP,sigma_xy_NoP,sigma_yx_NoP 
+   real(WP), dimension(:,:,:), allocatable :: force_potential_field,poisson_source
    ! These are the force values, which are held at the U and V cells, respectively.
    ! They are equivalent to Pjx and Pjy in the current code, but I have them here for clearer use.
    ! We will be designing a new 
@@ -297,8 +298,10 @@ contains
          allocate(PjxD(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(PjyD(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(PjzD(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-
+      
          allocate(SurfaceTensionDiv(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
+         allocate(force_potential_field(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
+         allocate(poisson_source(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
       end block allocate_work_arrays
       
       
@@ -1128,6 +1131,9 @@ contains
          call vtk_out%add_scalar('sigma_xy_NoP',sigma_xy_NoP)
          call vtk_out%add_scalar('sigma_yx_NoP',sigma_yx_NoP)
          call vtk_out%add_scalar('sigma_yy_NoP',sigma_yy_NoP)
+
+         call vtk_out%add_scalar('Force Potential',force_potential_field)
+         call vtk_out%add_scalar('Force Potential Source',poisson_source)
 
          call vtk_out%add_scalar('grad_vf_x',grad_vf_x)
          call vtk_out%add_scalar('grad_vf_y',grad_vf_y)
@@ -2495,22 +2501,89 @@ contains
       use f_PUNeigh_RectCub_class
       use f_SeparatorVariant_class
       use f_PUSolve_RectCub_class
+      use hypre_str_class, only: pcg_smg,gmres
 
       class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
       class(vfs), intent(inout) :: vf ! Volume Fraction Solver
+      type(hypre_str) :: poisson_solver ! Poisson Solver Object
+
       integer :: i,j,k,ii,jj,kk
       real(WP) :: tot_grad_x,tot_grad_y
 
-      Fst_x = 0.0_WP;
-      Fst_y = 0.0_WP;
-      Fst_z = 0.0_WP;
-      ! First Calculate Divergence of Forces
-      
 
+      ! Initialize Poisson Solver
+      poisson_solver=hypre_str(cfg=cfg,name='Smoothing',method=gmres,nst=7)
+      poisson_solver%maxit=fs%psolv%maxit
+      poisson_solver%rcvg=fs%psolv%rcvg
+      ! Setup Solver
+      ! Set 7-pt stencil map for the pressure solver
+      poisson_solver%stc(1,:)=[ 0, 0, 0]
+      poisson_solver%stc(2,:)=[+1, 0, 0]
+      poisson_solver%stc(3,:)=[-1, 0, 0]
+      poisson_solver%stc(4,:)=[ 0,+1, 0]
+      poisson_solver%stc(5,:)=[ 0,-1, 0]
+      poisson_solver%stc(6,:)=[ 0, 0,+1]
+      poisson_solver%stc(7,:)=[ 0, 0,-1]
+      ! Set Up Laplacian Operator
+      do k=fs%cfg%kmin_,fs%cfg%kmax_
+         do j=fs%cfg%jmin_,fs%cfg%jmax_
+            do i=fs%cfg%imin_,fs%cfg%imax_
+               ! Set Laplacian
+               poisson_solver%opr(1,i,j,k)=fs%divp_x(1,i,j,k)*fs%divu_x(-1,i+1,j,k)+&
+               &                       fs%divp_x(0,i,j,k)*fs%divu_x( 0,i  ,j,k)+&
+               &                       fs%divp_y(1,i,j,k)*fs%divv_y(-1,i,j+1,k)+&
+               &                       fs%divp_y(0,i,j,k)*fs%divv_y( 0,i,j  ,k)+&
+               &                       fs%divp_z(1,i,j,k)*fs%divw_z(-1,i,j,k+1)+&
+               &                       fs%divp_z(0,i,j,k)*fs%divw_z( 0,i,j,k  )
+               poisson_solver%opr(2,i,j,k)=fs%divp_x(1,i,j,k)*fs%divu_x( 0,i+1,j,k)
+               poisson_solver%opr(3,i,j,k)=fs%divp_x(0,i,j,k)*fs%divu_x(-1,i  ,j,k)
+               poisson_solver%opr(4,i,j,k)=fs%divp_y(1,i,j,k)*fs%divv_y( 0,i,j+1,k)
+               poisson_solver%opr(5,i,j,k)=fs%divp_y(0,i,j,k)*fs%divv_y(-1,i,j  ,k)
+               poisson_solver%opr(6,i,j,k)=fs%divp_z(1,i,j,k)*fs%divw_z( 0,i,j,k+1)
+               poisson_solver%opr(7,i,j,k)=fs%divp_z(0,i,j,k)*fs%divw_z(-1,i,j,k  )
+               ! Scale it by the cell volume
+               ! poisson_solver%opr(:,i,j,k)=-poisson_solver%opr(:,i,j,k)*this%cfg%vol(i,j,k) I don't think I need this right now.
+            end do
+         end do
+      end do
+      ! Initialize the Poisson solver
+      call poisson_solver%init()
+      call poisson_solver%setup()
+      poisson_solver%sol=fs%Pjx
+      ! We now need to calculate the right hand side, which will be the divergence of the force field
+      do k=fs%cfg%kmin_,fs%cfg%kmax_
+         do j=fs%cfg%jmin_,fs%cfg%jmax_
+            do i=fs%cfg%imin_,fs%cfg%imax_
+               SurfaceTensionDiv(i,j,k) = (sum(fs%divp_x(:,i,j,k)*fs%Pjx(i:i+1,j,k))&
+                                          +sum(fs%divp_y(:,i,j,k)*fs%Pjy(i,j:j+1,k))) ! No z direction right now
+            end do
+         end do
+      end do
+      
+      poisson_solver%rhs = SurfaceTensionDiv
+      poisson_source = SurfaceTensionDiv
+      ! Solve the Poisson Equation
+      call poisson_solver%solve()
+      force_potential_field = poisson_solver%sol
+      ! Now we need to calculate the gradient of the smoothed pressure field to get the new forces
+      ! Calculate Forces
+      do k=cfg%kmin_,cfg%kmax_
+         do j=cfg%jmin_,cfg%jmax_
+            do i=cfg%imin_,cfg%imax_
+               Fst_x(i,j,k) = 0.5_WP * (poisson_solver%sol(i,j,k) - poisson_solver%sol(i-1,j,k)) * cfg%dxi(i)
+               Fst_y(i,j,k) = 0.5_WP * (poisson_solver%sol(i,j,k) - poisson_solver%sol(i,j-1,k)) * cfg%dyi(j)
+               Fst_z(i,j,k) = 0.0_WP
+            end do
+         end do
+      end do   
+      ! Calculate Magnitude of Fst_x
+      ! write(*,'(A,F10.5)') 'Max Fst_x before assign: ', maxval(abs(Fst_x))
+      ! Assign
       fs%Pjx = Fst_x 
       fs%Pjy = Fst_y
       fs%Pjz = Fst_z
-      
+      call poisson_solver%destroy()
+      ! write(*,'(A)') 'Poisson Smoothing Complete'
    end subroutine applyPoissonSmoothing
    
 
@@ -2676,6 +2749,8 @@ contains
             call applyLaplacianSmoothing(this)
          CASE(3)
             call applyGradientSmoothing(this,vf)
+         CASE(4)
+            call applyPoissonSmoothing(this,vf)
          CASE DEFAULT
 
       END SELECT
@@ -2695,6 +2770,7 @@ contains
       this%DPjz=this%Pjz-this%DPjz
       
       ! Add div(Pjump) to RP
+      SurfaceTensionDiv = 0.0_WP
       do k=this%cfg%kmin_,this%cfg%kmax_
          do j=this%cfg%jmin_,this%cfg%jmax_
             do i=this%cfg%imin_,this%cfg%imax_

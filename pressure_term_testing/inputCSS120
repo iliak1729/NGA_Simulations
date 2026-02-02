@@ -1,8 +1,8 @@
 # Parallelization
-Partition : 3 3 1
+Partition : 1 1 1
 
 # Options
-Monitor File Name : A_PUTesting_TranslatingDrop_La120_CSS
+Monitor File Name : A_PUTesting_TranslatingDrop_La120_CSS_Poisson
 # 1 For Default, 2 for all Mom, 3 for all Poisson, 4 for Conservative with Default
 Surface Tension Option : 4
 # 1 for periodic, 2 for neumann on all walls, 3 for Neumann Top and Bottom, 4 For Neumann Left and Right
@@ -14,13 +14,15 @@ Reconstruction Option : 1
 # PU Scale
 Partition Of Unity Scale : 1.0
 PU Spread : 2.0
+# Smoothing Option: 1 for No Smoothing, 2 for Laplacian, 3 for Gradient, 4 for Poisson
+Smoothing Option : 3
 
 # Mesh definition
 Lx :	1.0
 Ly :	1.0
 #Lz :    0.02
-nx :    128
-ny :	128
+nx :    32
+ny :	32
 nz :	1
 
 # SolveEdge Options
@@ -29,7 +31,7 @@ Pressure :                   1
 # Droplet definiton
 Droplet diameter :           4.0e-1
 # DV FOR 1,2,3 :           0.4472135955 0.894427191 0
-Droplet velocity :           1 0 0
+Droplet velocity :           0 0 0
 Droplet Center :             0 0 0
 # Fluid properties
 # Liquid dynamic viscosity :    1.0e-3

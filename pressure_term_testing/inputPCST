@@ -14,8 +14,8 @@ Reconstruction Option : 1
 # PU Scale
 Partition Of Unity Scale : 1.0
 PU Spread : 2.0
-# Smoothing Option: 1 for No Smoothing, 2 for Laplacian, 3 for Gradient
-Smoothing Option : 3
+# Smoothing Option: 1 for No Smoothing, 2 for Laplacian, 3 for Gradient, 4 for Poisson
+Smoothing Option : 4
 # Mesh definition
 Lx :	1.0
 Ly :	1.0
@@ -30,7 +30,7 @@ Pressure :                   1
 # Droplet definiton
 Droplet diameter :           4.0e-1
 # DV FOR 1,2,3 :           0.4472135955 0.894427191 0
-Droplet velocity :           0 0 0
+Droplet velocity :           1 0 0
 Droplet Center :             0 0 0
 # Fluid properties
 # Liquid dynamic viscosity :    1.0e-3
@@ -48,7 +48,7 @@ Min Capillary Time :          1.0 # This will almost never matter, as the viscou
 Max timestep size : 2.e-3 # Default Values, Overriden
 Max time :          0.08  # Default Values, Overriden
 
-Timestep factor : 0.5 # Scale on Delta t_max. That is to say, we scale sqrt(rho*delta^3/(pi*sigma)), which is the max time step, by this value to get our Max time step.
+Timestep factor : 0.05 # Scale on Delta t_max. That is to say, we scale sqrt(rho*delta^3/(pi*sigma)), which is the max time step, by this value to get our Max time step.
 Max cfl number :    0.5 # Changes Time Step
 
 # Inner Iterations
