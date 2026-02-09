@@ -63,20 +63,7 @@ module simulation
    ! Rank Data
    real(WP), dimension(:,:,:), allocatable :: Ranks
    ! Conservative Surface Tension Values
-   ! These are the Surface Tension Stress values, which will be held in the pressure cell.
    real(WP) :: PU_spread
-   ! real(WP), dimension(:,:,:), allocatable :: sigma_xx,sigma_yy,sigma_xy,sigma_yx 
-   ! real(WP), dimension(:,:,:), allocatable :: sigma_xx_P,sigma_yy_P,sigma_xy_P,sigma_yx_P 
-   ! real(WP), dimension(:,:,:), allocatable :: sigma_xx_NoP,sigma_yy_NoP,sigma_xy_NoP,sigma_yx_NoP 
-   ! real(WP), dimension(:,:,:), allocatable :: force_potential_field,poisson_source
-   ! These are the force values, which are held at the U and V cells, respectively.
-   ! They are equivalent to Pjx and Pjy in the current code, but I have them here for clearer use.
-   ! We will be designing a new 
-   ! real(WP), dimension(:,:,:), allocatable :: Fst_x,Fst_y,Fst_z,PjxD,PjyD,PjzD,Pjx_ST,Pjy_ST,Pjz_ST
-   ! real(WP), dimension(:,:,:), allocatable :: Pjx_Marangoni,Pjy_Marangoni,Pjz_Marangoni
-   ! real(WP), dimension(:,:,:), allocatable :: grad_vf_x, grad_vf_y,grad_vf_z
-   ! integer, dimension(:,:,:), allocatable :: x_smoothing_tracker,y_smoothing_tracker
-   ! real(WP), dimension(:,:,:), allocatable :: SurfaceTensionDiv
 
 contains
    ! Locator Functions
@@ -246,48 +233,7 @@ contains
          allocate(Vi  (cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(Wi  (cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(Ranks(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! Conservative Surface Tension
-         ! allocate(sigma_xx(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(sigma_yy(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(sigma_xy(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(sigma_yx(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-
-         ! allocate(sigma_xx_P(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(sigma_yy_P(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(sigma_xy_P(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(sigma_yx_P(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-
-         ! allocate(sigma_xx_NoP(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(sigma_yy_NoP(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(sigma_xy_NoP(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(sigma_yx_NoP(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-
-         ! allocate(Fst_x(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(Fst_y(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(Fst_z(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-
-         ! allocate(PjxD(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(PjyD(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(PjzD(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-
-         ! allocate(Pjx_ST(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(Pjy_ST(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(Pjz_ST(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-
-         ! allocate(Pjx_Marangoni(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(Pjy_Marangoni(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(Pjz_Marangoni(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-
-         ! allocate(SurfaceTensionDiv(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-
-         ! allocate(grad_vf_x(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(grad_vf_y(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(grad_vf_z(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(x_smoothing_tracker(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(y_smoothing_tracker(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(force_potential_field(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-         ! allocate(poisson_source(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
-
+         
       end block allocate_work_arrays
       
       
@@ -1447,37 +1393,6 @@ contains
 
          ! VOF solver step
          call vf%advance(dt=time%dt,U=fs%U,V=fs%V,W=fs%W)
-         ! mixedYoungCentered: block 
-         !    use irl_fortran_interface, only: getPlane,new,construct_2pt,RectCub_type,&
-         !       &                                setNumberOfPlanes,setPlane,matchVolumeFraction
-         !    real(WP), dimension(1:4) :: plane
-         !    real(WP), dimension(1:3) :: norm
-         !    type(RectCub_type) :: cell
-         !    ! Here we do the mixed-Young-Centered Method
-         !    call new(cell)
-         !    do k = vf%cfg%kmin_,vf%cfg%kmax_
-         !       do j = vf%cfg%jmin_,vf%cfg%jmax_
-         !          do i = vf%cfg%imin_,vf%cfg%imax_
-         !             if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then
-         !                ! Make Cell
-         !                call construct_2pt(cell,[vf%cfg%x(i  ),vf%cfg%y(j  ),vf%cfg%z(k  )],&
-         !                &                       [vf%cfg%x(i+1),vf%cfg%y(j+1),vf%cfg%z(k+1)]) 
-         !                ! Get Normal
-         !                call mixedYoungCenterNormal(vf,i,j,k,norm)
-         !                ! Update Plane
-         !                plane(1:3) = norm 
-         !                ! Start at center
-         !                plane(4)=dot_product(plane(1:3),[vf%cfg%xm(i),vf%cfg%ym(j),vf%cfg%zm(k)])
-         !                ! Set Number of Plnes and Plane
-         !                call setNumberOfPlanes(vf%liquid_gas_interface(i,j,k),1)
-         !                call setPlane(vf%liquid_gas_interface(i,j,k),0,plane(1:3),plane(4))
-         !                ! Match Volume Fraction
-         !                call matchVolumeFraction(cell,vf%VF(i,j,k),vf%liquid_gas_interface(i,j,k))
-         !             endif
-         !          enddo
-         !       enddo
-         !    enddo
-         ! end block mixedYoungCentered
          
          ! Apply Boundary Conditions
 
@@ -1494,7 +1409,7 @@ contains
 
                call new(cell)
                ! Left Neumann Condition
-               write(*,'(A)') '=================================== Left Neumann'
+               ! write(*,'(A)') '=================================== Left Neumann'
                do k = vf%cfg%kmino_,vf%cfg%kmaxo_
                   do j = vf%cfg%jmino_,vf%cfg%jmaxo_
                      do i = vf%cfg%imino_,vf%cfg%imin-1 ! This makes it loop through only the left ghost cells (Indicies -2,-1,0)
@@ -1523,7 +1438,7 @@ contains
                enddo
 
                ! Right Neumann Condition
-               write(*,'(A)') '=================================== Right Neumann'
+               ! write(*,'(A)') '=================================== Right Neumann'
                do k = vf%cfg%kmino_,vf%cfg%kmaxo_
                   do j = vf%cfg%jmino_,vf%cfg%jmaxo_
                      do i = vf%cfg%imino_,vf%cfg%imin-1 ! This makes it loop through only the left ghost cells (Indicies -2,-1,0)
@@ -1552,7 +1467,7 @@ contains
                enddo
 
                !Bottom Neumann Condition
-               write(*,'(A)') '================================= Bot Neumann'
+               ! write(*,'(A)') '================================= Bot Neumann'
                do k = vf%cfg%kmino_,vf%cfg%kmaxo_
                   do j = vf%cfg%jmino_,vf%cfg%jmin-1
                      do i = vf%cfg%imino_,vf%cfg%imaxo_
@@ -1583,7 +1498,7 @@ contains
                enddo
 
                !Top Neumann Condition
-               write(*,'(A)') '================================= Top Neumann'
+               ! write(*,'(A)') '================================= Top Neumann'
                do k = vf%cfg%kmino_,vf%cfg%kmaxo_
                   do j = vf%cfg%jmino_,vf%cfg%jmin-1
                      do i = vf%cfg%imino_,vf%cfg%imaxo_
@@ -1627,7 +1542,7 @@ contains
                call vf%get_curvature()
 
                if(CurvatureOption .eq. 2) then
-                  write(*,'(A)') 'Getting Curvature'
+                  ! write(*,'(A)') 'Getting Curvature'
                   do k=vf%cfg%kmin_,vf%cfg%kmax_
                      do j=vf%cfg%jmin_,vf%cfg%jmax_
                         do i=vf%cfg%imin_,vf%cfg%imax_
@@ -1973,7 +1888,7 @@ contains
                ! Calculate curvature
                call vf%get_curvature()
                if(CurvatureOption .eq. 2) then
-                  write(*,'(A)') 'Getting Curvature'
+                  ! write(*,'(A)') 'Getting Curvature'
                   do k=vf%cfg%kmin_,vf%cfg%kmax_
                      do j=vf%cfg%jmin_,vf%cfg%jmax_
                         do i=vf%cfg%imin_,vf%cfg%imax_
@@ -2200,23 +2115,7 @@ contains
             
             ! Explicit calculation of drho*u/dt from NS
             ! call fs%get_dmomdt(resU,resV,resW)
-            ! write(*,'(A)') 'CASE SELECTION ================================================'
             
-            ! SELECT CASE (SurfaceTensionOption)
-            !    CASE (2)
-            !       ! write(*,'(A)') 'CASE 2 ================================================'
-            !       call add_surface_tension_jump_no_ST(fs,dt=time%dt,div=fs%div,vf=vf)
-            !       call get_dmomdt_full_ST(fs,resU,resV,resW)
-            !    CASE (3)
-            !       ! write(*,'(A)') 'CASE 3 ================================================'
-            !       call get_dmomdt_no_ST(fs,resU,resV,resW)
-            !    CASE (4)
-            !       ! Conservative Surface Tension Approach for get_dmomdt
-            !       call fs%get_dmomdt(resU,resV,resW)
-            !    CASE DEFAULT
-            !       ! write(*,'(A)') 'CASE DEFAULT ================================================'
-            !       call fs%get_dmomdt(resU,resV,resW)
-            ! END SELECT
             call cst%get_dmomdt(resU,resV,resW)
             ! Assemble explicit residual
             resU=-2.0_WP*fs%rho_U*fs%U+(fs%rho_Uold+fs%rho_U)*fs%Uold+time%dt*resU
@@ -2240,16 +2139,6 @@ contains
             call fs%correct_mfr()
             call fs%get_div()
             ! call fs%add_surface_tension_jump(dt=time%dt,div=fs%div,vf=vf)
-            ! SELECT CASE (SurfaceTensionOption)
-            !    CASE (2)
-            !       call add_surface_tension_jump_no_ST(fs,dt=time%dt,div=fs%div,vf=vf)
-            !    CASE (3)
-            !       call add_surface_tension_jump_full_ST(fs,dt=time%dt,div=fs%div,vf=vf)
-            !    CASE (4) 
-            !       call add_conservative_surface_tension_jump(fs,dt=time%dt,div=fs%div,vf=vf)
-            !    CASE DEFAULT
-            !       call fs%add_surface_tension_jump(dt=time%dt,div=fs%div,vf=vf)
-            ! END SELECT
             call cst%add_surface_tension_jump()
 
             fs%psolv%rhs=-fs%cfg%vol*fs%div/time%dt
