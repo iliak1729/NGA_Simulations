@@ -922,9 +922,9 @@ contains
          call vtk_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
          call vtk_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
 
-         call vtk_out%add_scalar('Fst_x',cst%Fst_x)
-         call vtk_out%add_scalar('Fst_y',cst%Fst_y)
-         call vtk_out%add_scalar('Fst_z',cst%Fst_z)
+         call vtk_out%add_scalar('Fst_x',fs%Pjx)
+         call vtk_out%add_scalar('Fst_y',fs%Pjx)
+         call vtk_out%add_scalar('Fst_z',fs%Pjx)
          call vtk_out%add_scalar('PjxD',cst%PjxD)
          call vtk_out%add_scalar('PjyD',cst%PjyD)
          call vtk_out%add_scalar('PjzD',cst%PjzD)

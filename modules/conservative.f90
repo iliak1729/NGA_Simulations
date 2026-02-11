@@ -150,6 +150,9 @@ subroutine get_dmomdt(this,resU,resV,resW)
         CASE (4)
             ! Conservative Surface Tension Approach for get_dmomdt
             call this%fs%get_dmomdt(resU,resV,resW)
+        CASE (5)
+            ! CSF Correction Approach
+            call this%fs%get_dmomdt(resU,resV,resW)
         CASE DEFAULT
             ! write(*,'(A)') 'CASE DEFAULT ================================================'
             call this%fs%get_dmomdt(resU,resV,resW)
@@ -167,6 +170,8 @@ subroutine add_surface_tension_jump(this)
             call this%add_surface_tension_jump_full_ST(dt=this%time%dt,div=this%fs%div)
         CASE (4) 
             call this%add_conservative_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
+        CASE (5)
+            call this%add_CSF_Shift_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
         CASE DEFAULT
             call this%fs%add_surface_tension_jump(dt=this%time%dt,div=this%fs%div,vf=this%vf)
     END SELECT

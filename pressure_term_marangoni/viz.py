@@ -30,13 +30,13 @@ datafile = "APS_2025_ARCHIVE/marangoni_drop_translation_true_runs/monitor/Herrma
 data3 = np.loadtxt(datafile, skiprows=1,delimiter=',')
 
 
-datafile = "pressure_term_marangoni/monitor/PressureTesting_Marangoni_32"
+datafile = "pressure_term_marangoni/monitor/PressureTesting_Marangoni_32_CSF_SHIFT_SWEEP"
 data4 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "pressure_term_marangoni/monitor/PressureTesting_Marangoni_64"
+datafile = "pressure_term_marangoni/monitor/PressureTesting_Marangoni_64_CSF_SHIFT_SWEEP"
 data5 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "pressure_term_marangoni/monitor/PressureTesting_Marangoni_128"
+datafile = "pressure_term_marangoni/monitor/PressureTesting_Marangoni_128_CSF_SHIFT_SWEEP"
 data6 = np.loadtxt(datafile, skiprows=2)
 
 rho1 = .2
@@ -64,7 +64,6 @@ print("Tnorm = ",tNorm)
 print("U0 = ",U0)
 print("Vygb =",Vygb)
 
-
 plt.figure()
 
 # Cases from Before
@@ -72,29 +71,30 @@ x = data3[:,0]/tNorm
 y = data3[:,1]
 plt.plot(x,y,label = "Herrmann",linewidth=2, color = color_black)
 
-# x = data0[:,1]/tNorm
-# y = data0[:,4]/Vygb
-# plt.plot(x,y,label = "N = 64",linewidth=2, color = color_blue)
+x = data0[:,1]/tNorm
+y = data0[:,4]/Vygb
+plt.plot(x,y,label = "Old64",linewidth=2, color = color_blue)
 
 # x = data1[:,1]/tNorm
 # y = data1[:,4]/Vygb
-# plt.plot(x,y,label = "N = 128",linewidth=2,color = color_red)
-x = data2[:,1]/tNorm
-y = data2[:,4]/Vygb
-plt.plot(x,y,label = "N = 256",linewidth=2,color = color_yellow)
+# plt.plot(x,y,label = "Old128",linewidth=2,color = color_red)
 
+# x = data2[:,1]/tNorm
+# y = data2[:,4]/Vygb
+# plt.plot(x,y,label = "Old256",linewidth=2,color = color_yellow)
 # Cases After
-# x = data4[:,1]/tNorm
-# y = data4[:,4]/Vygb
-# plt.plot(x,y,label = "N = 32 Pressure",linewidth=2, color = color_teal)
+
+x = data4[:,1]/tNorm
+y = data4[:,4]/Vygb
+plt.plot(x,y,label = "New32 Pressure",linewidth=2, color = color_teal)
 
 # x = data5[:,1]/tNorm
 # y = data5[:,4]/Vygb
-# plt.plot(x,y,label = "N = 64 Pressure",linewidth=2,color = color_pink)
+# plt.plot(x,y,label = "New64 Pressure",linewidth=2,color = color_pink)
 
-x = data6[:,1]/tNorm
-y = data6[:,4]/Vygb
-plt.plot(x,y,label = "N = 128 Pressure",linewidth=2,color = color_orange)
+# x = data6[:,1]/tNorm
+# y = data6[:,4]/Vygb
+# plt.plot(x,y,label = "New128",linewidth=2,color = color_orange)
 
 
 

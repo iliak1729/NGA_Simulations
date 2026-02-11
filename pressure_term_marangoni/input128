@@ -2,9 +2,9 @@
 Partition : 2 4 1
 
 # Options
-Monitor File Name : PressureTesting_Marangoni_128
-# 1 For Default, 2 for all Mom, 3 for all Poisson, 4 for Conservative with Default
-Surface Tension Option : 4
+Monitor File Name : PressureTesting_Marangoni_128_CSF_SHIFT_SWEEP
+# 1 For Default, 2 for all Mom, 3 for all Poisson, 4 for Conservative with Default, 5 For CSF Shift
+Surface Tension Option : 5
 # 1 for periodic, 2 for neumann on all walls, 3 for Neumann Top and Bottom, 4 For Neumann Left and Right
 Boundary Condition Option: 3
 # Curvature Option: 1 for default, 2 for height function
@@ -14,6 +14,8 @@ Reconstruction Option : 1
 # PU Scale
 Partition Of Unity Scale : 1.0
 PU Spread : 2.0
+# Smoothing Option: 1 for No Smoothing, 2 for Laplacian, 3 for Gradient, 4 for Poisson
+Smoothing Option : 1
 
 # Mesh definition
 Lx :	5.0
