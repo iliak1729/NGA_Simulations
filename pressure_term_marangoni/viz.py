@@ -30,10 +30,10 @@ datafile = "APS_2025_ARCHIVE/marangoni_drop_translation_true_runs/monitor/Herrma
 data3 = np.loadtxt(datafile, skiprows=1,delimiter=',')
 
 
-datafile = "pressure_term_marangoni/monitor/PressureTesting_Marangoni_32_CSF_SHIFT_SWEEP"
+datafile = "pressure_term_marangoni/monitor/Marangoni_Seric"
 data4 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "pressure_term_marangoni/monitor/PressureTesting_Marangoni_64_CSF_SHIFT_SWEEP"
+datafile = "pressure_term_marangoni/monitor/Marangoni_Peskin"
 data5 = np.loadtxt(datafile, skiprows=2)
 
 datafile = "pressure_term_marangoni/monitor/PressureTesting_Marangoni_128_CSF_SHIFT_SWEEP"
@@ -86,11 +86,11 @@ plt.plot(x,y,label = "Old64",linewidth=2, color = color_blue)
 
 x = data4[:,1]/tNorm
 y = data4[:,4]/Vygb
-plt.plot(x,y,label = "New32 Pressure",linewidth=2, color = color_teal)
+plt.plot(x,y,label = "Seric32",linewidth=2, color = color_teal)
 
-# x = data5[:,1]/tNorm
-# y = data5[:,4]/Vygb
-# plt.plot(x,y,label = "New64 Pressure",linewidth=2,color = color_pink)
+x = data5[:,1]/tNorm
+y = data5[:,4]/Vygb
+plt.plot(x,y,label = "Peskin32",linewidth=2,color = color_pink)
 
 # x = data6[:,1]/tNorm
 # y = data6[:,4]/Vygb

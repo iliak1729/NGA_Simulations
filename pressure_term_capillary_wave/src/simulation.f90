@@ -1326,6 +1326,11 @@ contains
          call vtk_out%add_scalar('grad_vf_y',cst%grad_vf_y)
          call vtk_out%add_scalar('grad_vf_z',cst%grad_vf_z)
 
+         call vtk_out%add_scalar('STx',cst%STx)
+         call vtk_out%add_scalar('STy',cst%STy)
+         call vtk_out%add_scalar('Hx',cst%Hx)
+         call vtk_out%add_scalar('Hy',cst%Hy)
+
          call vtk_out%add_vector('Fst',cst%Fst_x,cst%Fst_y,cst%Fst_z)
          call vtk_out%add_surface('plic',smesh) 
          call vtk_out%add_particle('tracers',pmesh)

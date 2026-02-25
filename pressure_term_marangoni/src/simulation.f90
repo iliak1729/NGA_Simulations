@@ -148,39 +148,39 @@ contains
 
    ! Function that finds the RMS Velocity Magnitude given U,V,W
    function Calc_RMS_Velocity() result(VrmsGlobal)
-      use mpi_f08, only: MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD
+
+      use mpi_f08
       implicit none
-      integer :: i,j,k
-      integer :: ierr
-      real(WP) :: Vrms(1),Umag,count(1),VrmsGlobal(1),countGlobal(1),dx,dy
-      ! Flow variables
-      real(WP), dimension(:,:,:), allocatable :: U        !< U velocity array
-      real(WP), dimension(:,:,:), allocatable :: V        !< V velocity array
-      real(WP), dimension(:,:,:), allocatable :: W        !< W velocity array
-      
-      ! Get Values
-      U = fs%U - vel(1)
-      V = fs%V - vel(2)
-      W = fs%W - vel(3)
+
+      integer :: i,j,k,ierr
+      real(WP) :: Vrms,count,VrmsGlobal,countGlobal,dx,dy
 
       dx = vf%cfg%dx(1)
       dy = vf%cfg%dy(1)
-      
+
       Vrms = 0.0_WP
       count = 0.0_WP
+
       k = 1
-      ! Loop Over all points, sum magnitudes
+
       do i = cfg%imin_,cfg%imax_
-         do j = cfg%jmin_,cfg%jmax_
-            Vrms = Vrms + (U(i,j,k)*U(i,j,k) + V(i,j,k)*V(i,j,k))*dy*dx
-            
-            count = count + dy*dx
-         end do
+      do j = cfg%jmin_,cfg%jmax_
+
+         Vrms = Vrms + ((fs%U(i,j,k)-vel(1))**2 + &
+                        (fs%V(i,j,k)-vel(2))**2)*dx*dy
+
+         count = count + dx*dy
+
       end do
+      end do
+
       CALL MPI_ALLREDUCE(Vrms,VrmsGlobal,1,MPI_DOUBLE_PRECISION,MPI_SUM,cfg%comm,ierr)
+
       CALL MPI_ALLREDUCE(count,countGlobal,1,MPI_DOUBLE_PRECISION,MPI_SUM,cfg%comm,ierr)
-      VrmsGlobal(1) = sqrt(VrmsGlobal(1)/countGlobal(1))
-   end function Calc_RMS_Velocity
+
+      VrmsGlobal = sqrt(VrmsGlobal/countGlobal)
+
+   end function
    
    function Calc_Amplitude() result(height)
       implicit none
@@ -678,7 +678,7 @@ contains
          call param_read('PU Spread',cst%PU_spread)
          call cst%temp()
       end block create_surface_tension_solver
-
+      call cst%add_surface_tension_jump()
       ! Create surfmesh object for interface polygon output
       create_smesh: block
          use irl_fortran_interface
@@ -764,7 +764,7 @@ contains
             pmesh%vec(:,2,i)=pt%p(i)%acc
          end do
       end block insert_tracers
-      
+     
       ! Ghost Cell Output
       create_ghost_vtk : block 
          use sgrid_class, only: cartesian
@@ -922,13 +922,53 @@ contains
          call vtk_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
          call vtk_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
 
-         call vtk_out%add_scalar('Fst_x',fs%Pjx)
-         call vtk_out%add_scalar('Fst_y',fs%Pjx)
-         call vtk_out%add_scalar('Fst_z',fs%Pjx)
-         call vtk_out%add_scalar('PjxD',cst%PjxD)
-         call vtk_out%add_scalar('PjyD',cst%PjyD)
-         call vtk_out%add_scalar('PjzD',cst%PjzD)
+         call vtk_out%add_scalar('Fst_x',cst%Fst_x)
+         call vtk_out%add_scalar('Fst_y',cst%Fst_y)
+         call vtk_out%add_scalar('Fst_z',cst%Fst_z)
+
+         call vtk_out%add_scalar('STx',cst%STx)
+         call vtk_out%add_scalar('STy',cst%STy)
+         call vtk_out%add_scalar('Hx',cst%Hx)
+         call vtk_out%add_scalar('Hy',cst%Hy)
+
+         call vtk_out%add_scalar('HF_DIR',cst%HF_dir)
+
+         call vtk_out%add_scalar('dSTds',cst%dStds)
+         call vtk_out%add_scalar('HF Type',cst%height_function_type)
+
+         call vtk_out%add_scalar('Stp1',cst%Stp1)
+         call vtk_out%add_scalar('St0',cst%St0)
+         call vtk_out%add_scalar('Stm1',cst%Stm1)
+
+         call vtk_out%add_scalar('Hp1',cst%Hp1)
+         call vtk_out%add_scalar('H0',cst%H0)
+         call vtk_out%add_scalar('Hm1',cst%Hm1)
+
+         call vtk_out%add_scalar('Gx',cst%Gx)
+         call vtk_out%add_scalar('Gy',cst%Gy)
+         call vtk_out%add_scalar('Gz',cst%Gz)
+
+         call vtk_out%add_scalar('ST_Coeff',cst%ST_Coeff)
+
+         call vtk_out%add_scalar('Seric_Populated_Initial',cst%Seric_Pop_Storage(:,:,:,0))
+         call vtk_out%add_scalar('Seric_Populated_Iter1',cst%Seric_Pop_Storage(:,:,:,1))
+         call vtk_out%add_scalar('Seric_Populated_Iter2',cst%Seric_Pop_Storage(:,:,:,2))
+
+         call vtk_out%add_scalar('Gx_Initial',cst%Gx_Storage(:,:,:,0))
+         call vtk_out%add_scalar('Gx_Iter1',cst%Gx_Storage(:,:,:,1))
+         call vtk_out%add_scalar('Gx_Iter2',cst%Gx_Storage(:,:,:,2))
+
+         call vtk_out%add_scalar('Gy_Initial',cst%Gy_Storage(:,:,:,0))
+         call vtk_out%add_scalar('Gy_Iter1',cst%Gy_Storage(:,:,:,1))
+         call vtk_out%add_scalar('Gy_Iter2',cst%Gy_Storage(:,:,:,2))
+         
+         call vtk_out%add_scalar('curvature_storage Initial',cst%curvature_storage(:,:,:,0))
+         call vtk_out%add_scalar('curvature_storage Iter1',cst%curvature_storage(:,:,:,1))
+         call vtk_out%add_scalar('curvature_storage Iter2',cst%curvature_storage(:,:,:,2))
+
          call vtk_out%add_vector('Fst',cst%Fst_x,cst%Fst_y,cst%Fst_z)
+         call vtk_out%add_vector('Pj',fs%Pjx,fs%Pjy,fs%Pjz)
+         call vtk_out%add_vector('Pj_Marangoni',cst%Pjx_ST,cst%Pjy_ST,cst%Pjz_ST)
          call vtk_out%add_surface('plic',smesh) 
          call vtk_out%add_particle('tracers',pmesh)
          ! Output to vtk
@@ -953,6 +993,8 @@ contains
          call mfile%add_column(UCOM,'COM U')
          call mfile%add_column(VCOM,'COM V')
          call mfile%add_column(WCOM,'COM W')
+
+         call mfile%add_column(RootMeanSquareVelocity,'Vrms')
          call mfile%write()         
       end block create_monitor
 
@@ -962,6 +1004,7 @@ contains
       ! write(*,'(A,2I10.5)') 'Processor jmin,jmax',cfg%jmin_,cfg%jmax_
       ! write(*,'(A,2I10.5)') 'Processor kmin,kmax',cfg%kmin_,cfg%kmax_
       ! STOP
+      
    end subroutine simulation_init
    
    
@@ -1038,6 +1081,7 @@ contains
             call fs%correct_mfr()
             call fs%get_div()
             ! call fs%add_surface_tension_jump(dt=time%dt,div=fs%div,vf=vf)
+
             call cst%add_surface_tension_jump()
 
             fs%psolv%rhs=-fs%cfg%vol*fs%div/time%dt
@@ -1087,7 +1131,7 @@ contains
             call PuVtk_Out%write_data(time%t)
          end if
          
-         ! RootMeanSquareVelocity = Calc_RMS_Velocity()
+         RootMeanSquareVelocity = Calc_RMS_Velocity()
          ! amp = Calc_Amplitude()
          ! COM = Calc_Center_of_mass()
          realCatcher =  Calc_Center_of_mass_velocity()
