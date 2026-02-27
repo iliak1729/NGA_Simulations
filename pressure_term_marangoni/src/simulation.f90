@@ -678,7 +678,7 @@ contains
          call param_read('PU Spread',cst%PU_spread)
          call cst%temp()
       end block create_surface_tension_solver
-      call cst%add_surface_tension_jump()
+      
       ! Create surfmesh object for interface polygon output
       create_smesh: block
          use irl_fortran_interface

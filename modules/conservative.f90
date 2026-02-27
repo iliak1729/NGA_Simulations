@@ -834,6 +834,11 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     this%DPjx_Marangoni= this%Pjx_Marangoni- this%Pjx_NoMarangoni
     this%DPjy_Marangoni = this%Pjy_Marangoni- this%Pjy_NoMarangoni
     this%DPjz_Marangoni = this%Pjz_Marangoni- this%Pjz_NoMarangoni
+
+    ! Assign to Pjx so that we can smooth it
+    this%fs%Pjx = this%DPjx_Marangoni
+    this%fs%Pjy = this%DPjy_Marangoni
+    this%fs%Pjz = this%DPjz_Marangoni
     ! We might need to smooth this so that the shape of the force field is the same as the CSF model
     SELECT CASE (this%SmoothingOption)
         CASE(1)
@@ -844,10 +849,15 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
             call applyGradientSmoothing(this)
         CASE(4)
             call applyPoissonSmoothing(this)
+        case(5) ! This is using the Peskin Delta Function
+            call this%applyPeskinSmoothing()
         CASE DEFAULT
 
     END SELECT
-
+    ! Repalce for visualization
+    this%DPjx_Marangoni= this%fs%Pjx
+    this%DPjy_Marangoni = this%fs%Pjy
+    this%DPjz_Marangoni = this%fs%Pjz
     ! Now we have (F_PCST - F_PCST_CONST_ST). We now add this to the CSF values and use that
     this%fs%Pjx = this%DPjx_Marangoni + this%PjxD
     this%fs%Pjy = this%DPjy_Marangoni + this%PjyD

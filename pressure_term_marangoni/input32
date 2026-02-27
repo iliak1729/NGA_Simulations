@@ -1,10 +1,11 @@
 # Parallelization
-Partition : 1 1 1
+Partition : 2 3 1
 
 # Options
-Monitor File Name : Temp
+Monitor File Name : Marangoni_Peskin_64
+
 # 1 For Default, 2 for all Mom, 3 for all Poisson, 4 for Conservative with Default, 5 For CSF Shift, 6 For Seric
-Surface Tension Option : 6
+Surface Tension Option : 4
 # 1 for periodic, 2 for neumann on all walls, 3 for Neumann Top and Bottom, 4 For Neumann Left and Right
 Boundary Condition Option: 3
 # Curvature Option: 1 for default, 2 for height function
@@ -21,8 +22,8 @@ Smoothing Option : 5
 Lx :	5.0
 Ly :	7.5
 #Lz :    0.02
-nx :    32
-ny :	48
+nx :    64
+ny :	96
 nz :	1
 
 # SolveEdge Options Marangon: 0 0.133 -0.1
@@ -42,8 +43,8 @@ Gas density :                 0.2
 Surface tension coefficient : 0.1
 # Dimensionless Numbers
 Laplace Number :              2
-Min Viscous Time :            12.5 # Changes Max Time
-Min Capillary Time :          12.5 # This will almost never matter, as the viscous time is so much longer, but it is fine
+Min Viscous Time :            4.5 # Changes Max Time
+Min Capillary Time :          4.5 # This will almost never matter, as the viscous time is so much longer, but it is fine
 
 # Time integration
 Max timestep size : 0.014 # Default Values, Overriden
