@@ -260,14 +260,15 @@ contains
       VFTotal = 0.0_WP
       CenterOfMassV = (/0.0_WP,0.0_WP,0.0_WP/)
       count = 0.0_WP
-      k = 1
       ! Calculate Liquid COM
       do i = cfg%imin_,cfg%imax_
          do j = cfg%jmin_,cfg%jmax_
-            VFTotal = VFTotal + vf%VF(i,j,k)
-            CellCenterVelocity = [Ui(i,j,k),Vi(i,j,k),Wi(i,j,k)]
-            CenterOfMassV = CenterOfMassV + vf%VF(i,j,k) * CellCenterVelocity
-            count = count + 1
+            do k = cfg%kmin_,cfg%kmax_
+               VFTotal = VFTotal + vf%VF(i,j,k)
+               CellCenterVelocity = [Ui(i,j,k),Vi(i,j,k),Wi(i,j,k)]
+               CenterOfMassV = CenterOfMassV + vf%VF(i,j,k) * CellCenterVelocity
+               count = count + 1
+            enddo
          end do
       end do
       
@@ -390,7 +391,7 @@ contains
                   end do
                   ! Call adaptive refinement code to get volume and barycenters recursively
                   vol=0.0_WP; area=0.0_WP; v_cent=0.0_WP; a_cent=0.0_WP
-                  call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_cylinder,0.0_WP,amr_ref_lvl)
+                  call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_sphere,0.0_WP,amr_ref_lvl)
                   vf%VF(i,j,k)=vol/vf%cfg%vol(i,j,k)
                   if (vf%VF(i,j,k).ge.VFlo.and.vf%VF(i,j,k).le.VFhi) then
                      vf%Lbary(:,i,j,k)=v_cent
@@ -840,7 +841,7 @@ contains
          call param_read('Partition Of Unity Scale',Scale)
          nx = Scale*cfg%nx
          ny = Scale*cfg%ny 
-         nz = 1
+         nz = Scale*cfg%nz
          ! write(*,'(A)') 'Domain Size'
          ! Change Domain Size
          Lx = cfg%xL

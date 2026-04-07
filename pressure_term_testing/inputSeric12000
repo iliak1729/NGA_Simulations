@@ -2,9 +2,9 @@
 Partition : 3 3 1
 
 # Options
-Monitor File Name : A_PUTesting_TranslatingDrop_La12000_CSS_Poisson
+Monitor File Name : TranslatingDrop_La12000_Seric
 # 1 For Default, 2 for all Mom, 3 for all Poisson, 4 for Conservative with Default
-Surface Tension Option : 4
+Surface Tension Option : 6
 # 1 for periodic, 2 for neumann on all walls, 3 for Neumann Top and Bottom, 4 For Neumann Left and Right
 Boundary Condition Option: 1
 # Curvature Option: 1 for default, 2 for height function
@@ -15,14 +15,14 @@ Reconstruction Option : 1
 Partition Of Unity Scale : 1.0
 PU Spread : 2.0
 # Smoothing Option: 1 for No Smoothing, 2 for Laplacian, 3 for Gradient, 4 for Poisson
-Smoothing Option : 4
+Smoothing Option : 1
 
 # Mesh definition
 Lx :	1.0
 Ly :	1.0
 #Lz :    0.02
-nx :    32
-ny :	32
+nx :    128
+ny :	128
 nz :	1
 
 # SolveEdge Options

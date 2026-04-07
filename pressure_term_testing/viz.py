@@ -32,7 +32,7 @@ data4 = np.loadtxt(datafile4, skiprows=2)
 # datafile8 = "APS_2025_ARCHIVE/drop_translation/monitor/A_PUTesting_TranslatingDrop_La120_CSS_Jibben"
 # data8 = np.loadtxt(datafile8, skiprows=2)
 
-datafile9 = "pressure_term_marangoni/monitor/TranslatingDrop_Peskin"
+datafile9 = "pressure_term_testing/monitor/TranslatingDrop_La120_Shift_Peskin"
 data9 = np.loadtxt(datafile9, skiprows=2)
 
 # datafile10 = "pressure_term_testing/monitor/A_PUTesting_TranslatingDrop_La1200_CSS"
@@ -119,8 +119,8 @@ plt.semilogy(x,y,label = "CSS120",color='#3c096c')
 
 # plt.figure()
 # plt.title(datafile7)
-x = data9[0::50,1]/data4[1,3]
-y = data9[0::50,6]
+x = data9[0::50,1]/data9[1,3]
+y = data9[0::50,5]
 output = np.array([x,y])
 output = np.transpose(output)
 # np.savetxt("CSF120J.csv",output,delimiter=",",fmt="%g")

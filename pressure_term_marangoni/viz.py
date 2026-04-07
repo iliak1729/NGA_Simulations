@@ -17,27 +17,30 @@ color_blue = '#0072B2'
 color_red = '#D55E00'
 color_pink = '#CC79A7'
 # Data
-datafile = "APS_2025_ARCHIVE/marangoni_drop_translation_true_runs/monitor/PU_Marangoni_64x96"
+datafile = "APS_2025_ARCHIVE/marangoni_drop_translation_true_runs/monitor/PU_Marangoni_128x192"
 data0 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "APS_2025_ARCHIVE/marangoni_drop_translation_true_runs/monitor/PU_Marangoni_128x192"
+datafile = "pressure_term_marangoni/monitor/Marangoni_3D_64_Fixed"
 data1 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "APS_2025_ARCHIVE/marangoni_drop_translation_true_runs/monitor/PU_Marangoni_256x384"
+datafile = "pressure_term_marangoni/monitor/Marangoni_Seric_Updated_TangentFix_64"
 data2 = np.loadtxt(datafile, skiprows=2)
  
 datafile = "APS_2025_ARCHIVE/marangoni_drop_translation_true_runs/monitor/Herrmann_Marangoni_256.txt"
 data3 = np.loadtxt(datafile, skiprows=1,delimiter=',')
 
 
-datafile = "pressure_term_marangoni/monitor/Marangoni_CsfShift_Peskin"
+datafile = "pressure_term_marangoni/monitor/Marangoni_Shift_Peskin_64"
 data4 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "pressure_term_marangoni/monitor/Marangoni_PeskinB"
+datafile = "pressure_term_marangoni/monitor/Marangoni_Seric_Update_128"
 data5 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "pressure_term_marangoni/monitor/PressureTesting_Marangoni_128_CSF_SHIFT_SWEEP"
+datafile = "pressure_term_marangoni/monitor/Marangoni_Shift_Peskin_128"
 data6 = np.loadtxt(datafile, skiprows=2)
+
+datafile = "pressure_term_marangoni/monitor/Marangoni_Peskin_128"
+data7 = np.loadtxt(datafile, skiprows=2)
 
 rho1 = .2
 mu1 = 0.1
@@ -67,34 +70,45 @@ print("Vygb =",Vygb)
 plt.figure()
 
 # Cases from Before
-x = data3[:,0]/tNorm
-y = data3[:,1]
-plt.plot(x,y,label = "Herrmann",linewidth=2, color = color_black)
+# x = data3[:,0]/tNorm
+# y = data3[:,1]
+# plt.plot(x,y,label = "Herrmann",linewidth=3, color = color_black)
 
-x = data0[:,1]/tNorm
-y = data0[:,4]/Vygb
-plt.plot(x,y,label = "Old64",linewidth=2, color = color_blue)
-
-# x = data1[:,1]/tNorm
-# y = data1[:,4]/Vygb
-# plt.plot(x,y,label = "Old128",linewidth=2,color = color_red)
+# x = data0[:,1]/tNorm
+# y = data0[:,4]/Vygb
+# plt.plot(x,y,label = "PCST,N=128",linewidth=5, color = color_skyblue)
 
 # x = data2[:,1]/tNorm
 # y = data2[:,4]/Vygb
-# plt.plot(x,y,label = "Old256",linewidth=2,color = color_yellow)
-# Cases After
+# plt.plot(x,y,label = "Seric,N=64",linewidth=5,color = color_yellow)
 
-x = data4[:,1]/tNorm
-y = data4[:,4]/Vygb
-plt.plot(x,y,label = "ShiftPeskin32",linewidth=2, color = color_teal)
+x = data1[:,1]/tNorm
+y = data1[:,4]/Vygb
+plt.plot(x,y,label = "3D,N=32",linewidth=5,color = color_red)
 
-x = data5[:,1]/tNorm
-y = data5[:,4]/Vygb
-plt.plot(x,y,label = "Peskin32",linewidth=2,color = color_pink)
+# x = data4[:,1]/tNorm
+# y = data4[:,4]/Vygb
+# plt.plot(x,y,label = "ShiftPeskin,N=64",linewidth=5, color = color_blue)
+
+# x = data5[:,1]/tNorm
+# y = data5[:,4]/Vygb
+# plt.plot(x,y,label = "Seric,N=128",linewidth=5,color = color_yellow)
+
+# x = data7[:,1]/tNorm
+# y = data7[:,4]/Vygb
+# plt.plot(x,y,label = "Peskin,N=128",linewidth=5,color = color_red)
 
 # x = data6[:,1]/tNorm
 # y = data6[:,4]/Vygb
-# plt.plot(x,y,label = "New128",linewidth=2,color = color_orange)
+# plt.plot(x,y,label = "ShiftPeskin,N=128",linewidth=5, color = color_blue)
+
+# x = data5[:,1]/tNorm
+# y = data5[:,4]/Vygb
+# plt.plot(x,y,label = "Seric,N=128",linewidth=5,color = color_pink)
+
+# x = data6[:,1]/tNorm
+# y = data6[:,4]/Vygb
+# plt.plot(x,y,label = "ShiftPeskin64",linewidth=2,color = color_orange)
 
 
 

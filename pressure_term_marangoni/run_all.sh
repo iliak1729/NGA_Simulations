@@ -1,16 +1,29 @@
 #!/bin/bash
 
-# Run CSS PLIC
-echo "Running with input32..."
-time mpiexec -n 8 ./nga.dp.gnu.opt.mpi.exe -i input32 -v 0 
+# Run 64 Cases
+# echo "Running with0 inputSeric64 ..."
+# time mpiexec -n 6 ./nga.dp.gnu.opt.mpi.exe -i inputSeric64 -v 0 
+# echo "Complete"
+
+# echo "Running with inputPeskin64 ..."
+# time mpiexec -n 6 ./nga.dp.gnu.opt.mpi.exe -i inputPeskin64 -v 0 
+# echo "Complete"
+
+# echo "Running with inputShiftPeskin64 ..."
+# time mpiexec -n 6 ./nga.dp.gnu.opt.mpi.exe -i inputShiftPeskin64 -v 0 
+# echo "Complete"
+
+# Run 128 Cases
+echo "Running with0 inputSeric128 ..."
+time mpiexec -n 1 ./nga.dp.gnu.opt.mpi.exe -i inputSeric128 -v 0 
 echo "Complete"
 
-echo "Running with input64..."
-time mpiexec -n 8 ./nga.dp.gnu.opt.mpi.exe -i input64 -v 0 
+echo "Running with inputPeskin128 ..."
+time mpiexec -n 1 ./nga.dp.gnu.opt.mpi.exe -i inputPeskin128 -v 0 
 echo "Complete"
 
-echo "Running with input128..."
-time mpiexec -n 8 ./nga.dp.gnu.opt.mpi.exe -i input128 -v 0 
+echo "Running with inputShiftPeskin128 ..."
+time mpiexec -n 1 ./nga.dp.gnu.opt.mpi.exe -i inputShiftPeskin128 -v 0 
 echo "Complete"
 
 echo "All runs complete."

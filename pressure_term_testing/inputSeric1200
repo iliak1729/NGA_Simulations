@@ -1,10 +1,10 @@
 # Parallelization
-Partition : 2 2 2
+Partition : 3 3 1
 
 # Options
-Monitor File Name : ThreeDimension_TranslatingDrop_La120
+Monitor File Name : TranslatingDrop_La1200_Seric
 # 1 For Default, 2 for all Mom, 3 for all Poisson, 4 for Conservative with Default
-Surface Tension Option : 8
+Surface Tension Option : 6
 # 1 for periodic, 2 for neumann on all walls, 3 for Neumann Top and Bottom, 4 For Neumann Left and Right
 Boundary Condition Option: 1
 # Curvature Option: 1 for default, 2 for height function
@@ -14,25 +14,23 @@ Reconstruction Option : 1
 # PU Scale
 Partition Of Unity Scale : 1.0
 PU Spread : 2.0
-# Smoothing Option: 1 for No Smoothing, 2 for Laplacian, 3 for Gradient, 4 for Poisson, 5 for Peskin
-Smoothing Option : 5
+# Smoothing Option: 1 for No Smoothing, 2 for Laplacian, 3 for Gradient, 4 for Poisson
+Smoothing Option : 1
+
 # Mesh definition
 Lx :	1.0
 Ly :	1.0
 #Lz :    0.02
-nx :    32
-ny :	32
-nz :	32
-# Initial condition function: 1 for cylinder, 2 for sphere
-Inital VOF : 2
+nx :    128
+ny :	128
+nz :	1
 
 # SolveEdge Options
 Marangoni :                  0.0 0 0
-Pressure :                   0
-# Droplet definiton 4.0e-1 for default
-Droplet diameter :           4.0e-1 
-# DV FOR 1,2,3 :           0.4472135955 0.894427191 0
-Droplet velocity :           0 0 0
+Pressure :                   1
+# Droplet definiton
+Droplet diameter :           4.0e-1
+Droplet velocity :           1 0 0
 Droplet Center :             0 0 0
 # Fluid properties
 # Liquid dynamic viscosity :    1.0e-3
@@ -42,7 +40,7 @@ Liquid density :              1
 Gas density :                 1
 Surface tension coefficient : 1
 # Dimensionless Numbers
-Laplace Number :              120.0
+Laplace Number :              1200.0
 Min Viscous Time :            1.0 # Changes Max Time
 Min Capillary Time :          1.0 # This will almost never matter, as the viscous time is so much longer, but it is fine
 
@@ -50,7 +48,7 @@ Min Capillary Time :          1.0 # This will almost never matter, as the viscou
 Max timestep size : 2.e-3 # Default Values, Overriden
 Max time :          0.08  # Default Values, Overriden
 
-Timestep factor : 0.05 # Scale on Delta t_max. That is to say, we scale sqrt(rho*delta^3/(pi*sigma)), which is the max time step, by this value to get our Max time step.
+Timestep factor : 0.5 # Scale on Delta t_max. That is to say, we scale sqrt(rho*delta^3/(pi*sigma)), which is the max time step, by this value to get our Max time step.
 Max cfl number :    0.5 # Changes Time Step
 
 # Inner Iterations
@@ -65,4 +63,4 @@ Implicit tolerance : 1e-12
 Implicit iteration : 1000
 
 # Ensight output
-Ensight output period : 1e-10
+Ensight output period : 1e-2

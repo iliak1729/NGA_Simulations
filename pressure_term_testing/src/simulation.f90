@@ -17,6 +17,7 @@ module simulation
    use sgrid_class,       only: sgrid
    use config_class,      only: config
    use irl_fortran_interface
+   use conservative_st
    implicit none
    private
    
@@ -27,6 +28,7 @@ module simulation
    type(vfs),         public :: vf
    type(timetracker), public :: time
    type(tracer),      public :: pt
+   type(conservative_st_type), public :: cst
 
    !> Ensight postprocessing
    type(surfmesh) :: smesh
@@ -51,7 +53,7 @@ module simulation
    real(WP) :: radius,laplace_number,time_scale_factor,minTv,minTc,Tc,Tv,dtCap,Nx,Lx,delta,RootMeanSquareVelocity,amp,omega,omegaT
    real(WP) :: PressureOption
    integer :: npart,SurfaceTensionOption,BoundaryConditionOption,CurvatureOption,ReconstructionOption,i,j,k
-   integer :: SmoothingOption
+   integer :: SmoothingOption,ShapeOption
    integer :: ierr2, myrank
 
    character(len = 1000) :: MonitorFileName
@@ -345,7 +347,7 @@ contains
                call vf%initialize(cfg=cfg,reconstruction_method=jibben,name='VOF')
          END SELECT
          
-         ! Neumann Conditions if needed
+         ! Neumann Conditions if needed  
          call param_Read('Boundary Condition Option',BoundaryConditionOption)
          call param_Read('Curvature Option',CurvatureOption)
          
@@ -372,7 +374,7 @@ contains
          ! Initialize two droplets
          call param_read('Droplet diameter',radius); radius=0.5_WP*radius
          call param_read('Droplet Center',center)      
-         
+         call param_read('Inital VOF',ShapeOption)
          do k=vf%cfg%kmino_,vf%cfg%kmaxo_
             do j=vf%cfg%jmino_,vf%cfg%jmaxo_
                do i=vf%cfg%imino_,vf%cfg%imaxo_
@@ -385,9 +387,16 @@ contains
                         end do
                      end do
                   end do
-                  ! Call adaptive refinement code to get volume and barycenters recursively
+                  ! Call adaptive refinement code to get volume and barycenters recursively 
                   vol=0.0_WP; area=0.0_WP; v_cent=0.0_WP; a_cent=0.0_WP
-                  call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_cylinder,0.0_WP,amr_ref_lvl)
+                  ! levelset_sphere, levelset_cylinder 
+                  SELECT CASE (ShapeOption)
+                     CASE (2)
+                        call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_sphere,0.0_WP,amr_ref_lvl)
+                     CASE DEFAULT
+                        call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_cylinder,0.0_WP,amr_ref_lvl)
+                  END SELECT
+                  
                   vf%VF(i,j,k)=vol/vf%cfg%vol(i,j,k)
                   if (vf%VF(i,j,k).ge.VFlo.and.vf%VF(i,j,k).le.VFhi) then
                      vf%Lbary(:,i,j,k)=v_cent
@@ -590,232 +599,10 @@ contains
 
             end block VOF_Neumann
       end block create_and_initialize_vof
-      ! STOP
-      ! write(*,'(A)') '=========================== End Initilize VOF'
-      ! write(*,'(A)') '=========================== Test Height Function'
-      test_height_function_curvature: block
-         integer :: i,j,k
-         real(WP), dimension(:,:,:), allocatable :: curv 
-         integer, dimension(:,:,:), allocatable :: dirs 
-         real(WP), dimension(:,:,:), allocatable :: h0s 
-         real(WP), dimension(:,:,:), allocatable :: hp1s 
-         real(WP), dimension(:,:,:), allocatable :: hm1s 
-         real(WP), dimension(:,:,:), allocatable :: hPs 
-         real(WP), dimension(:,:,:), allocatable :: hPPs 
-
-         real(WP),dimension(4) :: ret
-         real(WP),dimension(5) :: hs
-
-         allocate(curv(vf%cfg%imino_:vf%cfg%imaxo_,vf%cfg%jmino_:vf%cfg%jmaxo_,vf%cfg%kmino_:vf%cfg%kmaxo_)); curv = 0.0_WP
-         allocate(dirs(vf%cfg%imino_:vf%cfg%imaxo_,vf%cfg%jmino_:vf%cfg%jmaxo_,vf%cfg%kmino_:vf%cfg%kmaxo_)); dirs = 0
-
-         allocate(h0s(vf%cfg%imino_:vf%cfg%imaxo_,vf%cfg%jmino_:vf%cfg%jmaxo_,vf%cfg%kmino_:vf%cfg%kmaxo_)); h0s = 0.0_WP
-         allocate(hp1s(vf%cfg%imino_:vf%cfg%imaxo_,vf%cfg%jmino_:vf%cfg%jmaxo_,vf%cfg%kmino_:vf%cfg%kmaxo_)); hp1s = 0.0_WP
-         allocate(hm1s(vf%cfg%imino_:vf%cfg%imaxo_,vf%cfg%jmino_:vf%cfg%jmaxo_,vf%cfg%kmino_:vf%cfg%kmaxo_)); hm1s = 0.0_WP
-         allocate(hPs(vf%cfg%imino_:vf%cfg%imaxo_,vf%cfg%jmino_:vf%cfg%jmaxo_,vf%cfg%kmino_:vf%cfg%kmaxo_)); hPs = 0.0_WP
-         allocate(hPPs(vf%cfg%imino_:vf%cfg%imaxo_,vf%cfg%jmino_:vf%cfg%jmaxo_,vf%cfg%kmino_:vf%cfg%kmaxo_)); hPPs = 0.0_WP
-         ! First, Let us print out the Current Volume Fractions
-         ! write (*,'(A)') '======== Volume Fraction'
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmino_,vf%cfg%jmaxo_
-         !       do i=vf%cfg%imino_,vf%cfg%imaxo_
-         !          if(vf%VF(i,j,k) .gt. 1e-12) then
-         !             write(*,'(A,F6.2,A,$)') CHAR(27)//'[34m', vf%VF(i,j,k), CHAR(27)//'[0m'
-         !          else
-         !             write(*,'(F6.2,$)') vf%VF(i,j,k)
-         !          endif
-         !       enddo
-         !       write (*,*) ''
-         !    enddo
-         ! enddo
-         ! write (*,*) ''
-         ! write (*,*) ''
-         ! Also Print the curvature here
-         ! write (*,'(A)') '======== Default Curvature'
-         
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmin_,vf%cfg%jmax_
-         !       do i=vf%cfg%imin_,vf%cfg%imax_
-         !          if(vf%curv(i,j,k) .gt. 1e-12) then
-         !             write(*,'(A,F6.2,A,$)') CHAR(27)//'[34m', vf%curv(i,j,k), CHAR(27)//'[0m'
-         !          else
-         !             write(*,'(F6.2,$)') vf%curv(i,j,k)
-         !          endif
-         !       enddo
-         !       write (*,*) ''
-         !    enddo
-         ! enddo
-         ! write (*,*) ''
-         ! write (*,*) ''
-         ! Next, Make a new Curvature array
-         ! write (*,'(A)') '======== Height Function Curvature Calcluation'
-
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmin_,vf%cfg%jmax_
-         !       do i=vf%cfg%imin_,vf%cfg%imax_
-         !          if(vf%VF(i,j,k) .gt. 0.0 .and. vf%VF(i,j,k) .lt. 1.0-1e-12) then !
-         !             ! Get Direction
-         !             ! i= 6
-         !             ! j = 12
-         !             ! k = 1
-         !             planeNormal = calculateNormal(vf%interface_polygon(1,i,j,k))
-         !             if(abs(planeNormal(1)) .gt. abs(planeNormal(2))) then
-         !                dir = int(sign(1.0_WP,planeNormal(1)))
-         !             else
-         !                dir = int(sign(2.0_WP,planeNormal(2)))
-         !             endif
-
-         !             dirs(i,j,k) = dir
-
-         !             write (*,'(A,3I6.1)') 'i,j,k = ',i,j,k
-         !             ! Calculate Curvature
-         !             ! call computeInterfaceHeight(vf,i,j,k,dir,ret)
-         !             ! write(*,'(A,4F6.2)') 'interfaceHeightResult = ',ret
-         !             ! i0s(i,j,k) = ret(1)
-         !             ! j0s(i,j,k) = ret(2)
-         !             ! k0s(i,j,k) = ret(3)
-         !             ! h0s(i,j,k) = ret(4)
-         !             call heightFunctionCurvature(i,j,k,vf,curv(i,j,k),dir,hs)
-         !             hp1s(i,j,k) = hs(3)
-         !             hm1s(i,j,k) = hs(1)
-         !             h0s(i,j,k) = hs(2)
-         !             hPs(i,j,k) = hs(4)
-         !             hPPs(i,j,k) = hs(5)
-         !             write(*,'(A,5F15.7)') 'hs = ',hs
-         !             ! STOP
-         !          endif
-         !       enddo
-         !    enddo
-         ! enddo
-
-         ! ! Print New Curvature
-         ! write (*,'(A)') '======== Direction Print'
-
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmin_,vf%cfg%jmax_
-         !       do i=vf%cfg%imin_,vf%cfg%imax_
-         !          ! Print Curvature
-         !          if(abs(dirs(i,j,k)) .gt. 1e-12) then
-         !             write(*,'(A,I6.2,A,$)') CHAR(27)//'[34m', dirs(i,j,k), CHAR(27)//'[0m'
-         !          else
-         !             write(*,'(I6.2,$)') dirs(i,j,k)
-         !          endif
-         !       enddo
-         !       write (*,*) ''
-         !    enddo
-         ! enddo
-
-         ! write (*,'(A)') '======== Curvature Print'
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmin_,vf%cfg%jmax_
-         !       do i=vf%cfg%imin_,vf%cfg%imax_
-         !          ! Print Curvature
-         !          if(curv(i,j,k) .gt. 1e-12) then
-         !             write(*,'(A,F6.2,A,$)') CHAR(27)//'[34m', curv(i,j,k), CHAR(27)//'[0m'
-         !          else
-         !             write(*,'(F6.2,$)') curv(i,j,k)
-         !          endif
-         !       enddo
-         !       write (*,*) ''
-         !    enddo
-         ! enddo
-
-         ! write (*,'(A)') '======== hm1 Print'
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmin_,vf%cfg%jmax_
-         !       do i=vf%cfg%imin_,vf%cfg%imax_
-         !          ! Print Curvature
-         !          if(abs(hm1s(i,j,k)) .gt. 1e-12) then
-         !             write(*,'(A,F10.3,A,$)') CHAR(27)//'[34m', hm1s(i,j,k), CHAR(27)//'[0m'
-         !          else
-         !             write(*,'(F10.3,$)') hm1s(i,j,k)
-         !          endif
-         !       enddo
-         !       write (*,*) ''
-         !    enddo
-         ! enddo
-
-         ! write (*,'(A)') '======== h0 Print'
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmin_,vf%cfg%jmax_
-         !       do i=vf%cfg%imin_,vf%cfg%imax_
-         !          ! Print Curvature
-         !          if(abs(h0s(i,j,k)) .gt. 1e-12) then
-         !             write(*,'(A,F10.3,A,$)') CHAR(27)//'[34m', h0s(i,j,k), CHAR(27)//'[0m'
-         !          else
-         !             write(*,'(F10.3,$)') h0s(i,j,k)
-         !          endif
-         !       enddo
-         !       write (*,*) ''
-         !    enddo
-         ! enddo
-
-         ! write (*,'(A)') '======== hp1 Print'
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmin_,vf%cfg%jmax_
-         !       do i=vf%cfg%imin_,vf%cfg%imax_
-         !          ! Print Curvature
-         !          if(abs(hp1s(i,j,k)) .gt. 1e-12) then
-         !             write(*,'(A,F10.3,A,$)') CHAR(27)//'[34m', hp1s(i,j,k), CHAR(27)//'[0m'
-         !          else
-         !             write(*,'(F10.3,$)') hp1s(i,j,k)
-         !          endif
-         !       enddo
-         !       write (*,*) ''
-         !    enddo
-         ! enddo
-
-         ! write (*,'(A)') '======== hP Print'
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmin_,vf%cfg%jmax_
-         !       do i=vf%cfg%imin_,vf%cfg%imax_
-         !          ! Print Curvature
-         !          if(abs(hPs(i,j,k)) .gt. 1e-12) then
-         !             write(*,'(A,F10.3,A,$)') CHAR(27)//'[34m', hPs(i,j,k), CHAR(27)//'[0m'
-         !          else
-         !             write(*,'(F10.3,$)') hPs(i,j,k)
-         !          endif
-         !       enddo
-         !       write (*,*) ''
-         !    enddo
-         ! enddo
-
-         ! write (*,'(A)') '======== hPP Print'
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmin_,vf%cfg%jmax_
-         !       do i=vf%cfg%imin_,vf%cfg%imax_
-         !          ! Print Curvature
-         !          if(abs(hPPs(i,j,k)) .gt. 1e-12) then
-         !             write(*,'(A,F10.2,A,$)') CHAR(27)//'[34m', hPPs(i,j,k), CHAR(27)//'[0m'
-         !          else
-         !             write(*,'(F10.2,$)') hPPs(i,j,k)
-         !          endif
-         !       enddo
-         !       write (*,*) ''
-         !    enddo
-         ! enddo
-
-         ! write (*,'(A)') '======== Curv Print'
-         ! do k=vf%cfg%kmin_,vf%cfg%kmax_
-         !    do j=vf%cfg%jmin_,vf%cfg%jmax_
-         !       do i=vf%cfg%imin_,vf%cfg%imax_
-         !          ! Print Curvature
-         !          if(abs(curv(i,j,k)) .gt. 1e-12) then
-         !             write(*,'(A,F10.5,A,$)') CHAR(27)//'[34m', curv(i,j,k), CHAR(27)//'[0m'
-         !          else
-         !             write(*,'(F10.5,$)') curv(i,j,k)
-         !          endif
-         !       enddo
-         !       write (*,*) ''
-         !    enddo
-         ! enddo
-
-         ! ! STOP
-
-      end block test_height_function_curvature
-      ! write(*,'(A)') '=========================== End Test '  
+      ! print *, "Created VOF"
       ! STOP
       ! Create a two-phase flow solver without bconds
+      !  print *, "Creating FS"
       create_and_initialize_flow_solver: block
          use hypre_str_class, only: pcg_pfmg
          use mathtools, only: Pi
@@ -888,7 +675,20 @@ contains
          time%tmax = max(minTv*Tv,minTc*Tc)
 
       end block create_and_initialize_flow_solver
-      
+      !  print *, "Created FS"
+      !   print *, "Creating CST"
+      create_surface_tension_solver : block
+         call cst%init(fs,vf,time)
+         call param_read('Marangoni',cst%MarangoniOption)
+         call param_read('Pressure',cst%PressureOption)
+         call param_read('Smoothing Option',cst%SmoothingOption)
+         call param_read('Surface Tension Option',cst%SurfaceTensionOption)
+         call param_read('Curvature Option',cst%CurvatureOption)
+         call param_read('PU Spread',cst%PU_spread)
+         call cst%temp()
+      end block create_surface_tension_solver
+         ! print *, "Created CST"
+
       ! Create surfmesh object for interface polygon output
       create_smesh: block
          use irl_fortran_interface
@@ -901,7 +701,7 @@ contains
          ! Also populate nplane variable
          call add_surfgrid_variable(smesh,1,vf%curv)      
       end block create_smesh
-      
+      ! print *, "Creating Smesh"
       ! Initialize our tracer particle tracker
       initialize_pt: block
          ! Get number of particles
@@ -911,7 +711,7 @@ contains
          ! Initialize with zero particles
          call pt%resize(0)
       end block initialize_pt
-
+      ! print *, "Creating PT"
       ! Create partmesh object for Lagrangian particle output
       create_pmesh: block
          integer :: i
@@ -924,7 +724,7 @@ contains
             pmesh%vec(:,2,i)=pt%p(i)%acc
          end do
       end block create_pmesh
-
+         ! print *, "Creating PMESH"
       ! Seed interface with tracers
       insert_tracers: block
          use mpi_f08, only: MPI_INTEGER8,MPI_MAX
@@ -974,7 +774,7 @@ contains
             pmesh%vec(:,2,i)=pt%p(i)%acc
          end do
       end block insert_tracers
-      
+      ! print *, "Inserted Tracers"
       ! Ghost Cell Output
       create_ghost_vtk : block 
          use sgrid_class, only: cartesian
@@ -1036,6 +836,7 @@ contains
          call GhostVtk_Out%add_surface('plic',smesh) 
          if (Ghostvtk_evt%occurs()) call GhostVtk_Out%write_data(time%t)
       end block create_ghost_vtk
+      ! print *, "Creatd GhostVTK"
 
       create_PU_vtk : block 
          use sgrid_class, only: cartesian
@@ -1048,28 +849,32 @@ contains
          ! write(*,'(A)') 'Grid Size'
          ! Change nx,ny,nz to get Ghost Cells
          call param_read('Partition Of Unity Scale',Scale)
+         ! print *, "N set"
          nx = Scale*cfg%nx
          ny = Scale*cfg%ny 
-         nz = 1
+         nz = Scale*cfg%nz
          ! write(*,'(A)') 'Domain Size'
          ! Change Domain Size
+         ! print *, "L Set"
          Lx = cfg%xL
          Ly = cfg%yL
          Lz = cfg%zL
          ! Allocate Space
-         allocate(PartitionOfUnityValue  (1:nx,1:ny,1:nz))
-         allocate(PartitionOfUnityWeight  (1:nx,1:ny,1:nz))
-         allocate(PUTangent_x  (1:nx,1:ny,1:nz))
-         allocate(PUTangent_y  (1:nx,1:ny,1:nz))
-         allocate(PUTangent_z  (1:nx,1:ny,1:nz))
+         allocate(PartitionOfUnityValue  (nx+1,ny+1,nz+1))
+         allocate(PartitionOfUnityWeight  (nx+1,ny+1,nz+1))
+         allocate(PUTangent_x  (nx+1,ny+1,nz+1))
+         allocate(PUTangent_y  (nx+1,ny+1,nz+1))
+         allocate(PUTangent_z  (nx+1,ny+1,nz+1))
+         allocate(x(nx+1))
+         allocate(y(ny+1))
+         allocate(z(nz+1))
+         ! print *, "Finish ALlocate"
          PartitionOfUnityValue = 0.0_WP
          PartitionOfUnityWeight = 0.0_WP
          PUTangent_x = 0.0_WP
          PUTangent_y = 0.0_WP
          PUTangent_z = 0.0_WP
-         allocate(x(nx+1))
-         allocate(y(ny+1))
-         allocate(z(nz+1))
+         
          ! write(*,'(A)') 'Fill Domain'
          do i=1,nx+1
             x(i)=real(i-1,WP)/real(nx,WP)*Lx-0.5_WP*Lx
@@ -1080,9 +885,10 @@ contains
          do k=1,nz+1
             z(k)=real(k-1,WP)/real(nz,WP)*Lz-0.5_WP*Lz 
          end do
+         ! print *, "Finish Assign"
          ! write(*,'(A)') 'Make Grid'
          PuGrid=sgrid(coord=cartesian,no=0,x=x,y=y,z=z,xper=.false.,yper=.false.,zper=.false.,name='DropTranslation_PU')
-
+         ! print *, "Make Opject"
          ! Now that we have a grid, create a new config
          ! Read in partition
          ! write(*,'(A)') 'Get Partition'
@@ -1091,23 +897,25 @@ contains
          ! Create partitioned grid
          ! write(*,'(A)') 'Get Config'
          PuCfg=config(grp=group,decomp=partition,grid=PuGrid)
-
+         ! print *, "Finish Config"
          ! Now, create the vtk output
          PuVtk_Out = vtk(cfg=PuCfg,name ='DropTranslation_PartitionOfUnity')
          PuVtk_evt=event(time=time,name='Ensight output')
+         ! print *, "Objects Made"
          call param_read('Ensight output period',PuVtk_evt%tper)
          call param_read('PU Spread',PU_spread)
          ! Add Variables
          call PuVtk_Out%add_scalar('Partition Of Unity Value',PartitionOfUnityValue)
          call PuVtk_Out%add_scalar('Partition Of Unity Weight',PartitionOfUnityWeight)
          call PuVTK_Out%add_vector('Partition Of Unity Tangent',PUTangent_x,PUTangent_y,PUTangent_z)
+         ! print *, "Added Data"
          if (PuVtk_evt%occurs()) call PuVtk_Out%write_data(time%t)
       end block create_PU_vtk
-      
+      ! print *, "Creatd PUVTK"
 
       ! Add Ensight output
       create_vtk: block
-         ! Create Ensight output from cfg
+         ! Create Ensight output from cfg 
          vtk_out=vtk(cfg=cfg,name='DropTranslation')
          ! Create event for Ensight output
          vtk_evt=event(time=time,name='Ensight output')
@@ -1117,36 +925,27 @@ contains
          call vtk_out%add_scalar('VOF',vf%VF)
          call vtk_out%add_scalar('curvature',vf%curv)
          call vtk_out%add_scalar('pressure',fs%P)
-         call vtk_out%add_scalar('sigma_xx',sigma_xx)
-         call vtk_out%add_scalar('sigma_xy',sigma_xy)
-         call vtk_out%add_scalar('sigma_yx',sigma_yx)
-         call vtk_out%add_scalar('sigma_yy',sigma_yy)
+         call vtk_out%add_scalar('sigma_xx',cst%sigma_xx)
+         call vtk_out%add_scalar('sigma_xy',cst%sigma_xy)
+         call vtk_out%add_scalar('sigma_yx',cst%sigma_yx)
+         call vtk_out%add_scalar('sigma_yy',cst%sigma_yy)
 
-         call vtk_out%add_scalar('sigma_xx_P',sigma_xx_P)
-         call vtk_out%add_scalar('sigma_xy_P',sigma_xy_P)
-         call vtk_out%add_scalar('sigma_yx_P',sigma_yx_P)
-         call vtk_out%add_scalar('sigma_yy_P',sigma_yy_P)
+         call vtk_out%add_scalar('sigma_xx_P',cst%sigma_xx_P)
+         call vtk_out%add_scalar('sigma_xy_P',cst%sigma_xy_P)
+         call vtk_out%add_scalar('sigma_yx_P',cst%sigma_yx_P)
+         call vtk_out%add_scalar('sigma_yy_P',cst%sigma_yy_P)
 
-         call vtk_out%add_scalar('sigma_xx_NoP',sigma_xx_NoP)
-         call vtk_out%add_scalar('sigma_xy_NoP',sigma_xy_NoP)
-         call vtk_out%add_scalar('sigma_yx_NoP',sigma_yx_NoP)
-         call vtk_out%add_scalar('sigma_yy_NoP',sigma_yy_NoP)
+         call vtk_out%add_scalar('sigma_xx_NoP',cst%sigma_xx_NoP)
+         call vtk_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
+         call vtk_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
+         call vtk_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
 
-         call vtk_out%add_scalar('Force Potential',force_potential_field)
-         call vtk_out%add_scalar('Force Potential Source',poisson_source)
+         call vtk_out%add_vector('sigma_3d_x*',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
+         call vtk_out%add_vector('sigma_3d_y*',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
+         call vtk_out%add_vector('sigma_3d_z*',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
 
-         call vtk_out%add_scalar('grad_vf_x',grad_vf_x)
-         call vtk_out%add_scalar('grad_vf_y',grad_vf_y)
-         call vtk_out%add_scalar('grad_vf_z',grad_vf_z)
-
-
-         call vtk_out%add_scalar('Fst_x',Fst_x)
-         call vtk_out%add_scalar('Fst_y',Fst_y)
-         call vtk_out%add_scalar('Fst_z',Fst_z)
-         call vtk_out%add_scalar('PjxD',PjxD)
-         call vtk_out%add_scalar('PjyD',PjyD)
-         call vtk_out%add_scalar('PjzD',PjzD)
-         call vtk_out%add_vector('Fst',Fst_x,Fst_y,Fst_z)
+         call vtk_out%add_vector('Pj',fs%Pjx,fs%Pjy,fs%Pjz)
+         call vtk_out%add_vector('Fst_3D',cst%Fst_x_3D,cst%Fst_y_3D,cst%Fst_z_3D)
 
          call vtk_out%add_surface('plic',smesh) 
 
@@ -1154,9 +953,9 @@ contains
          ! Output to vtk
          if (vtk_evt%occurs()) call vtk_out%write_data(time%t)
       end block create_vtk
-      
+      ! print *, "Creatd VTK"
 
-      ! Create a monitor file
+      ! Create a monitor file 
       create_monitor: block
          ! Prepare some info about fields
          call fs%get_cfl(time%dt,time%cfl)
@@ -1174,7 +973,7 @@ contains
          call mfile%add_column(RootMeanSquareVelocity,'Vrms')
          call mfile%write()         
       end block create_monitor
-
+      ! print *, "Creatd Monitor"
       ! Print Imin and Imax of processor:
       ! write(*,'(A)') '========================== Processor Properties ========================== '
       ! write(*,'(A,2I10.5)') 'Processor imin,imax',cfg%imin_,cfg%imax_
@@ -1189,7 +988,7 @@ contains
       implicit none
       ! Perform time integration
       do while (.not.time%done())
-         
+         print *, "Timestep = ", time%n
          ! Increment time
          call fs%get_cfl(time%dt,time%cfl)
          call time%adjust_dt()
@@ -1216,37 +1015,6 @@ contains
          ! write(*,'(A,4I25.5)') 'Padded Grid Size: nxo,nyo,nzo: ', vf%cfg%nxo_,vf%cfg%nyo_,vf%cfg%nzo_
          ! VOF solver step
          call vf%advance(dt=time%dt,U=fs%U,V=fs%V,W=fs%W)
-         ! mixedYoungCentered: block 
-         !    use irl_fortran_interface, only: getPlane,new,construct_2pt,RectCub_type,&
-         !       &                                setNumberOfPlanes,setPlane,matchVolumeFraction
-         !    real(WP), dimension(1:4) :: plane
-         !    real(WP), dimension(1:3) :: norm
-         !    type(RectCub_type) :: cell
-         !    ! Here we do the mixed-Young-Centered Method
-         !    call new(cell)
-         !    do k = vf%cfg%kmin_,vf%cfg%kmax_
-         !       do j = vf%cfg%jmin_,vf%cfg%jmax_
-         !          do i = vf%cfg%imin_,vf%cfg%imax_
-         !             if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then
-         !                ! Make Cell
-         !                call construct_2pt(cell,[vf%cfg%x(i  ),vf%cfg%y(j  ),vf%cfg%z(k  )],&
-         !                &                       [vf%cfg%x(i+1),vf%cfg%y(j+1),vf%cfg%z(k+1)]) 
-         !                ! Get Normal
-         !                call mixedYoungCenterNormal(vf,i,j,k,norm)
-         !                ! Update Plane
-         !                plane(1:3) = norm 
-         !                ! Start at center
-         !                plane(4)=dot_product(plane(1:3),[vf%cfg%xm(i),vf%cfg%ym(j),vf%cfg%zm(k)])
-         !                ! Set Number of Plnes and Plane
-         !                call setNumberOfPlanes(vf%liquid_gas_interface(i,j,k),1)
-         !                call setPlane(vf%liquid_gas_interface(i,j,k),0,plane(1:3),plane(4))
-         !                ! Match Volume Fraction
-         !                call matchVolumeFraction(cell,vf%VF(i,j,k),vf%liquid_gas_interface(i,j,k))
-         !             endif
-         !          enddo
-         !       enddo
-         !    enddo
-         ! end block mixedYoungCentered
          
          ! Apply Boundary Conditions
          call vf%apply_bcond(time%t,time%dt)
@@ -1274,23 +1042,9 @@ contains
             
             ! Explicit calculation of drho*u/dt from NS
             ! call fs%get_dmomdt(resU,resV,resW)
-            ! write(*,'(A)') 'CASE SELECTION ================================================'
+            ! write(*,'(A)') 'CASE SELECTION ================================================'  
             
-            SELECT CASE (SurfaceTensionOption)
-               CASE (2)
-                  ! write(*,'(A)') 'CASE 2 ================================================'
-                  call add_surface_tension_jump_no_ST(fs,dt=time%dt,div=fs%div,vf=vf)
-                  call get_dmomdt_full_ST(fs,resU,resV,resW)
-               CASE (3)
-                  ! write(*,'(A)') 'CASE 3 ================================================'
-                  call get_dmomdt_no_ST(fs,resU,resV,resW)
-               CASE (4)
-                  ! Conservative Surface Tension Approach for get_dmomdt
-                  call fs%get_dmomdt(resU,resV,resW)
-               CASE DEFAULT
-                  ! write(*,'(A)') 'CASE DEFAULT ================================================'
-                  call fs%get_dmomdt(resU,resV,resW)
-            END SELECT
+            call cst%get_dmomdt(resU,resV,resW)
            
             ! Assemble explicit residual
             resU=-2.0_WP*fs%rho_U*fs%U+(fs%rho_Uold+fs%rho_U)*fs%Uold+time%dt*resU
@@ -1314,16 +1068,7 @@ contains
             call fs%correct_mfr()
             call fs%get_div()
             ! call fs%add_surface_tension_jump(dt=time%dt,div=fs%div,vf=vf)
-            SELECT CASE (SurfaceTensionOption)
-               CASE (2)
-                  call add_surface_tension_jump_no_ST(fs,dt=time%dt,div=fs%div,vf=vf)
-               CASE (3)
-                  call add_surface_tension_jump_full_ST(fs,dt=time%dt,div=fs%div,vf=vf)
-               CASE (4) 
-                  call add_conservative_surface_tension_jump(fs,dt=time%dt,div=fs%div,vf=vf)
-               CASE DEFAULT
-                  call fs%add_surface_tension_jump(dt=time%dt,div=fs%div,vf=vf)
-            END SELECT
+            call cst%add_surface_tension_jump()
 
             fs%psolv%rhs=-fs%cfg%vol*fs%div/time%dt
             if (cfg%amRoot) fs%psolv%rhs(cfg%imin,cfg%jmin,cfg%kmin)=0.0_WP
@@ -1340,7 +1085,6 @@ contains
             
             ! Increment sub-iteration counter
             time%it=time%it+1
-            
          end do
          
          ! Recompute interpolated velocity and divergence 
@@ -1357,7 +1101,7 @@ contains
                call vf%update_surfmesh(smesh)
                call add_surfgrid_variable(smesh,1,vf%curv)      
             end block update_smesh  
-            ! Update partmesh object
+            ! Update partmesh object 
             update_pmesh: block
               integer :: i
               call pt%update_partmesh(pmesh)
@@ -1372,12 +1116,15 @@ contains
             call PuVtk_Out%write_data(time%t)
          end if
          
-         RootMeanSquareVelocity = Calc_RMS_Velocity()
+         ! RootMeanSquareVelocity = Calc_RMS_Velocity()
          ! amp = Calc_Amplitude()
          ! COM = Calc_Center_of_mass()
          call mfile%write()
-         ! write (*,'(A,F10.5)') '======== Surface Tension Coefficient: ', fs%sigma
+         ! write (*,'(A,F10.5)') '======== Surface Tension Coefficient: ', fs%sigma 
          ! STOP
+
+         ! print *, "x(1),y(1),z(1)",fs%cfg%x(1),fs%cfg%y(1),fs%cfg%z(1)
+         ! print *, "x(2),y(2),z(2)",fs%cfg%x(2),fs%cfg%y(2),fs%cfg%z(2)
       end do
       
    end subroutine simulation_run
@@ -1473,7 +1220,7 @@ contains
             ! Avoid particles with id=0
             if (pt%p(i)%id.eq.0) cycle
             oldpos=pt%p(i)%pos
-            ! Interpolate distance function
+            ! Interpolate distance function 
             dist=cfg%get_scalar(pos=pt%p(i)%pos,i0=pt%p(i)%ind(1),j0=pt%p(i)%ind(2),k0=pt%p(i)%ind(3),S=vf%G,bc='n')
             if (abs(dist).gt.maxdist) then
                ! Interpolate interface normal
@@ -1482,7 +1229,7 @@ contains
                &                 cfg%get_scalar(pos=pt%p(i)%pos,i0=pt%p(i)%ind(1),j0=pt%p(i)%ind(2),k0=pt%p(i)%ind(3),S=resW,bc='n')])
                ! Move tracer along distance function gradient
                pt%p(i)%pos=pt%p(i)%pos-dist*normal
-               ! Correct the position to take into account periodicity
+               ! Correct the position to take into account periodicity  
                pt%p(i)%pos(1)=cfg%x(cfg%imin)+modulo(pt%p(i)%pos(1)-cfg%x(cfg%imin),cfg%xL)
                pt%p(i)%pos(2)=cfg%y(cfg%jmin)+modulo(pt%p(i)%pos(2)-cfg%y(cfg%jmin),cfg%yL)
                pt%p(i)%pos(3)=cfg%z(cfg%kmin)+modulo(pt%p(i)%pos(3)-cfg%z(cfg%kmin),cfg%zL)
@@ -1498,1094 +1245,6 @@ contains
          pt%p(i)%vel=cfg%get_velocity(pos=pt%p(i)%pos,i0=pt%p(i)%ind(1),j0=pt%p(i)%ind(2),k0=pt%p(i)%ind(3),U=fs%U,V=fs%V,W=fs%W)
       end do
    end subroutine project_tracers
-   
-   ! ============================= MOMENTUM EQUATION REPLACEMENT SUBROUTINES
-
-   subroutine get_dmomdt_full_ST(this,drhoUdt,drhoVdt,drhoWdt)
-      implicit none
-      class(tpns), intent(inout) :: this
-      real(WP), dimension(this%cfg%imino_:,this%cfg%jmino_:,this%cfg%kmino_:), intent(out) :: drhoUdt !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
-      real(WP), dimension(this%cfg%imino_:,this%cfg%jmino_:,this%cfg%kmino_:), intent(out) :: drhoVdt !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
-      real(WP), dimension(this%cfg%imino_:,this%cfg%jmino_:,this%cfg%kmino_:), intent(out) :: drhoWdt !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
-      integer :: i,j,k,ii,jj,kk
-
-      ! Zero out drhoUVW/dt arrays
-      drhoUdt=0.0_WP; drhoVdt=0.0_WP; drhoWdt=0.0_WP
-      
-      ! Flux of rhoU
-      do kk=this%cfg%kmin_,this%cfg%kmax_+1
-         do jj=this%cfg%jmin_,this%cfg%jmax_+1
-            do ii=this%cfg%imin_,this%cfg%imax_+1
-               ! Fluxes on x-face
-               i=ii-1; j=jj-1; k=kk-1
-               this%FUX(i,j,k)=this%FUX(i,j,k)-this%P(i,j,k) &
-               &              -sum(this%hybu_x(:,i,j,k)*this%rho_Uold(i:i+1,j,k))*sum(this%hybu_x(:,i,j,k)*this%U(i:i+1,j,k))*sum(this%itpu_x(:,i,j,k)*this%U(i:i+1,j,k)) &
-               &              +this%visc   (i,j,k)*(sum(this%grdu_x(:,i,j,k)*this%U(i:i+1,j,k))+sum(this%grdu_x(:,i,j,k)*this%U(i:i+1,j,k)))
-               ! Fluxes on y-face
-               i=ii; j=jj; k=kk
-               this%FUY(i,j,k)=this%FUY(i,j,k) &
-               &              -sum(this%hybu_y(:,i,j,k)*this%rho_Uold(i,j-1:j,k))*sum(this%hybu_y(:,i,j,k)*this%U(i,j-1:j,k))*sum(this%itpv_x(:,i,j,k)*this%V(i-1:i,j,k)) &
-               &              +this%visc_xy(i,j,k)*(sum(this%grdu_y(:,i,j,k)*this%U(i,j-1:j,k))+sum(this%grdv_x(:,i,j,k)*this%V(i-1:i,j,k)))
-               ! Fluxes on z-face
-               i=ii; j=jj; k=kk
-               this%FUZ(i,j,k)=this%FUZ(i,j,k) &
-               &              -sum(this%hybu_z(:,i,j,k)*this%rho_Uold(i,j,k-1:k))*sum(this%hybu_z(:,i,j,k)*this%U(i,j,k-1:k))*sum(this%itpw_x(:,i,j,k)*this%W(i-1:i,j,k)) &
-               &              +this%visc_zx(i,j,k)*(sum(this%grdu_z(:,i,j,k)*this%U(i,j,k-1:k))+sum(this%grdw_x(:,i,j,k)*this%W(i-1:i,j,k)))
-            end do
-         end do
-      end do
-      ! Time derivative of rhoU
-      do k=this%cfg%kmin_,this%cfg%kmax_
-         do j=this%cfg%jmin_,this%cfg%jmax_
-            do i=this%cfg%imin_,this%cfg%imax_
-               drhoUdt(i,j,k)=sum(this%divu_x(:,i,j,k)*this%FUX(i-1:i,j,k))+&
-               &              sum(this%divu_y(:,i,j,k)*this%FUY(i,j:j+1,k))+&
-               &              sum(this%divu_z(:,i,j,k)*this%FUZ(i,j,k:k+1))+this%Pjx(i,j,k)
-            end do
-         end do
-      end do
-      ! Sync it
-      call this%cfg%sync(drhoUdt)
-      
-      ! Flux of rhoV
-      do kk=this%cfg%kmin_,this%cfg%kmax_+1
-         do jj=this%cfg%jmin_,this%cfg%jmax_+1
-            do ii=this%cfg%imin_,this%cfg%imax_+1
-               ! Fluxes on x-face
-               i=ii; j=jj; k=kk
-               this%FVX(i,j,k)=this%FVX(i,j,k) &
-               &              -sum(this%hybv_x(:,i,j,k)*this%rho_Vold(i-1:i,j,k))*sum(this%hybv_x(:,i,j,k)*this%V(i-1:i,j,k))*sum(this%itpu_y(:,i,j,k)*this%U(i,j-1:j,k)) &
-               &              +this%visc_xy(i,j,k)*(sum(this%grdv_x(:,i,j,k)*this%V(i-1:i,j,k))+sum(this%grdu_y(:,i,j,k)*this%U(i,j-1:j,k)))
-               ! Fluxes on y-face
-               i=ii-1; j=jj-1; k=kk-1
-               this%FVY(i,j,k)=this%FVY(i,j,k)-this%P(i,j,k) &
-               &              -sum(this%hybv_y(:,i,j,k)*this%rho_Vold(i,j:j+1,k))*sum(this%hybv_y(:,i,j,k)*this%V(i,j:j+1,k))*sum(this%itpv_y(:,i,j,k)*this%V(i,j:j+1,k)) &
-               &              +this%visc   (i,j,k)*(sum(this%grdv_y(:,i,j,k)*this%V(i,j:j+1,k))+sum(this%grdv_y(:,i,j,k)*this%V(i,j:j+1,k)))
-               ! Fluxes on z-face
-               i=ii; j=jj; k=kk
-               this%FVZ(i,j,k)=this%FVZ(i,j,k) &
-               &              -sum(this%hybv_z(:,i,j,k)*this%rho_Vold(i,j,k-1:k))*sum(this%hybv_z(:,i,j,k)*this%V(i,j,k-1:k))*sum(this%itpw_y(:,i,j,k)*this%W(i,j-1:j,k)) &
-               &              +this%visc_yz(i,j,k)*(sum(this%grdv_z(:,i,j,k)*this%V(i,j,k-1:k))+sum(this%grdw_y(:,i,j,k)*this%W(i,j-1:j,k)))
-            end do
-         end do
-      end do
-      ! Time derivative of rhoV
-      do k=this%cfg%kmin_,this%cfg%kmax_
-         do j=this%cfg%jmin_,this%cfg%jmax_
-            do i=this%cfg%imin_,this%cfg%imax_
-               drhoVdt(i,j,k)=sum(this%divv_x(:,i,j,k)*this%FVX(i:i+1,j,k))+&
-               &              sum(this%divv_y(:,i,j,k)*this%FVY(i,j-1:j,k))+&
-               &              sum(this%divv_z(:,i,j,k)*this%FVZ(i,j,k:k+1))+this%Pjy(i,j,k)
-            end do
-         end do
-      end do
-      ! Sync it
-      call this%cfg%sync(drhoVdt)
-      
-      ! Flux of rhoW
-      do kk=this%cfg%kmin_,this%cfg%kmax_+1
-         do jj=this%cfg%jmin_,this%cfg%jmax_+1
-            do ii=this%cfg%imin_,this%cfg%imax_+1
-               ! Fluxes on x-face
-               i=ii; j=jj; k=kk
-               this%FWX(i,j,k)=this%FWX(i,j,k) &
-               &              -sum(this%hybw_x(:,i,j,k)*this%rho_Wold(i-1:i,j,k))*sum(this%hybw_x(:,i,j,k)*this%W(i-1:i,j,k))*sum(this%itpu_z(:,i,j,k)*this%U(i,j,k-1:k)) &
-               &              +this%visc_zx(i,j,k)*(sum(this%grdw_x(:,i,j,k)*this%W(i-1:i,j,k))+sum(this%grdu_z(:,i,j,k)*this%U(i,j,k-1:k)))
-               ! Fluxes on y-face
-               i=ii; j=jj; k=kk
-               this%FWY(i,j,k)=this%FWY(i,j,k) &
-               &              -sum(this%hybw_y(:,i,j,k)*this%rho_Wold(i,j-1:j,k))*sum(this%hybw_y(:,i,j,k)*this%W(i,j-1:j,k))*sum(this%itpv_z(:,i,j,k)*this%V(i,j,k-1:k)) &
-               &              +this%visc_yz(i,j,k)*(sum(this%grdw_y(:,i,j,k)*this%W(i,j-1:j,k))+sum(this%grdv_z(:,i,j,k)*this%V(i,j,k-1:k)))
-               ! Fluxes on z-face
-               i=ii-1; j=jj-1; k=kk-1
-               this%FWZ(i,j,k)=this%FWZ(i,j,k)-this%P(i,j,k) &
-               &              -sum(this%hybw_z(:,i,j,k)*this%rho_Wold(i,j,k:k+1))*sum(this%hybw_z(:,i,j,k)*this%W(i,j,k:k+1))*sum(this%itpw_z(:,i,j,k)*this%W(i,j,k:k+1)) &
-               &              +this%visc   (i,j,k)*(sum(this%grdw_z(:,i,j,k)*this%W(i,j,k:k+1))+sum(this%grdw_z(:,i,j,k)*this%W(i,j,k:k+1)))
-            end do
-         end do
-      end do
-      ! Time derivative of rhoW
-      do k=this%cfg%kmin_,this%cfg%kmax_
-         do j=this%cfg%jmin_,this%cfg%jmax_
-            do i=this%cfg%imin_,this%cfg%imax_
-               drhoWdt(i,j,k)=sum(this%divw_x(:,i,j,k)*this%FWX(i:i+1,j,k))+&
-               &              sum(this%divw_y(:,i,j,k)*this%FWY(i,j:j+1,k))+&
-               &              sum(this%divw_z(:,i,j,k)*this%FWZ(i,j,k-1:k))+this%Pjz(i,j,k)
-            end do
-         end do
-      end do
-      ! Sync it
-      call this%cfg%sync(drhoWdt)
-   end subroutine get_dmomdt_full_ST
-
-   subroutine get_dmomdt_no_ST(this,drhoUdt,drhoVdt,drhoWdt)
-      implicit none
-      class(tpns), intent(inout) :: this
-      real(WP), dimension(this%cfg%imino_:,this%cfg%jmino_:,this%cfg%kmino_:), intent(out) :: drhoUdt !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
-      real(WP), dimension(this%cfg%imino_:,this%cfg%jmino_:,this%cfg%kmino_:), intent(out) :: drhoVdt !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
-      real(WP), dimension(this%cfg%imino_:,this%cfg%jmino_:,this%cfg%kmino_:), intent(out) :: drhoWdt !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
-      integer :: i,j,k,ii,jj,kk
-
-      
-      ! Zero out drhoUVW/dt arrays
-      drhoUdt=0.0_WP; drhoVdt=0.0_WP; drhoWdt=0.0_WP
-      
-      ! Flux of rhoU
-      do kk=this%cfg%kmin_,this%cfg%kmax_+1
-         do jj=this%cfg%jmin_,this%cfg%jmax_+1
-            do ii=this%cfg%imin_,this%cfg%imax_+1
-               ! Fluxes on x-face
-               i=ii-1; j=jj-1; k=kk-1
-               this%FUX(i,j,k)=this%FUX(i,j,k)-this%P(i,j,k) &
-               &              -sum(this%hybu_x(:,i,j,k)*this%rho_Uold(i:i+1,j,k))*sum(this%hybu_x(:,i,j,k)*this%U(i:i+1,j,k))*sum(this%itpu_x(:,i,j,k)*this%U(i:i+1,j,k)) &
-               &              +this%visc   (i,j,k)*(sum(this%grdu_x(:,i,j,k)*this%U(i:i+1,j,k))+sum(this%grdu_x(:,i,j,k)*this%U(i:i+1,j,k)))
-               ! Fluxes on y-face
-               i=ii; j=jj; k=kk
-               this%FUY(i,j,k)=this%FUY(i,j,k) &
-               &              -sum(this%hybu_y(:,i,j,k)*this%rho_Uold(i,j-1:j,k))*sum(this%hybu_y(:,i,j,k)*this%U(i,j-1:j,k))*sum(this%itpv_x(:,i,j,k)*this%V(i-1:i,j,k)) &
-               &              +this%visc_xy(i,j,k)*(sum(this%grdu_y(:,i,j,k)*this%U(i,j-1:j,k))+sum(this%grdv_x(:,i,j,k)*this%V(i-1:i,j,k)))
-               ! Fluxes on z-face
-               i=ii; j=jj; k=kk
-               this%FUZ(i,j,k)=this%FUZ(i,j,k) &
-               &              -sum(this%hybu_z(:,i,j,k)*this%rho_Uold(i,j,k-1:k))*sum(this%hybu_z(:,i,j,k)*this%U(i,j,k-1:k))*sum(this%itpw_x(:,i,j,k)*this%W(i-1:i,j,k)) &
-               &              +this%visc_zx(i,j,k)*(sum(this%grdu_z(:,i,j,k)*this%U(i,j,k-1:k))+sum(this%grdw_x(:,i,j,k)*this%W(i-1:i,j,k)))
-            end do
-         end do
-      end do
-      ! Time derivative of rhoU
-      do k=this%cfg%kmin_,this%cfg%kmax_
-         do j=this%cfg%jmin_,this%cfg%jmax_
-            do i=this%cfg%imin_,this%cfg%imax_
-               drhoUdt(i,j,k)=sum(this%divu_x(:,i,j,k)*this%FUX(i-1:i,j,k))+&
-               &              sum(this%divu_y(:,i,j,k)*this%FUY(i,j:j+1,k))+&
-               &              sum(this%divu_z(:,i,j,k)*this%FUZ(i,j,k:k+1))+this%Pjx(i,j,k)
-            end do
-         end do
-      end do
-      ! Sync it
-      call this%cfg%sync(drhoUdt)
-      
-      ! Flux of rhoV
-      do kk=this%cfg%kmin_,this%cfg%kmax_+1
-         do jj=this%cfg%jmin_,this%cfg%jmax_+1
-            do ii=this%cfg%imin_,this%cfg%imax_+1
-               ! Fluxes on x-face
-               i=ii; j=jj; k=kk
-               this%FVX(i,j,k)=this%FVX(i,j,k) &
-               &              -sum(this%hybv_x(:,i,j,k)*this%rho_Vold(i-1:i,j,k))*sum(this%hybv_x(:,i,j,k)*this%V(i-1:i,j,k))*sum(this%itpu_y(:,i,j,k)*this%U(i,j-1:j,k)) &
-               &              +this%visc_xy(i,j,k)*(sum(this%grdv_x(:,i,j,k)*this%V(i-1:i,j,k))+sum(this%grdu_y(:,i,j,k)*this%U(i,j-1:j,k)))
-               ! Fluxes on y-face
-               i=ii-1; j=jj-1; k=kk-1
-               this%FVY(i,j,k)=this%FVY(i,j,k)-this%P(i,j,k) &
-               &              -sum(this%hybv_y(:,i,j,k)*this%rho_Vold(i,j:j+1,k))*sum(this%hybv_y(:,i,j,k)*this%V(i,j:j+1,k))*sum(this%itpv_y(:,i,j,k)*this%V(i,j:j+1,k)) &
-               &              +this%visc   (i,j,k)*(sum(this%grdv_y(:,i,j,k)*this%V(i,j:j+1,k))+sum(this%grdv_y(:,i,j,k)*this%V(i,j:j+1,k)))
-               ! Fluxes on z-face
-               i=ii; j=jj; k=kk
-               this%FVZ(i,j,k)=this%FVZ(i,j,k) &
-               &              -sum(this%hybv_z(:,i,j,k)*this%rho_Vold(i,j,k-1:k))*sum(this%hybv_z(:,i,j,k)*this%V(i,j,k-1:k))*sum(this%itpw_y(:,i,j,k)*this%W(i,j-1:j,k)) &
-               &              +this%visc_yz(i,j,k)*(sum(this%grdv_z(:,i,j,k)*this%V(i,j,k-1:k))+sum(this%grdw_y(:,i,j,k)*this%W(i,j-1:j,k)))
-            end do
-         end do
-      end do
-      ! Time derivative of rhoV
-      do k=this%cfg%kmin_,this%cfg%kmax_
-         do j=this%cfg%jmin_,this%cfg%jmax_
-            do i=this%cfg%imin_,this%cfg%imax_
-               drhoVdt(i,j,k)=sum(this%divv_x(:,i,j,k)*this%FVX(i:i+1,j,k))+&
-               &              sum(this%divv_y(:,i,j,k)*this%FVY(i,j-1:j,k))+&
-               &              sum(this%divv_z(:,i,j,k)*this%FVZ(i,j,k:k+1))+this%Pjy(i,j,k)
-            end do
-         end do
-      end do
-      ! Sync it
-      call this%cfg%sync(drhoVdt)
-      
-      ! Flux of rhoW
-      do kk=this%cfg%kmin_,this%cfg%kmax_+1
-         do jj=this%cfg%jmin_,this%cfg%jmax_+1
-            do ii=this%cfg%imin_,this%cfg%imax_+1
-               ! Fluxes on x-face
-               i=ii; j=jj; k=kk
-               this%FWX(i,j,k)=this%FWX(i,j,k) &
-               &              -sum(this%hybw_x(:,i,j,k)*this%rho_Wold(i-1:i,j,k))*sum(this%hybw_x(:,i,j,k)*this%W(i-1:i,j,k))*sum(this%itpu_z(:,i,j,k)*this%U(i,j,k-1:k)) &
-               &              +this%visc_zx(i,j,k)*(sum(this%grdw_x(:,i,j,k)*this%W(i-1:i,j,k))+sum(this%grdu_z(:,i,j,k)*this%U(i,j,k-1:k)))
-               ! Fluxes on y-face
-               i=ii; j=jj; k=kk
-               this%FWY(i,j,k)=this%FWY(i,j,k) &
-               &              -sum(this%hybw_y(:,i,j,k)*this%rho_Wold(i,j-1:j,k))*sum(this%hybw_y(:,i,j,k)*this%W(i,j-1:j,k))*sum(this%itpv_z(:,i,j,k)*this%V(i,j,k-1:k)) &
-               &              +this%visc_yz(i,j,k)*(sum(this%grdw_y(:,i,j,k)*this%W(i,j-1:j,k))+sum(this%grdv_z(:,i,j,k)*this%V(i,j,k-1:k)))
-               ! Fluxes on z-face
-               i=ii-1; j=jj-1; k=kk-1
-               this%FWZ(i,j,k)=this%FWZ(i,j,k)-this%P(i,j,k) &
-               &              -sum(this%hybw_z(:,i,j,k)*this%rho_Wold(i,j,k:k+1))*sum(this%hybw_z(:,i,j,k)*this%W(i,j,k:k+1))*sum(this%itpw_z(:,i,j,k)*this%W(i,j,k:k+1)) &
-               &              +this%visc   (i,j,k)*(sum(this%grdw_z(:,i,j,k)*this%W(i,j,k:k+1))+sum(this%grdw_z(:,i,j,k)*this%W(i,j,k:k+1)))
-            end do
-         end do
-      end do
-      ! Time derivative of rhoW
-      do k=this%cfg%kmin_,this%cfg%kmax_
-         do j=this%cfg%jmin_,this%cfg%jmax_
-            do i=this%cfg%imin_,this%cfg%imax_
-               drhoWdt(i,j,k)=sum(this%divw_x(:,i,j,k)*this%FWX(i:i+1,j,k))+&
-               &              sum(this%divw_y(:,i,j,k)*this%FWY(i,j:j+1,k))+&
-               &              sum(this%divw_z(:,i,j,k)*this%FWZ(i,j,k-1:k)) ! +this%Pjz(i,j,k)
-            end do
-         end do
-      end do
-      ! Sync it
-      call this%cfg%sync(drhoWdt)
-      
-   end subroutine get_dmomdt_no_ST
-   
-   ! ============================= SURFACE TENSION REPLACEMENT SUBROUTINES
-   ! Full ST in Poisson
-   subroutine add_surface_tension_jump_full_ST(this,dt,div,vf,contact_model)
-      use messager,  only: die
-      use vfs_class, only: vfs
-      implicit none
-      class(tpns), intent(inout) :: this
-      real(WP), intent(inout) :: dt     !< Timestep size over which to advance
-      real(WP), dimension(this%cfg%imino_:,this%cfg%jmino_:,this%cfg%kmino_:), intent(inout) :: div  !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
-      class(vfs), intent(inout) :: vf
-      integer, intent(in), optional :: contact_model
-      integer :: i,j,k
-      real(WP) :: mycurv,mysurf
-      
-      ! Store old jump
-      this%DPjx=this%Pjx
-      this%DPjy=this%Pjy
-      this%DPjz=this%Pjz
-      
-      ! Calculate pressure jump
-      do k=this%cfg%kmin_,this%cfg%kmax_+1
-         do j=this%cfg%jmin_,this%cfg%jmax_+1
-            do i=this%cfg%imin_,this%cfg%imax_+1
-               ! X face
-               mysurf=sum(vf%SD(i-1:i,j,k)*this%cfg%vol(i-1:i,j,k))
-               if (mysurf.gt.0.0_WP) then
-                  mycurv=sum(vf%SD(i-1:i,j,k)*vf%curv(i-1:i,j,k)*this%cfg%vol(i-1:i,j,k))/mysurf
-               else
-                  mycurv=0.0_WP
-               end if
-               this%Pjx(i,j,k)=this%sigma*mycurv*sum(this%divu_x(:,i,j,k)*vf%VF(i-1:i,j,k))
-               ! Y face
-               mysurf=sum(vf%SD(i,j-1:j,k)*this%cfg%vol(i,j-1:j,k))
-               if (mysurf.gt.0.0_WP) then
-                  mycurv=sum(vf%SD(i,j-1:j,k)*vf%curv(i,j-1:j,k)*this%cfg%vol(i,j-1:j,k))/mysurf
-               else
-                  mycurv=0.0_WP
-               end if
-               this%Pjy(i,j,k)=this%sigma*mycurv*sum(this%divv_y(:,i,j,k)*vf%VF(i,j-1:j,k))
-               ! Z face
-               mysurf=sum(vf%SD(i,j,k-1:k)*this%cfg%vol(i,j,k-1:k))
-               if (mysurf.gt.0.0_WP) then
-                  mycurv=sum(vf%SD(i,j,k-1:k)*vf%curv(i,j,k-1:k)*this%cfg%vol(i,j,k-1:k))/mysurf
-               else
-                  mycurv=0.0_WP
-               end if
-               this%Pjz(i,j,k)=this%sigma*mycurv*sum(this%divw_z(:,i,j,k)*vf%VF(i,j,k-1:k))
-            end do
-         end do
-      end do
-      
-      ! Add wall contact force to pressure jump
-      if (present(contact_model)) then
-         select case (contact_model)
-         case (1)
-            call this%add_static_contact(vf=vf)
-         case default
-            call die('[tpns: add_surface_tension_jump] Unknown contact model!')
-         end select
-      end if
-      
-      ! Compute jump of DP
-      this%DPjx=this%Pjx-this%DPjx
-      this%DPjy=this%Pjy-this%DPjy
-      this%DPjz=this%Pjz-this%DPjz
-      
-      ! Add div(Pjump) to RP
-      do k=this%cfg%kmin_,this%cfg%kmax_
-         do j=this%cfg%jmin_,this%cfg%jmax_
-            do i=this%cfg%imin_,this%cfg%imax_
-               div(i,j,k)=div(i,j,k)+dt*(sum(this%divp_x(:,i,j,k)*this%Pjx(i:i+1,j,k)/this%rho_U(i:i+1,j,k))&
-               &                        +sum(this%divp_y(:,i,j,k)*this%Pjy(i,j:j+1,k)/this%rho_V(i,j:j+1,k))&
-               &                        +sum(this%divp_z(:,i,j,k)*this%Pjz(i,j,k:k+1)/this%rho_W(i,j,k:k+1)))
-            end do
-         end do
-      end do
-   end subroutine add_surface_tension_jump_full_ST
-
-   ! No ST in Poisson, just recalc Pj
-   subroutine add_surface_tension_jump_no_ST(this,dt,div,vf,contact_model)
-      use messager,  only: die
-      use vfs_class, only: vfs
-      implicit none
-      
-      class(tpns), intent(inout) :: this
-      real(WP), intent(inout) :: dt     !< Timestep size over which to advance
-      real(WP), dimension(this%cfg%imino_:,this%cfg%jmino_:,this%cfg%kmino_:), intent(inout) :: div  !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
-      real(WP), dimension(this%cfg%imino_,this%cfg%jmino_,this%cfg%kmino_) :: addToDiv
-      class(vfs), intent(inout) :: vf
-      integer, intent(in), optional :: contact_model
-      integer :: i,j,k
-      real(WP) :: mycurv,mysurf, magx,magy,magz,magdiv
-      ! Store old jump
-      this%DPjx=this%Pjx
-      this%DPjy=this%Pjy
-      this%DPjz=this%Pjz
-      
-      ! Calculate pressure jump
-      do k=this%cfg%kmin_,this%cfg%kmax_+1
-         do j=this%cfg%jmin_,this%cfg%jmax_+1
-            do i=this%cfg%imin_,this%cfg%imax_+1
-               ! X face
-               mysurf=sum(vf%SD(i-1:i,j,k)*this%cfg%vol(i-1:i,j,k))
-               if (mysurf.gt.0.0_WP) then
-                  mycurv=sum(vf%SD(i-1:i,j,k)*vf%curv(i-1:i,j,k)*this%cfg%vol(i-1:i,j,k))/mysurf
-               else
-                  mycurv=0.0_WP
-               end if
-               this%Pjx(i,j,k)=this%sigma*mycurv*sum(this%divu_x(:,i,j,k)*vf%VF(i-1:i,j,k))
-               ! Y face
-               mysurf=sum(vf%SD(i,j-1:j,k)*this%cfg%vol(i,j-1:j,k))
-               if (mysurf.gt.0.0_WP) then
-                  mycurv=sum(vf%SD(i,j-1:j,k)*vf%curv(i,j-1:j,k)*this%cfg%vol(i,j-1:j,k))/mysurf
-               else
-                  mycurv=0.0_WP
-               end if
-               this%Pjy(i,j,k)=this%sigma*mycurv*sum(this%divv_y(:,i,j,k)*vf%VF(i,j-1:j,k))
-               ! Z face
-               mysurf=sum(vf%SD(i,j,k-1:k)*this%cfg%vol(i,j,k-1:k))
-               if (mysurf.gt.0.0_WP) then
-                  mycurv=sum(vf%SD(i,j,k-1:k)*vf%curv(i,j,k-1:k)*this%cfg%vol(i,j,k-1:k))/mysurf
-               else
-                  mycurv=0.0_WP
-               end if
-               this%Pjz(i,j,k)=this%sigma*mycurv*sum(this%divw_z(:,i,j,k)*vf%VF(i,j,k-1:k))
-            end do
-         end do
-      end do
-      
-      ! Add wall contact force to pressure jump
-      if (present(contact_model)) then
-         select case (contact_model)
-         case (1)
-            call this%add_static_contact(vf=vf)
-         case default
-            call die('[tpns: add_surface_tension_jump] Unknown contact model!')
-         end select
-      end if
-      
-      ! Compute jump of DP
-      this%DPjx=this%Pjx-this%DPjx
-      this%DPjy=this%Pjy-this%DPjy
-      this%DPjz=this%Pjz-this%DPjz
-      
-      ! Calculate Magnitude of DPs
-      magx = NORM2(this%DPjx)
-      magy = NORM2(this%DPjy)
-      magz = NORM2(this%DPjz)
-      magdiv = NORM2(this%div)
-      addToDiv = dt*(sum(this%divp_x(:,i,j,k)*this%DPjx(i:i+1,j,k)/this%rho_U(i:i+1,j,k))&
-               &                        +sum(this%divp_y(:,i,j,k)*this%DPjy(i,j:j+1,k)/this%rho_V(i,j:j+1,k))&
-               &                        +sum(this%divp_z(:,i,j,k)*this%DPjz(i,j,k:k+1)/this%rho_W(i,j,k:k+1)))
-      
-      magz = NORM2(addToDiv)
-      ! write(*,'(A,4F35.10)') '   magx,magy,magz,magdiv: ', magx,magy,magz,magdiv
-      ! if(magz.gt.0) then
-      !      write(*,'(A,F10.5)')  '====================================MagToDiv: ',magz
-      ! endif
-   end subroutine add_surface_tension_jump_no_ST
-   
-   subroutine computeInterfaceHeight(vf,i0,j0,k0,dir,ret)
-      use messager,  only: die
-      use vfs_class, only: vfs
-      implicit none
-      class(vfs), intent(inout) :: vf
-      integer :: i0,j0,k0 !i0,j0,k0 tell us the original cell location
-      integer :: dir  ! 1 = x oriented, 2 = y oriented, 3 = z oriented. Sign gives direction
-      integer :: iplus,jplus,kplus ! Tells us how to add
-      integer :: i,j,k,count ! Current Cell Location
-      real(WP),dimension(4) :: ret
-      real(WP) :: H,ct,cb
-      LOGICAL :: bound,whileTest
-
-      ! Initial Values
-      ! write(*,'(A)') 'Start Function'
-      i = i0
-      j = j0
-      k = k0
-      ! write(*,'(A)') 'Get Volume Fractions'
-      ct = vf%VF(i,j,k)
-      H = vf%VF(i0,j0,k0)
-      ! write(*,'(A)') 'End Volume Fractions'
-      ! write(*,'(A,3I6.2,F6.2,I6.2)') 'Initial i,j,k,ct,dir = ',i,j,k,ct,dir
-      count = 0
-      ! Convert dir to index additions
-      SELECT CASE (abs(dir))
-         CASE (1) ! x oriented
-            iplus = sign(1,dir)
-            jplus = 0
-            kplus = 0
-         CASE (2) ! y oriented
-            iplus = 0
-            jplus = sign(1,dir)
-            kplus = 0
-         CASE (3) ! z oriented
-            iplus = 0
-            jplus = 0
-            kplus = sign(1,dir)
-      END SELECT
-      ! write(*,'(A,3I6.2)') 'iplus,jplus,kplus = ', iplus,jplus,kplus
-      ! Set initial Bound
-      if(ct .lt. VFhi) then 
-         bound = .TRUE.
-      else
-         bound = .FALSE.
-      endif
-
-      ! Find Top Out
-      ! write(*,'(A)') 'Start Top Loop'
-      ! write(*,'(A,F6.2)') 'Pre Loop H = ',H
-      do while((.not. bound) .or. (ct .gt. VFlo) .and. count .lt. 3) ! If not at interface, or at interface exactly, then go to top neighbor
-         ! write(*,'(A)')  '========= while 1'
-         ! Go To Top N eighbor
-         i = i + iplus
-         j = j + jplus
-         k = k + kplus
-         ! Update ct
-         ct = vf%VF(i,j,k)
-         ! write(*,'(A,3I6.2,F6.2)') 'i,j,k,ct = ',i,j,k,ct
-         ! Update H
-         H = H + ct
-         ! write(*,'(A,F6.2)') 'H = ',H
-         if((ct .gt. VFlo) .and. (ct .le. VFhi)) then
-            bound = .true.
-         endif
-         count = count + 1
-      enddo
-      ! write(*,'(A,F6.2)') 'End Top Loop COu = ',H
-      ! Catch Inconsistent result
-      if((ct .gt. VFlo)) then
-         H = -1.0_WP
-         ret = [-1.0_WP,-1.0_WP,-1.0_WP,-1.0_WP]
-         RETURN
-      endif
-
-      ! Reset to center
-      i = i0
-      j = j0
-      k = k0
-      cb = vf%VF(i,j,k)
-      ! write(*,'(A,3I6.2,F6.2)') 'Initial i,j,k,cb = ',i,j,k,cb
-      count = 0
-      ! Set initial Bound
-      if(cb .gt. VFlo) then 
-         bound = .TRUE.
-      else
-         bound = .FALSE.
-      endif
-      whileTest = (.not. bound) .or. (((cb .lt. VFhi) .and. (cb .gt. VFlo)) .and. count .lt. 3)
-      
-      ! Find Bottom in
-      ! write(*,'(A)') 'Start Bot Loop'
-      do while((.not. bound) .or. (((cb .lt. VFhi) .and. (cb .gt. VFlo)) .and. count .lt. 3)) ! If not at interface, or at interface exactly, then go to Bottom neighbor
-         ! write(*,'(A)')  '========= while 2' 
-         
-         ! Go To Bottom Neighbor
-         i = i - iplus
-         j = j - jplus
-         k = k - kplus
-         ! write(*,'(A,3I10.5)')  '========= i,j,k = ',i,j,k 
-         ! Update cb
-         cb = vf%VF(i,j,k)
-         ! write(*,'(A,3I6.2,F6.2)') 'i,j,k,cb = ',i,j,k,cb
-         ! Update H
-         H = H + cb
-         if((cb .gt. VFlo) .and. (cb .le. VFhi)) then
-            bound = .true.
-         endif
-         count = count + 1
-      enddo
-      ! write(*,'(A,F6.2)') 'End Bot Loop H = ',H
-      ! Catch Inconsistent result
-      if(cb .lt. VFhi) then
-         ! print *, "Inconsistent 2"
-         H = -2.0_WP
-         ret = [-2.0_WP,-2.0_WP,-2.0_WP,-2.0_WP]
-         RETURN
-      endif
-      !return N and H
-      ret = [0.0_WP,0.0_WP,0.0_WP,0.0_WP]
-      ret(1) = i
-      ret(2) = j
-      ret(3) = k
-      ret(4) = H
-   end subroutine computeInterfaceHeight
-
-   subroutine heightFunctionCurvature(i,j,k,vf,mycurv,dir,hs)
-      use messager,  only: die
-      use vfs_class, only: vfs
-      implicit none
-      class(vfs), intent(inout) :: vf
-      integer :: i,j,k,n,iplus,jplus,kplus ! Current Cell Location
-      integer :: dir  ! 1 = x oriented, 2 = y oriented, 3 = z oriented. Sign gives direction
-      real(WP), dimension(1) :: mycurv,mysurf
-      real(WP), dimension(1,3) :: mynorm
-      real(WP) :: h0,hm1,hp1,dx,hP,hPP,shift ! h0 is the center height, hm1 is the cell to the "left" and hp1 is the cell to the right.
-      real(WP), dimension(4) :: cellAndHeight
-      integer, dimension(3) :: cell0,cellm1,cellp1
-      real(WP),dimension(5),optional :: hs
-
-      ! Convert dir to index additions in perpendicular direction
-      ! write (*,'(A,I6.2)') '============================ START HEIGHT FUNCTION CURVATURE= ',dir
-      ! write (*,'(A,I6.2)') 'dir = ',dir
-      SELECT CASE (abs(dir))
-         CASE (1) ! x oriented
-            iplus = 0
-            jplus = -(sign(int(1),dir))
-            kplus = -(sign(int(1),dir))
-         CASE (2) ! y oriented
-            iplus = (sign(int(1),dir))
-            jplus = 0
-            kplus = (sign(int(1),dir))
-         CASE (3) ! z oriented
-            iplus = (sign(int(1),dir))
-            jplus = (sign(int(1),dir))
-            kplus = 0
-      END SELECT
-
-      ! Calculate H0,N0
-      ! write (*,'(A)') 'COMPUTE H0 ================================================='
-      call computeInterfaceHeight(vf,i,j,k,dir,cellAndHeight)
-      cell0(1) = cellAndHeight(1)
-      cell0(2) = cellAndHeight(2)
-      cell0(3) = cellAndHeight(3)
-      h0 = cellAndHeight(4)
-      
-      ! Right now, focus on 2D, so there are only 2
-      ! Calculate hp1, Np1
-      ! write (*,'(A)') 'COMPUTE Hp1 ================================================='
-      ! write (*,'(A,3I6.2)') 'PLUS i,j,dir = ',iplus,jplus,dir
-      call computeInterfaceHeight(vf,i+iplus,j+jplus,k,dir,cellAndHeight)
-      cellp1(1) = cellAndHeight(1)
-      cellp1(2) = cellAndHeight(2)
-      cellp1(3) = cellAndHeight(3)
-      hp1 = cellAndHeight(4)
-      
-      ! Calculate hm1, Nm1
-      ! write (*,'(A)') 'COMPUTE Hm1 ================================================='
-      call computeInterfaceHeight(vf,i-iplus,j-jplus,k,dir,cellAndHeight)
-      cellm1(1) = cellAndHeight(1)
-      cellm1(2) = cellAndHeight(2)
-      cellm1(3) = cellAndHeight(3)
-      hm1 = cellAndHeight(4)
-      ! write (*,'(A)') 'COMPUTE COMPLETE ================================================='
-      ! Check for Consistency
-      hs = [hm1,h0,hp1,hP,hPP]
-      if((sign(1.0_WP,hp1) .ne. -1.0_WP) .and. (sign(1.0_WP,hm1) .ne. -1.0_WP)) then 
-         ! consistent
-         ! write (*,'(A)') 'dx calc'
-         dx = (vf%cfg%xm(cell0(1)) - vf%cfg%xm(cell0(1)+iplus)) + (vf%cfg%ym(cell0(2)) - vf%cfg%ym(cell0(2)+jplus))
-         dx = -dx
-         ! write (*,'(A,F10.2)') 'dx = ',dx
-         ! write (*,'(A,F10.2)') 'dx = ',dx
-         ! write (*,'(A,F10.2)') 'dx = ',dx
-         ! write (*,'(A)') 'START CONSISTENCY CHECK'
-         h0 = h0*abs(dx)
-         ! Move Heights to a common origin
-         ! write(*,'(A)')''
-         ! write(*,'(A)')''
-         ! write(*,'(A)')''
-         ! write(*,'(A,F10.5)') 'hp=m1 Val Before mult',hm1
-         ! write(*,'(A,F10.5)') 'dx',dx
-         hm1 = hm1*abs(dx)
-         shift = vf%cfg%xm(cellm1(1)) * (2-abs(dir))+ vf%cfg%ym(cellm1(2)) * (abs(dir)-1)- vf%cfg%xm(cell0(1)) * (2-abs(dir)) - vf%cfg%ym(cell0(2)) * (abs(dir)-1)
-         ! write(*,'(A,F10.5)') 'hm1 Val Before Shift',hm1
-         ! write(*,'(A,3I10.1)') 'cellm1: ',cellm1(1),cellm1(2),cellm1(3)
-         ! write(*,'(A,3I10.1)') 'cell0: ',cell0
-         ! write(*,'(A,I10.1)') 'dir: ',dir
-         hm1 = hm1 + shift*sign(1.0_WP,real(dir,WP))
-         ! write(*,'(A,F10.5)') 'hm1 Val After Shift2',hp1
-         ! write(*,'(A,F10.5)') 'term1: ',vf%cfg%xm(cellm1(1)) * (2-abs(dir))
-         ! write(*,'(A,F10.5)') 'term2: ',vf%cfg%ym(cellm1(2)) * (abs(dir)-1)
-         ! write(*,'(A,F10.5)') 'term3: ',vf%cfg%xm(cell0(1)) * (2-abs(dir))
-         ! write(*,'(A,F10.5)') 'term4: ',vf%cfg%ym(cell0(2)) * (abs(dir)-1)
-         
-         ! write(*,'(A,F10.5)') 'Net: ',shift
-         ! hm1 = hm1 + vf%cfg%xm(cellm1(1)) * (2-abs(dir)) + vf%cfg%ym(cellm1(2)) * (abs(dir)-1)
-         ! hm1 = hm1 - vf%cfg%xm(cell0(1)) * (2-abs(dir)) - vf%cfg%ym(cell0(2)) * (abs(dir)-1)
-         ! write (*,'(A)') 'hm shift'
-         ! write(*,'(A)')''
-         ! write(*,'(A)')''
-         ! write(*,'(A)')''
-         ! write(*,'(A,F10.5)') 'hp1 Val Before mult',hp1
-         ! write(*,'(A,F10.5)') 'dx',dx
-         hp1 = hp1*abs(dx)
-         ! write(*,'(A,F10.5)') 'hp1 Val Before Shift',hp1
-         ! write(*,'(A,3I10.1)') 'cellp1: ',cellp1(1),cellp1(2),cellp1(3)
-         ! write(*,'(A,3I10.1)') 'cell0: ',cell0
-         ! write(*,'(A,I10.1)') 'dir: ',dir
-         shift = vf%cfg%xm(cellp1(1)) * (2-abs(dir))+ vf%cfg%ym(cellp1(2)) * (abs(dir)-1)- vf%cfg%xm(cell0(1)) * (2-abs(dir)) - vf%cfg%ym(cell0(2)) * (abs(dir)-1)
-         hp1 = hp1 + shift*sign(1.0_WP,real(dir,WP)) 
-         ! hp1 = hp1 + vf%cfg%xm(cellp1(1)) * (2-abs(dir))+ vf%cfg%ym(cellp1(2)) * (abs(dir)-1)
-         ! write(*,'(A,F20.8)') 'hp1 Val After Shift1',hp1
-         ! hp1 = hp1 - vf%cfg%xm(cell0(1)) * (2-abs(dir)) - vf%cfg%ym(cell0(2)) * (abs(dir)-1)
-         ! write(*,'(A,F10.5)') 'hp1 Val After Shift2',hp1
-         ! write(*,'(A,F10.5)') 'term1: ',vf%cfg%xm(cellp1(1)) * (2-abs(dir))
-         ! write(*,'(A,F10.5)') 'term2: ',vf%cfg%ym(cellp1(2)) * (abs(dir)-1)
-         ! write(*,'(A,F10.5)') 'term3: ',vf%cfg%xm(cell0(1)) * (2-abs(dir))
-         ! write(*,'(A,F10.5)') 'term4: ',vf%cfg%ym(cell0(2)) * (abs(dir)-1)
-         
-         ! write(*,'(A,F10.5)') 'Net: ',shift
-         ! write (*,'(A)') 'hp shift'
-         ! Now that everything is in the commmon frame, finite differences
-         
-         ! write(*,'(A)')''
-         ! write(*,'(A)')''
-         ! write(*,'(A)')''
-         ! write (*,'(A,F10.5)') 'h0 = ',h0
-         ! write (*,'(A,F10.5)') 'hp1 = ',hp1
-         ! write (*,'(A,F10.5)') 'hm1 = ',hm1
-
-         hP = (hp1-hm1)/(2*abs(dx))
-         ! write (*,'(A,F10.5)') 'hP calc',hP
-         
-         hPP = (hp1 - 2* h0 + hm1)/(dx*dx)
-         ! write (*,'(A,F10.5)') 'hPP calc',hPP
-
-         hs = [hm1/dx,h0/dx,hp1/dx,hP,hPP]
-         ! Calculate Curvature
-         mycurv = -hPP/((1.0_WP+hP*hP)**(1.5_WP))
-         ! I have included a factor of -1 here. This is because all the curvatures are exactly negative what they should be.
-         ! The current theory is that I should not multiply by abs(dx) for h0,hm1,hp1 but simply dx. This could fix that problem.
-         ! However, doing this would require me to then reevaluate how the shift is done, and i think that would hurt me right now.
-         ! As such, I will simply not be doing that right, and instead adding in the -1. I think in an ideal world I would fix this, 
-         ! but we do not live in an ideal world. 
-         ! write(*,'(A,F6.2)') 'Final Curvature: ',mycurv
-      else 
-         mycurv = vf%curv(i,j,k)
-      endif
-      
-   end subroutine heightFunctionCurvature
-
-   ! ============================== Conservative Surface Tension Subroutines
-   subroutine updateSurfaceTensionStresses(fs,vf)
-      use irl_fortran_interface
-      use f_PUNeigh_RectCub_class
-      use f_SeparatorVariant_class
-      use f_PUSolve_RectCub_class
-
-      implicit none
-      class(vfs), intent(inout) :: vf ! Volume Fraction Solver
-      class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
-      integer :: i,j,k,j_in,i_in ! Current Cell Location
-      type(PUNeigh_RectCub_type) :: neighborhood
-      type(PU_RectCub_type) :: solver
-      
-      ! Temp Items
-      type(SeparatorVariant_type) :: plane
-      real(WP), dimension(1:3) :: cen,startPoint,endPoint,Gcen,Lcen,force,pos
-      integer, dimension(1:3) :: ind,indguess
-      real(WP) :: dx,dy,C,xEval,yEval,zEval
-
-      dx = vf%cfg%dx(1)
-      dy = vf%cfg%dy(1)
-      C = 4.0_WP
-      ! Create Neighborhood and solver
-      call new(neighborhood) 
-      call new(solver)
-      ! Loop over real domain 
-      do k=cfg%kmin_,cfg%kmax_
-         do j=cfg%jmin_,cfg%jmax_
-            do i=cfg%imin_,cfg%imax_
-               ! if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then
-
-                  ! Empty Neighborhood
-                  call emptyNeighborhood(neighborhood) 
-                  ! Add 7x7 (3 on each side) stencil, in plane
-                  ! write(*,'(A)') '=============== New: '
-                  do j_in = -3,3
-                     do i_in = -3,3
-                        if(vf%VF(i+i_in,j+j_in,k) .gt. vf%VFmin .and. vf%VF(i+i_in,j+j_in,k) .lt. vf%VFmax) then
-                           ! For now, compute centroid as cell center
-                           ! Gcen = vf%Gbary(:,i+i_in,j+j_in,k)
-                           ! Lcen = vf%Lbary(:,i+i_in,j+j_in,k)
-                           ! ! cen = vf%VF(i+i_in,j+j_in,k) * Lcen + (1-vf%VF(i+i_in,j+j_in,k)) * Gcen
-                           ! ! cen = (Lcen+Gcen)/2
-                           ! cen = (/vf%cfg%xm(i+i_in),vf%cfg%ym(j+j_in),vf%cfg%zm(k)/)
-                           cen = calculateCentroid(vf%interface_polygon(1,i+i_in,j+j_in,k))
-                           ! Get Plane
-                           plane = vf%liquid_gas_interface(i+i_in,j+j_in,k)
-                           ! if((vf%VF(i+i_in,j+j_in,k) .gt. VFlo .and. vf%VF(i+i_in,j+j_in,k) .lt. VFhi) .and. (i .eq. 16) .and. (j .eq. 24)) then
-                           !    write(*,'(A,3I10.5)') 'Mid Cell: ', i,j,k
-                           !    write(*,'(A,3I10.5)') 'Curr Cell: ', i+i_in,j+j_in,k 
-                           !    write(*,'(A,3F10.5)') 'Cen: ', cen 
-                           !    call printToScreen(plane)
-                           call addMember(neighborhood,cen,1.0_WP,plane)
-                        endif
-                     end do
-                  end do
-                  ! Set Neighborhood in solver
-                  call setNeighborhood(solver,neighborhood)
-                  call setThreshold(solver,0.1875_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
-                  ! ====== Get Stresses
-
-                  ! sigma_xx, we go on right of u cell
-                  ! The right of the u cell goes y(j) to y(j+1) at xm(i)
-                  startPoint = (/cfg%xm(i),cfg%y(j),cfg%zm(k)/)
-                  endPoint = (/cfg%xm(i),cfg%y(j+1),cfg%zm(k)/)
-                  force = (/0.0_WP,0.0_WP,0.0_WP/)
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,PressureOption,MarangoniOption,force)
-                  
-                  ! call solveEdge(solver,fs%sigma,startPoint,endPoint,radius,center,5.0_WP,force)
-                  ! We only want the x component of this force, so take it and store it as sigma_xx
-                  sigma_xx(i,j,k) = force(1)
-
-                  ! ====== For Debugging
-                  ! No Pressure
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,0.0_WP,MarangoniOption,force)
-                  sigma_xx_NoP(i,j,k) = force(1)
-                  ! With Pressure
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,1.0_WP,MarangoniOption,force)
-                  sigma_xx_P(i,j,k) = force(1)
-                  sigma_xx_P(i,j,k) = sigma_xx_P(i,j,k) - sigma_xx_NoP(i,j,k)
-
-
-                  ! sigma_xy, we go on bottom of u cell
-                  ! The bottom of the u cell goes xm(i-1) to xm(i) at y(j)
-                  startPoint = (/cfg%xm(i-1),cfg%y(j),cfg%zm(k)/)
-                  endPoint = (/cfg%xm(i),cfg%y(j),cfg%zm(k)/)
-                  force = (/0.0_WP,0.0_WP,0.0_WP/)
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,PressureOption,MarangoniOption,force)
-                  ! call solveEdge(solver,fs%sigma,startPoint,endPoint,radius,center,5.0_WP,force)
-                  ! We only want the x component of this force, so take it and store it as sigma_xy 
-                  sigma_xy(i,j,k) = force(1)
-
-                  ! ====== For Debugging
-                  ! No Pressure
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,0.0_WP,MarangoniOption,force)
-                  sigma_xy_NoP(i,j,k) = force(1)
-                  ! With Pressure
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,1.0_WP,MarangoniOption,force)
-                  sigma_xy_P(i,j,k) = force(1)
-                  sigma_xy_P(i,j,k) = sigma_xy_P(i,j,k) - sigma_xy_NoP(i,j,k)
-
-                  ! sigma_yx, we go on left of v cell
-                  ! The bottom of the u cell goes ym(j-1) to ym(j) at x(i)
-                  startPoint = (/cfg%x(i),cfg%ym(j),cfg%zm(k)/)
-                  endPoint = (/cfg%x(i),cfg%ym(j-1),cfg%zm(k)/)
-                  force = (/0.0_WP,0.0_WP,0.0_WP/)
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,PressureOption,MarangoniOption,force)
-                  ! call solveEdge(solver,fs%sigma,startPoint,endPoint,radius,center,5.0_WP,force)
-                  ! We only want the y component of this force, so take it and store it as sigma_yx 
-                  sigma_yx(i,j,k) = force(2)
-                  
-                  ! ====== For Debugging
-                  ! No Pressure
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,0.0_WP,MarangoniOption,force)
-                  sigma_yx_NoP(i,j,k) = force(2)
-                  ! With Pressure
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,1.0_WP,MarangoniOption,force)
-                  sigma_yx_P(i,j,k) = force(2)
-                  sigma_yx_P(i,j,k) = sigma_yx_P(i,j,k) - sigma_yx_NoP(i,j,k)
-
-                  ! sigma_yy, we go on top of v cell
-                  ! The bottom of the u cell goes x(i) to x(i+1) at ym(j) 
-                  startPoint = (/cfg%x(i+1),cfg%ym(j),cfg%zm(k)/)
-                  endPoint = (/cfg%x(i),cfg%ym(j),cfg%zm(k)/)
-                  force = (/0.0_WP,0.0_WP,0.0_WP/)
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,PressureOption,MarangoniOption,force)
-                  ! call solveEdge(solver,fs%sigma,startPoint,endPoint,radius,center,5.0_WP,force)
-                  ! We only want the y component of this force, so take it and store it as sigma_yy
-                  sigma_yy(i,j,k) = force(2)
-
-                  ! ====== For Debugging  
-                  ! No Pressure
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,0.0_WP,MarangoniOption,force)
-                  sigma_yy_NoP(i,j,k) = force(2)
-                  ! With Pressure
-                  call solveEdge(solver,fs%sigma,startPoint,endPoint,PU_spread*dx,1.0_WP,MarangoniOption,force)
-                  sigma_yy_P(i,j,k) = force(2)
-                  sigma_yy_P(i,j,k) = sigma_yy_P(i,j,k) - sigma_yy_NoP(i,j,k)
-               ! endif
-            end do
-         end do
-      end do
-      ! Boundary Conditions
-      call vf%cfg%sync(sigma_xx)
-      call vf%cfg%sync(sigma_xy)
-      call vf%cfg%sync(sigma_yx)
-      call vf%cfg%sync(sigma_yy)
-
-      call vf%cfg%sync(sigma_xx_NoP)
-      call vf%cfg%sync(sigma_xy_NoP)
-      call vf%cfg%sync(sigma_yx_NoP)
-      call vf%cfg%sync(sigma_yy_NoP)
-
-      call vf%cfg%sync(sigma_xx_P)
-      call vf%cfg%sync(sigma_xy_P)
-      call vf%cfg%sync(sigma_yx_P)
-      call vf%cfg%sync(sigma_yy_P)
-   end subroutine updateSurfaceTensionStresses
-
-   subroutine updateSurfaceTensionForces(fs)
-      use irl_fortran_interface
-      use f_PUNeigh_RectCub_class
-      use f_SeparatorVariant_class
-      use f_PUSolve_RectCub_class
-
-      class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
-      integer :: i,j,k 
-      
-      do k=cfg%kmin_,cfg%kmax_
-         do j=cfg%jmin_,cfg%jmax_
-            do i=cfg%imin_,cfg%imax_
-               ! write(*,'(A,F10.5)') 'DX,i,j,k: ', cfg%dxmi(i)
-               Fst_x(i,j,k) = (sigma_xx(i,j,k)-sigma_xx(i-1,j,k)) - (sigma_xy(i,j+1,k)-sigma_xy(i,j,k))
-               Fst_x(i,j,k) = Fst_x(i,j,k) * cfg%dxi(i)
-
-               Fst_y(i,j,k) = (sigma_yy(i,j,k)-sigma_yy(i,j-1,k)) - (sigma_yx(i+1,j,k)-sigma_yx(i,j,k))
-               Fst_y(i,j,k) = Fst_y(i,j,k) * cfg%dyi(j)
-
-               Fst_z(i,j,k) = 0.0_WP
-            end do
-         end do
-      end do
-      fs%Pjx = Fst_x 
-      fs%Pjy = Fst_y
-      fs%Pjz = Fst_z
-   end subroutine updateSurfaceTensionForces
-
-   subroutine applyLaplacianSmoothing(fs)
-      use irl_fortran_interface
-      use f_PUNeigh_RectCub_class
-      use f_SeparatorVariant_class
-      use f_PUSolve_RectCub_class
-
-      class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
-      integer :: i,j,k 
-      
-      Fst_x = 0.0_WP;
-      Fst_y = 0.0_WP;
-      Fst_z = 0.0_WP;
-
-      ! Smoothing
-      do k=cfg%kmin_,cfg%kmax_
-         do j=cfg%jmin_,cfg%jmax_
-            do i=cfg%imin_,cfg%imax_
-               Fst_x(i,j,k) = 0.125*(fs%Pjx(i+1,j,k)+fs%Pjx(i-1,j,k) + fs%Pjx(i,j+1,k) + fs%Pjx(i,j-1,k)) + 0.5*fs%Pjx(i,j,k)
-               Fst_y(i,j,k) = 0.125*(fs%Pjy(i+1,j,k)+fs%Pjy(i-1,j,k) + fs%Pjy(i,j+1,k) + fs%Pjy(i,j-1,k)) + 0.5*fs%Pjy(i,j,k)
-            end do
-         end do
-      end do
-
-      fs%Pjx = Fst_x 
-      fs%Pjy = Fst_y
-      fs%Pjz = Fst_z
-      
-   end subroutine applyLaplacianSmoothing
-
-   subroutine applyGradientSmoothing(fs,vf)
-      use irl_fortran_interface
-      use f_PUNeigh_RectCub_class
-      use f_SeparatorVariant_class
-      use f_PUSolve_RectCub_class
-
-      class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
-      class(vfs), intent(inout) :: vf ! Volume Fraction Solver
-      integer :: i,j,k,ii,jj,kk,negativeIndex,positiveIndex
-      real(WP) :: tot_grad_x,tot_grad_y,tot_force
-
-      Fst_x = 0.0_WP;
-      Fst_y = 0.0_WP;
-      Fst_z = 0.0_WP;
-      
-      negativeIndex = -1
-      positiveIndex = 1
-      ! Calculate Gradients
-      do k=cfg%kmin_,cfg%kmax_
-         do j=cfg%jmin_,cfg%jmax_
-            do i=cfg%imin_,cfg%imax_
-               grad_vf_x(i,j,k) = abs((vf%VF(i  ,j  ,k) - vf%VF(i-1,j  ,k))  * vf%cfg%dxi(i))
-               grad_vf_y(i,j,k) = abs((vf%VF(i  ,j  ,k) - vf%VF(i  ,j-1,k)) * vf%cfg%dyi(j))
-               ! While we are looping everything, also check to see if everything has been processed
-               if(abs(fs%Pjx(i,j,k)) .gt. 1e-12) then
-                  x_smoothing_tracker(i,j,k) = 1 ! Mark as needing smoothing
-               endif
-
-               if(abs(fs%Pjy(i,j,k)) .gt. 1e-12) then
-                  y_smoothing_tracker(i,j,k) = 1 ! Mark as needing smoothing
-               endif
-
-            end do
-         end do
-      end do
-      ! Smoothing
-      do k=cfg%kmin_,cfg%kmax_
-         do j=cfg%jmin_,cfg%jmax_
-            do i=cfg%imin_,cfg%imax_
-               tot_grad_x = 0.0_WP
-               tot_grad_y = 0.0_WP
-               ! X Direction
-               if(abs(fs%Pjx(i,j,k)) .gt. 1e-12 .and. x_smoothing_tracker(i,j,k) == 1) then  ! This checks to see if we are in a mixed cell that has not yet been smoothed
-                  ! Current Cell
-                  tot_grad_x = grad_vf_x(i,j,k)
-                  tot_force = fs%Pjx(i,j,k)
-                  ! Going Left
-                  do while(abs(fs%Pjx(i+negativeIndex,j,k)) .gt. 1e-12 .and. (i+negativeIndex) .ge. cfg%imin_)
-                     tot_grad_x = tot_grad_x + grad_vf_x(i+negativeIndex,j,k)
-                     tot_force = tot_force + fs%Pjx(i+negativeIndex,j,k)
-                     negativeIndex = negativeIndex -1
-                  end do
-                  ! Going Right
-                  do while(abs(fs%Pjx(i+positiveIndex,j,k)) .gt. 1e-12 .and. (i+positiveIndex) .le. cfg%imax_)
-                     tot_grad_x = tot_grad_x + grad_vf_x(i+positiveIndex,j,k)
-                     tot_force = tot_force + fs%Pjx(i+positiveIndex,j,k)
-                     positiveIndex = positiveIndex +1
-                  end do
-                  ! Now Reassign Force Values in between 
-                  do ii = negativeIndex,positiveIndex
-                     Fst_x(i+ii,j,k) = grad_vf_x(i+ii,j,k)*tot_force/tot_grad_x ! Summing Components
-                     
-                     ! Mark as Smoothed
-                     x_smoothing_tracker(i+ii,j,k) = 0
-                  end do
-                  ! Reset Indicies
-                  negativeIndex = -1
-                  positiveIndex = 1
-                  tot_force = 0.0_WP
-               endif
-               
-               ! Y Direction
-               if(abs(fs%Pjy(i,j,k)) .gt. 1e-12 .and. y_smoothing_tracker(i,j,k) == 1) then  
-                  ! Current Cell
-                  tot_grad_y = grad_vf_y(i,j,k)
-                  tot_force = fs%Pjy(i,j,k)
-                  ! Going Down
-                  do while(abs(fs%Pjy(i,j+negativeIndex,k)) .gt. 1e-12 .and. (j+negativeIndex) .ge. cfg%jmin_)
-                     tot_grad_y = tot_grad_y + grad_vf_y(i,j+negativeIndex,k)
-                     tot_force = tot_force + fs%Pjy(i,j+negativeIndex,k)
-                     negativeIndex = negativeIndex -1
-                  end do
-                  ! Going Up
-                  do while(abs(fs%Pjy(i,j+positiveIndex,k)) .gt. 1e-12 .and. (j+positiveIndex) .le. cfg%jmax_)
-                     tot_grad_y = tot_grad_y + grad_vf_y(i,j+positiveIndex,k)
-                     tot_force = tot_force + fs%Pjy(i,j+positiveIndex,k)
-                     positiveIndex = positiveIndex +1
-                  end do
-                  ! Now Reassign Force Values in between 
-                  do jj = negativeIndex,positiveIndex
-                     Fst_y(i,j+jj,k) = grad_vf_y(i,j+jj,k)*tot_force/tot_grad_y ! Summing Components
-                     ! Mark as Smoothed
-                     y_smoothing_tracker(i,j+jj,k) = 0
-                  end do
-                  ! Reset Indicies
-                  negativeIndex = -1
-                  positiveIndex = 1
-                  tot_force = 0.0_WP
-               endif 
-
-            end do 
-         end do
-      end do
-      write(*,'(A)') 'Gradient Smoothing Complete'
-      fs%Pjx = Fst_x 
-      fs%Pjy = Fst_y
-      fs%Pjz = Fst_z
-      
-   end subroutine applyGradientSmoothing
-
-   subroutine applyPoissonSmoothing(fs,vf)
-      use irl_fortran_interface
-      use f_PUNeigh_RectCub_class
-      use f_SeparatorVariant_class
-      use f_PUSolve_RectCub_class
-      use hypre_str_class, only: pcg_smg,gmres
-
-      class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
-      class(vfs), intent(inout) :: vf ! Volume Fraction Solver
-      type(hypre_str) :: poisson_solver ! Poisson Solver Object
-
-      integer :: i,j,k,ii,jj,kk
-      real(WP) :: tot_grad_x,tot_grad_y
-
-
-      ! Initialize Poisson Solver
-      poisson_solver=hypre_str(cfg=cfg,name='Smoothing',method=gmres,nst=7)
-      poisson_solver%maxit=fs%psolv%maxit
-      poisson_solver%rcvg=fs%psolv%rcvg
-      ! Setup Solver
-      ! Set 7-pt stencil map for the pressure solver
-      poisson_solver%stc(1,:)=[ 0, 0, 0]
-      poisson_solver%stc(2,:)=[+1, 0, 0]
-      poisson_solver%stc(3,:)=[-1, 0, 0]
-      poisson_solver%stc(4,:)=[ 0,+1, 0]
-      poisson_solver%stc(5,:)=[ 0,-1, 0]
-      poisson_solver%stc(6,:)=[ 0, 0,+1]
-      poisson_solver%stc(7,:)=[ 0, 0,-1]
-      ! Set Up Laplacian Operator
-      do k=fs%cfg%kmin_,fs%cfg%kmax_
-         do j=fs%cfg%jmin_,fs%cfg%jmax_
-            do i=fs%cfg%imin_,fs%cfg%imax_
-               ! Set Laplacian
-               poisson_solver%opr(1,i,j,k)=fs%divp_x(1,i,j,k)*fs%divu_x(-1,i+1,j,k)+&
-               &                       fs%divp_x(0,i,j,k)*fs%divu_x( 0,i  ,j,k)+&
-               &                       fs%divp_y(1,i,j,k)*fs%divv_y(-1,i,j+1,k)+&
-               &                       fs%divp_y(0,i,j,k)*fs%divv_y( 0,i,j  ,k)+&
-               &                       fs%divp_z(1,i,j,k)*fs%divw_z(-1,i,j,k+1)+&
-               &                       fs%divp_z(0,i,j,k)*fs%divw_z( 0,i,j,k  )
-               poisson_solver%opr(2,i,j,k)=fs%divp_x(1,i,j,k)*fs%divu_x( 0,i+1,j,k)
-               poisson_solver%opr(3,i,j,k)=fs%divp_x(0,i,j,k)*fs%divu_x(-1,i  ,j,k)
-               poisson_solver%opr(4,i,j,k)=fs%divp_y(1,i,j,k)*fs%divv_y( 0,i,j+1,k)
-               poisson_solver%opr(5,i,j,k)=fs%divp_y(0,i,j,k)*fs%divv_y(-1,i,j  ,k)
-               poisson_solver%opr(6,i,j,k)=fs%divp_z(1,i,j,k)*fs%divw_z( 0,i,j,k+1)
-               poisson_solver%opr(7,i,j,k)=fs%divp_z(0,i,j,k)*fs%divw_z(-1,i,j,k  )
-               ! Scale it by the cell volume
-               ! poisson_solver%opr(:,i,j,k)=-poisson_solver%opr(:,i,j,k)*this%cfg%vol(i,j,k) I don't think I need this right now.
-            end do
-         end do
-      end do
-      ! Initialize the Poisson solver
-      call poisson_solver%init()
-      call poisson_solver%setup()
-      poisson_solver%sol=fs%Pjx
-      ! We now need to calculate the right hand side, which will be the divergence of the force field
-      do k=fs%cfg%kmin_,fs%cfg%kmax_
-         do j=fs%cfg%jmin_,fs%cfg%jmax_
-            do i=fs%cfg%imin_,fs%cfg%imax_
-               SurfaceTensionDiv(i,j,k) = (sum(fs%divp_x(:,i,j,k)*fs%Pjx(i:i+1,j,k))&
-                                          +sum(fs%divp_y(:,i,j,k)*fs%Pjy(i,j:j+1,k))) ! No z direction right now
-            end do
-         end do
-      end do
-      
-      poisson_solver%rhs = SurfaceTensionDiv
-      poisson_source = SurfaceTensionDiv
-      ! Solve the Poisson Equation
-      call poisson_solver%solve()
-      force_potential_field = poisson_solver%sol
-      ! Now we need to calculate the gradient of the smoothed pressure field to get the new forces
-      ! Calculate Forces
-      do k=cfg%kmin_,cfg%kmax_
-         do j=cfg%jmin_,cfg%jmax_
-            do i=cfg%imin_,cfg%imax_
-               Fst_x(i,j,k) = 0.5_WP * (poisson_solver%sol(i,j,k) - poisson_solver%sol(i-1,j,k)) * cfg%dxi(i)
-               Fst_y(i,j,k) = 0.5_WP * (poisson_solver%sol(i,j,k) - poisson_solver%sol(i,j-1,k)) * cfg%dyi(j)
-               Fst_z(i,j,k) = 0.0_WP
-            end do
-         end do
-      end do   
-      ! Calculate Magnitude of Fst_x
-      ! write(*,'(A,F10.5)') 'Max Fst_x before assign: ', maxval(abs(Fst_x))
-      ! Assign
-      fs%Pjx = Fst_x 
-      fs%Pjy = Fst_y
-      fs%Pjz = Fst_z
-      call poisson_solver%destroy()
-      ! write(*,'(A)') 'Poisson Smoothing Complete'
-   end subroutine applyPoissonSmoothing
-   
 
    subroutine updatePartitionOfUnity(vf,fs)
       use irl_fortran_interface
@@ -2679,277 +1338,5 @@ contains
          end do
       end do
    end subroutine updatePartitionOfUnity
-
-   subroutine add_conservative_surface_tension_jump(this,dt,div,vf,contact_model)
-      use messager,  only: die
-      use vfs_class, only: vfs
-      use irl_fortran_interface
-      use f_PUNeigh_RectCub_class
-      use f_SeparatorVariant_class 
-      use f_PUSolve_RectCub_class
-
-      implicit none
-      class(tpns), intent(inout) :: this
-      real(WP), intent(inout) :: dt     !< Timestep size over which to advance 
-      real(WP), dimension(this%cfg%imino_:,this%cfg%jmino_:,this%cfg%kmino_:), intent(inout) :: div  !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
-      class(vfs), intent(inout) :: vf
-      integer, intent(in), optional :: contact_model
-      integer :: i,j,k
-      real(WP) :: mycurv,mysurf
-      
-      ! Store old jump
-      this%DPjx=this%Pjx
-      this%DPjy=this%Pjy
-      this%DPjz=this%Pjz
-      ! Calculate pressure jump 
-      do k=this%cfg%kmin_,this%cfg%kmax_+1
-         do j=this%cfg%jmin_,this%cfg%jmax_+1
-            do i=this%cfg%imin_,this%cfg%imax_+1
-               ! X face
-               mysurf=sum(vf%SD(i-1:i,j,k)*this%cfg%vol(i-1:i,j,k))
-               if (mysurf.gt.0.0_WP) then
-                  mycurv=sum(vf%SD(i-1:i,j,k)*vf%curv(i-1:i,j,k)*this%cfg%vol(i-1:i,j,k))/mysurf
-               else
-                  mycurv=0.0_WP
-               end if
-               this%Pjx(i,j,k)=this%sigma*mycurv*sum(this%divu_x(:,i,j,k)*vf%VF(i-1:i,j,k))
-               ! Y face
-               mysurf=sum(vf%SD(i,j-1:j,k)*this%cfg%vol(i,j-1:j,k))
-               if (mysurf.gt.0.0_WP) then
-                  mycurv=sum(vf%SD(i,j-1:j,k)*vf%curv(i,j-1:j,k)*this%cfg%vol(i,j-1:j,k))/mysurf
-               else
-                  mycurv=0.0_WP
-               end if
-               this%Pjy(i,j,k)=this%sigma*mycurv*sum(this%divv_y(:,i,j,k)*vf%VF(i,j-1:j,k))
-               ! Z face
-               mysurf=sum(vf%SD(i,j,k-1:k)*this%cfg%vol(i,j,k-1:k))
-               if (mysurf.gt.0.0_WP) then
-                  mycurv=sum(vf%SD(i,j,k-1:k)*vf%curv(i,j,k-1:k)*this%cfg%vol(i,j,k-1:k))/mysurf
-               else
-                  mycurv=0.0_WP
-               end if
-               this%Pjz(i,j,k)=this%sigma*mycurv*sum(this%divw_z(:,i,j,k)*vf%VF(i,j,k-1:k))
-            end do
-         end do
-      end do
-
-      PjxD = this%Pjx
-      PjyD = this%Pjy 
-      PjzD = this%Pjz
-
-      ! Update Values
-      call updateSurfaceTensionStresses(this,vf)
-      call updateSurfaceTensionForces(this)
-
-      
-      SELECT CASE (SmoothingOption)
-         CASE(1)
-            
-         CASE(2)
-            call applyLaplacianSmoothing(this)
-         CASE(3)
-            call applyGradientSmoothing(this,vf)
-         CASE(4)
-            call applyPoissonSmoothing(this,vf)
-         CASE DEFAULT
-
-      END SELECT
-      ! Add wall contact force to pressure jump 
-      if (present(contact_model)) then
-         select case (contact_model)
-         case (1)
-            call this%add_static_contact(vf=vf)
-         case default
-            call die('[tpns: add_surface_tension_jump] Unknown contact model!')
-         end select
-      end if
-      
-      ! Compute jump of DP
-      this%DPjx=this%Pjx-this%DPjx
-      this%DPjy=this%Pjy-this%DPjy
-      this%DPjz=this%Pjz-this%DPjz
-      
-      ! Add div(Pjump) to RP
-      SurfaceTensionDiv = 0.0_WP
-      do k=this%cfg%kmin_,this%cfg%kmax_
-         do j=this%cfg%jmin_,this%cfg%jmax_
-            do i=this%cfg%imin_,this%cfg%imax_
-               SurfaceTensionDiv(i,j,k) = dt*(sum(this%divp_x(:,i,j,k)*this%DPjx(i:i+1,j,k)/this%rho_U(i:i+1,j,k))&
-               &                             +sum(this%divp_y(:,i,j,k)*this%DPjy(i,j:j+1,k)/this%rho_V(i,j:j+1,k)))
-               ! &                           +sum(this%divp_z(:,i,j,k)*this%DPjz(i,j,k:k+1)/this%rho_W(i,j,k:k+1)))
-               ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
-               !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
-               ! endif
-               this%div(i,j,k)=this%div(i,j,k)-SurfaceTensionDiv(i,j,k)
-            end do
-         end do
-      end do
-   end subroutine add_conservative_surface_tension_jump
-   
-   subroutine YoungsNormalMethod(vf,i,j,k,YoungNormal)
-      use messager,  only: die
-      use vfs_class, only: vfs
-
-      implicit none
-      class(vfs), intent(inout) :: vf
-      integer :: i,j,k,n
-      ! Young Method Variables
-      real(WP) :: Cbar_i,Cbar_ip1
-      real(WP), dimension(1:3,1:4) :: normals
-      real(WP), dimension(1:3) :: YoungNormal
-
-      ! Top Right Corner
-      Cbar_i = (vf%VF(i,j,k) + vf%VF(i,j+1,k))/2
-      Cbar_ip1 = (vf%VF(i+1,j,k) + vf%VF(i+1,j+1,k))/2 
-      normals(1,1) = vf%cfg%dxmi(i)*(Cbar_i-Cbar_ip1)
-
-      Cbar_i = (vf%VF(i,j,k) + vf%VF(i+1,j,k))/2
-      Cbar_ip1 = (vf%VF(i,j+1,k) + vf%VF(i+1,j+1,k))/2 
-      normals(2,1) = vf%cfg%dymi(j)*(Cbar_i-Cbar_ip1)
-      
-      normals(3,1) = 0.0_WP
-
-      ! Bottom Right Corner
-      Cbar_i = (vf%VF(i,j,k) + vf%VF(i,j-1,k))/2
-      Cbar_ip1 = (vf%VF(i+1,j,k) + vf%VF(i+1,j-1,k))/2 
-      normals(1,2) = vf%cfg%dxmi(i)*(Cbar_i-Cbar_ip1)
-
-      Cbar_i = (vf%VF(i,j-1,k) + vf%VF(i+1,j-1,k))/2 
-      Cbar_ip1 = (vf%VF(i,j,k) + vf%VF(i+1,j,k))/2
-      normals(2,2) = vf%cfg%dymi(j)*(Cbar_i-Cbar_ip1)
-      
-      normals(3,2) = 0.0_WP
-
-      ! Top Left Corner
-      Cbar_i = (vf%VF(i-1,j,k) + vf%VF(i-1,j+1,k))/2
-      Cbar_ip1 = (vf%VF(i,j,k) + vf%VF(i,j+1,k))/2 
-      normals(1,3) = vf%cfg%dxmi(i)*(Cbar_i-Cbar_ip1)
-
-      Cbar_i = (vf%VF(i,j,k) + vf%VF(i-1,j,k))/2 
-      Cbar_ip1 = (vf%VF(i,j+1,k) + vf%VF(i-1,j+1,k))/2
-      normals(2,3) = vf%cfg%dymi(j)*(Cbar_i-Cbar_ip1)
-      
-      normals(3,3) = 0.0_WP
-
-      ! Bottom Left Corner
-      Cbar_i = (vf%VF(i-1,j,k) + vf%VF(i-1,j-1,k))/2
-      Cbar_ip1 = (vf%VF(i,j,k) + vf%VF(i,j-1,k))/2 
-      normals(1,4) = vf%cfg%dxmi(i)*(Cbar_i-Cbar_ip1)
-
-      Cbar_i = (vf%VF(i,j-1,k) + vf%VF(i-1,j-1,k))/2 
-      Cbar_ip1 = (vf%VF(i,j,k) + vf%VF(i-1,j,k))/2
-      normals(2,4) = vf%cfg%dymi(j)*(Cbar_i-Cbar_ip1)
-      
-      normals(3,4) = 0.0_WP
-
-      ! Combine into a single normal
-      YoungNormal(:) = (normals(:,1)+normals(:,2)+normals(:,3)+normals(:,4))/4
-
-      ! Normalize
-      YoungNormal = YoungNormal/(sqrt(YoungNormal(1)*YoungNormal(1) + YoungNormal(2)*YoungNormal(2)))
-   end subroutine YoungsNormalMethod
-
-   subroutine CenteredColumnsNormalMethod(vf,i,j,k,normal)
-      use messager,  only: die
-      use vfs_class, only: vfs
-
-      implicit none
-      class(vfs), intent(inout) :: vf
-      integer :: i,j,k,n
-      ! Young Method Variables
-      real(WP) :: Xmx,Xmy,Ymx,Ymy,norm
-      real(WP), dimension(1:3,1:2) :: normals
-      real(WP), dimension(1:3) :: normal
-
-      ! X Major Orientation
-      ! First get Sign of mx
-      Xmx = sign(1.0_WP,(vf%VF(i+1,j,k)-vf%VF(i-1,j,k)))
-      ! Now get value of my
-      Xmy = 0.5 * (sum(vf%VF(i-1:i+1,j+1,k))-sum(vf%VF(i-1:i+1,j-1,k)))
-      ! Normalize
-      norm = abs(Xmx)+abs(Xmy)
-      Xmx = Xmx/norm
-      Xmy = Xmy/norm 
-      ! Store
-      normals(1,1) = Xmx
-      normals(2,1) = Xmy
-      normals(3,1) = 0.0_WP
-
-      ! Y Major Orientation
-      ! First get Sign of my
-      Ymy = sign(1.0_WP,(vf%VF(i,j+1,k)-vf%VF(i,j-1,k)))
-      ! Now get value of mx
-      Ymx = 0.5 * (sum(vf%VF(i+1,j-1:j+1,k))-sum(vf%VF(i-1,j-1:j+1,k)))
-
-      ! Normalize
-      norm = abs(Ymx)+abs(Ymy)
-      Ymx = Ymx/norm
-      Ymy = Ymy/norm 
-      ! Store
-      normals(1,2) = Ymx
-      normals(2,2) = Ymy
-      normals(3,2) = 1.0_WP
-
-      ! Pick the Better Normal
-      if(abs(Ymy) .gt. abs(Xmx)) then
-         normal = normals(:,2)
-      else
-         normal = normals(:,1)
-      endif
-      ! Normalize
-      normal = -normal
-      ! normal = -normal/(sqrt(normal(1)*normal(1) + normal(2)*normal(2)))
-      ! ! STOP
-   end subroutine CenteredColumnsNormalMethod
-      
-   subroutine mixedYoungCenterNormal(vf,i,j,k,normal_return)
-      use messager,  only: die
-      use vfs_class, only: vfs
-
-      implicit none
-      class(vfs), intent(inout) :: vf
-      integer :: i,j,k,n
-      ! Variables
-      real(WP), dimension(1:3) :: YoungNormal,CCNormal
-      real(WP) :: mYoung,mCC
-      ! Return Value
-      real(WP), dimension(1:3) :: normal_return
-
-      ! ================================== Young's Method
-      call YoungsNormalMethod(vf,i,j,k,YoungNormal)
-      ! if(abs(YoungNormal(1)) .gt. abs(YoungNormal(2))) then ! X Oriented
-      !    ! Normalize to have Unit x
-      !    YoungNormal = YoungNormal/abs(YoungNormal(1))
-      !    mYoung = YoungNormal(2)
-      ! else
-      !    YoungNormal = YoungNormal/abs(YoungNormal(2))
-      !    mYoung = YoungNormal(1)
-      ! endif
-      ! ================================== CC Method
-      call CenteredColumnsNormalMethod(vf,i,j,k,CCNormal)
-      ! if(abs(CCNormal(1)) .gt. abs(CCNormal(2))) then ! X Oriented
-      !    ! Normalize to have Unit x
-      !    CCNormal = CCNormal/abs(CCNormal(1))
-      !    mCC = CCNormal(2)
-      ! else
-      !    CCNormal = CCNormal/abs(CCNormal(2))
-      !    mCC = CCNormal(1)
-      ! endif
-
-      ! ================================== Pick the one with smaller angular offset from aligned
-      normal_return = YoungNormal ! Default
-      if(CCNormal(3) .eq. 0.0_WP) then
-         if(abs(CCNormal(1)) .le. abs(YoungNormal(1))) then
-            normal_return = CCNormal
-         endif
-      else 
-         if(abs(CCNormal(2)).le. abs(YoungNormal(1))) then
-            normal_return = CCNormal
-            normal_return(3) = 0.0_WP
-         endif
-      endif
-
-      normal_return = normal_return/sqrt(normal_return(1)*normal_return(1)+normal_return(2)*normal_return(2))
-   end subroutine mixedYoungCenterNormal
 
 end module simulation

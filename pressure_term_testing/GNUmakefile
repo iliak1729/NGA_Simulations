@@ -18,7 +18,7 @@ COMP      = gnu
 EXEBASE   = nga
 
 # Directories that contain user-defined code
-Udirs   := src
+Udirs   := src ../modules
 # Include user-defined sources
 Upack   += $(foreach dir, $(Udirs), $(wildcard $(dir)/Make.package))
 Ulocs   += $(foreach dir, $(Udirs), $(wildcard $(dir)))

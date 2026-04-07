@@ -41,8 +41,10 @@ module conservative_st
         real(WP), dimension(:,:,:), allocatable :: sigma_xx,sigma_yy,sigma_xy,sigma_yx ! Used Stress Tensor components
         real(WP), dimension(:,:,:), allocatable :: sigma_xx_P,sigma_yy_P,sigma_xy_P,sigma_yx_P ! Pressure Component
         real(WP), dimension(:,:,:), allocatable :: sigma_xx_NoP,sigma_yy_NoP,sigma_xy_NoP,sigma_yx_NoP ! Tangent Component
+        real(WP), dimension(:,:,:,:,:), allocatable :: sigma_3D
         real(WP), dimension(:,:,:), allocatable :: force_potential_field,poisson_source ! Potential Field Tools
         real(WP), dimension(:,:,:), allocatable :: Fst_x,Fst_y,Fst_z ! Forces sent to momentum equation
+        real(WP), dimension(:,:,:), allocatable :: Fst_x_3D,Fst_y_3D,Fst_z_3D
         real(WP), dimension(:,:,:), allocatable :: PjxD,PjyD,PjzD ! CSF Forces
         real(WP), dimension(:,:,:), allocatable :: Pjx_ST,Pjy_ST,Pjz_ST ! Forces from UpdateSTForces
         real(WP), dimension(:,:,:), allocatable :: Pjx_Marangoni,Pjy_Marangoni,Pjz_Marangoni ! Storage
@@ -56,6 +58,9 @@ module conservative_st
         real(WP), dimension(:,:,:), allocatable :: mag_tx,mag_ty
         real(WP), dimension(:,:,:), allocatable :: Seric_Populated,Seric_Pop_Temp
         real(WP), dimension(:,:,:,:), allocatable :: Seric_Pop_Storage,Gx_Storage,Gy_Storage,curvature_storage
+        ! Abu-Al-Saud Methods
+        real(WP), dimension(:,:,:), allocatable :: phi,phi_x,phi_y,phi_xx,phi_xy,phi_yy
+        real(WP), dimension(:,:,:), allocatable :: curvature_abu
         ! Initailize Boolean
         logical :: initialized = .false.
     contains
@@ -74,9 +79,12 @@ module conservative_st
         procedure, private :: add_conservative_surface_tension_jump
         procedure, private :: add_CSF_Shift_surface_tension_jump
         procedure, private :: add_Seric_surface_tension_jump
+        procedure, private :: add_3D_surface_tension_jump
 
         procedure, private :: updateSurfaceTensionStresses
+        procedure, private :: updateSurfaceTensionStresses3D
         procedure, private :: updateSurfaceTensionForces
+        procedure, private :: updateSurfaceTensionForces3D
 
         procedure, private :: applyLaplacianSmoothing
         procedure, private :: applyGradientSmoothing
@@ -93,6 +101,14 @@ module conservative_st
         procedure, private :: centered_columns_normal_method
         procedure, private :: PeskinDeltaBase
         procedure, private :: PeskinDelta
+        
+        ! Abu-Al-Saud Methods
+        procedure, private :: populate_levelset_with_pu
+        procedure, private :: update_levelset_derivatives
+        procedure, private :: populate_diagonal
+        procedure, private :: populate_off_diagonal
+        procedure, private :: add_Saud_surface_tension_jump
+        ! procedure, private :: updateSaudForces
         ! procedure, private :: height_function_surface_tension
     end type conservative_st_type
 contains 
@@ -130,6 +146,10 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%Fst_x(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%Fst_y(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%Fst_z(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+
+    allocate(this%Fst_x_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%Fst_y_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%Fst_z_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
 
     allocate(this%PjxD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%PjyD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
@@ -195,7 +215,16 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%Gx_Storage(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,0:2))
     allocate(this%Gy_Storage(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,0:2))
     allocate(this%curvature_storage(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,0:2))
+    allocate(this%sigma_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
     
+    allocate(this%phi(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%phi_x(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%phi_y(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%phi_xx(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%phi_xy(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%phi_yy(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%curvature_abu(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+
 end subroutine init
 
 subroutine get_dmomdt(this,resU,resV,resW)
@@ -228,8 +257,8 @@ end subroutine get_dmomdt
 subroutine add_surface_tension_jump(this)
     class(conservative_st_type), intent(inout) :: this
 
-    call this%update_surface_tension_coefficients()
-    call this%update_columns()
+    ! call this%update_surface_tension_coefficients()
+    ! call this%update_columns()
     
     SELECT CASE (this%SurfaceTensionOption)
         CASE (2)
@@ -242,6 +271,10 @@ subroutine add_surface_tension_jump(this)
             call this%add_CSF_Shift_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
         case (6)
             call this%add_Seric_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
+        case (7)
+            call this%add_Saud_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
+        case (8)
+            call this%add_3D_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
         CASE DEFAULT
             call this%fs%add_surface_tension_jump(dt=this%time%dt,div=this%fs%div,vf=this%vf)
     END SELECT
@@ -700,7 +733,9 @@ subroutine add_conservative_surface_tension_jump(this,dt,div,contact_model)
 
     ! Update Values
     call this%updateSurfaceTensionStresses()
+    call this%updateSurfaceTensionStresses3D()
     call this%updateSurfaceTensionForces()
+    call this%updateSurfaceTensionForces3D()
     
     this%fs%Pjx = this%Pjx_ST
     this%fs%Pjy = this%Pjy_ST
@@ -751,6 +786,118 @@ subroutine add_conservative_surface_tension_jump(this,dt,div,contact_model)
         end do
     end do
 end subroutine add_conservative_surface_tension_jump
+
+subroutine add_3D_surface_tension_jump(this,dt,div,contact_model)
+    use messager,  only: die
+    use vfs_class, only: vfs
+    use irl_fortran_interface
+    use f_PUSTNeigh_RectCub_class
+    use f_SeparatorVariant_class 
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    real(WP), intent(inout) :: dt     !< Timestep size over which to advance 
+    real(WP), dimension(this%fs%cfg%imino_:,this%fs%cfg%jmino_:,this%fs%cfg%kmino_:), intent(inout) :: div  !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
+    integer, intent(in), optional :: contact_model
+    integer :: i,j,k
+    real(WP) :: mycurv,mysurf
+    
+    ! Store old jump
+    this%fs%DPjx=this%fs%Pjx
+    this%fs%DPjy=this%fs%Pjy
+    this%fs%DPjz=this%fs%Pjz
+    ! Calculate pressure jump
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_+1
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_+1
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_+1
+            ! X face
+            mysurf=sum(this%vf%SD(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i-1:i,j,k)*this%vf%curv(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjx(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divu_x(:,i,j,k)*this%vf%VF(i-1:i,j,k))
+            ! Y face
+            mysurf=sum(this%vf%SD(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i,j-1:j,k)*this%vf%curv(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjy(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divv_y(:,i,j,k)*this%vf%VF(i,j-1:j,k))
+            ! Z face
+            mysurf=sum(this%vf%SD(i,j,k-1:k)*this%fs%cfg%vol(i,j,k-1:k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i,j,k-1:k)*this%vf%curv(i,j,k-1:k)*this%fs%cfg%vol(i,j,k-1:k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjz(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divw_z(:,i,j,k)*this%vf%VF(i,j,k-1:k))
+        end do
+        end do
+    end do
+
+    this%PjxD = this%fs%Pjx
+    this%PjyD = this%fs%Pjy 
+    this%PjzD = this%fs%Pjz
+
+    ! Update Values
+    call this%updateSurfaceTensionStresses()
+    call this%updateSurfaceTensionForces()
+    call this%updateSurfaceTensionStresses3D()
+    call this%updateSurfaceTensionForces3D()
+    
+    this%fs%Pjx = this%Fst_x_3D 
+    this%fs%Pjy = this%Fst_y_3D
+    this%fs%Pjz = this%Fst_z_3D
+    
+    SELECT CASE (this%SmoothingOption)
+        CASE(1)
+        
+        CASE(2)
+        call this%applyLaplacianSmoothing()
+        CASE(3)
+        call this%applyGradientSmoothing()
+        CASE(4)
+        call this%applyPoissonSmoothing()
+        case(5) ! This is using the Peskin Delta Function 
+        call this%applyPeskinSmoothing()
+        CASE DEFAULT
+
+    END SELECT
+
+    ! Add wall contact force to pressure jump 
+    if (present(contact_model)) then
+        select case (contact_model)
+        case (1)
+        call this%fs%add_static_contact(vf=this%vf)
+        case default
+        call die('[tpns: add_surface_tension_jump] Unknown contact model!')
+        end select
+    end if
+    
+    ! Compute jump of DP
+    this%fs%DPjx=this%fs%Pjx-this%fs%DPjx
+    this%fs%DPjy=this%fs%Pjy-this%fs%DPjy
+    this%fs%DPjz=this%fs%Pjz-this%fs%DPjz
+    
+    ! Add div(Pjump) to RP
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            this%SurfaceTensionDiv(i,j,k) = dt*(sum(this%fs%divp_x(:,i,j,k)*this%fs%DPjx(i:i+1,j,k)/this%fs%rho_U(i:i+1,j,k))&
+            &                                  +sum(this%fs%divp_y(:,i,j,k)*this%fs%DPjy(i,j:j+1,k)/this%fs%rho_V(i,j:j+1,k)))
+            ! &                           +sum(this%divp_z(:,i,j,k)*this%DPjz(i,j,k:k+1)/this%rho_W(i,j,k:k+1)))
+            ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
+            !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
+            ! endif
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+        end do
+        end do
+    end do
+end subroutine add_3D_surface_tension_jump
    
 subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     use messager,  only: die
@@ -813,6 +960,7 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     ! Update Values
     call updateSurfaceTensionStresses(this)
     call updateSurfaceTensionForces(this)
+    call this%updateSurfaceTensionForces3D()
     ! Store Force Values
     this%Pjx_Marangoni = this%Pjx_ST
     this%Pjy_Marangoni = this%Pjy_ST
@@ -823,7 +971,7 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     this%MarangoniOption = (/0.0_WP,0.0_WP,0.0_WP/)
     call updateSurfaceTensionStresses(this)
     call updateSurfaceTensionForces(this)
-
+    call this%updateSurfaceTensionForces3D()
     this%Pjx_NoMarangoni = this%Pjx_ST
     this%Pjy_NoMarangoni = this%Pjy_ST
     this%Pjz_NoMarangoni = this%Pjz_ST
@@ -908,8 +1056,8 @@ subroutine add_Seric_surface_tension_jump(this,dt,div,contact_model)
     real(WP), dimension(this%fs%cfg%imino_:,this%fs%cfg%jmino_:,this%fs%cfg%kmino_:), intent(inout) :: div  !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
     integer, intent(in), optional :: contact_model
     integer :: i,j,k,dir,n,m
-    real(WP) :: mycurv,mysurf, count,delta
-    real(WP), dimension(3) :: planeNormal, tangent
+    real(WP) :: mycurv,mysurf, count,delta,myGradient
+    real(WP), dimension(3) :: planeNormal, tangent,planeNormal1,planeNormal2
 
     ! Store old jump
     this%fs%DPjx=this%fs%Pjx
@@ -956,6 +1104,7 @@ subroutine add_Seric_surface_tension_jump(this,dt,div,contact_model)
         do j=this%fs%cfg%jmin_-1,this%fs%cfg%jmax_+1
         do i=this%fs%cfg%imin_-1,this%fs%cfg%imax_+1
             call this%mixed_young_center_normal(i,j,k,planeNormal)
+            ! print *, "Plane Normal = ", planeNormal
             if(abs(planeNormal(1)) .gt. abs(planeNormal(2))) then ! Plane more vertical, X orient
                 dir = int(sign(1.0_WP,planeNormal(1)))
             else
@@ -995,81 +1144,67 @@ subroutine add_Seric_surface_tension_jump(this,dt,div,contact_model)
     this%Gy_Storage(:,:,:,0) = this%Gy
     this%curvature_storage(:,:,:,0) = this%vf%curv
 
-    do n=1,2 ! Number of Smoothing Iterations
-        this%Fst_x = 0.0_WP; ! We are just using Fst as a storage array for the smoothing of G so we do not have to make a new array
-        this%Fst_y = 0.0_WP;
-        this%Fst_z = 0.0_WP;
-        this%Seric_Pop_Temp = 0;
-        do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
-            do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
-            do i=this%fs%cfg%imin_,this%fs%cfg%imax_
-                if(this%Seric_Populated(i,j,k) .gt. 0.0_WP) then ! Do nothing at already visted cells
-                    this%Fst_x(i,j,k) = this%Gx(i,j,k)
-                    this%Fst_y(i,j,k) = this%Gy(i,j,k)
-                    this%Fst_z(i,j,k) = this%vf%curv(i+neighbors(m,1),j+neighbors(m,2),k)
-                    this%Seric_Pop_Temp(i,j,k) = 1.0_WP
-                else ! Boundary Cells
-                    count = 0.0_WP
-                    do m = 1,4 ! Loop Over Neighbords
-                        if(this%Seric_Populated(i+neighbors(m,1),j+neighbors(m,2),k) .gt. 0.0_WP) then
-                            count = count + 1.0_WP 
-                            this%Fst_x(i,j,k) = this%Fst_x(i,j,k) + this%Gx(i+neighbors(m,1),j+neighbors(m,2),k)
-                            this%Fst_y(i,j,k) = this%Fst_y(i,j,k) + this%Gy(i+neighbors(m,1),j+neighbors(m,2),k)
-                            this%Fst_z(i,j,k) = this%Fst_z(i,j,k) + this%vf%curv(i+neighbors(m,1),j+neighbors(m,2),k)
-                            this%Seric_Pop_Temp(i,j,k) = 2.0_WP
-                        endif
-                    end do
-                    if(count .gt. 0.0_WP) then
-                        this%Fst_x(i,j,k) = this%Fst_x(i,j,k)/count
-                        this%Fst_y(i,j,k) = this%Fst_y(i,j,k)/count
-                        this%Fst_z(i,j,k) = this%Fst_z(i,j,k)/count
-                    else
-                        this%Fst_x(i,j,k) = 0.0_WP
-                        this%Fst_y(i,j,k) = 0.0_WP
-                        this%Fst_z(i,j,k) = 0.0_WP
-                    endif
-                endif
-                
-            enddo
-            enddo
-        enddo
-        this%Gx = this%Fst_x
-        this%Gy = this%Fst_y
-        this%vf%curv = this%Fst_z
-        this%Seric_Populated = this%Seric_Pop_Temp
-        ! Store Value
-        this%Seric_Pop_Storage(:,:,:,n) = this%Seric_Populated
-        this%Gx_Storage(:,:,:,n) = this%Gx
-        this%Gy_Storage(:,:,:,n) = this%Gy
-        this%curvature_storage(:,:,:,n) = this%Fst_z
-    enddo
+    
     ! Now that we have Gx and Gy, we need to calculat the forces
     this%Fst_x = 0.0_WP
     this%Fst_y = 0.0_WP
     this%Fst_z = 0.0_WP
-    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
-        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
-        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
-            ! Normal and Tangent
-            call this%mixed_young_center_normal(i,j,k,planeNormal)
-            tangent = (/-planeNormal(2),planeNormal(1),planeNormal(3)/)
-            ! VF Gradient - for calculating magnitude of dirac delta
-            this%grad_vf_x(i,j,k) = ((this%vf%VF(i  ,j  ,k) - this%vf%VF(i-1,j  ,k))  * this%vf%cfg%dxi(i))
-            this%grad_vf_y(i,j,k) = ((this%vf%VF(i  ,j  ,k) - this%vf%VF(i  ,j-1,k)) * this%vf%cfg%dyi(j))
-            delta = this%grad_vf_x(i,j,k) * this%grad_vf_x(i,j,k) + this%grad_vf_y(i,j,k) * this%grad_vf_y(i,j,k)
-            delta = sqrt(delta)
-            ! Tangent Force
-            this%Fst_x(i,j,k) = this%Gx(i,j,k) * abs(tangent(1)) * delta
-            this%Fst_y(i,j,k) = this%Gy(i,j,k) * abs(tangent(2)) * delta
-            ! Normal Force
-            this%Fst_x(i,j,k) = this%ST_Coeff(i,j,k) * this%vf%curv(i,j,k) * this%grad_vf_x(i,j,k)
-            this%Fst_y(i,j,k) = this%ST_Coeff(i,j,k) * this%vf%curv(i,j,k) * this%grad_vf_y(i,j,k)
-        enddo
-        enddo
-    enddo
+    ! Calculate forces 
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_+1
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_+1
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_+1
+            ! These are the deltas
+            this%grad_vf_x(i,j,k) = sum(this%fs%divu_x(:,i,j,k)*this%vf%VF(i-1:i,j,k))
+            this%grad_vf_y(i,j,k) = sum(this%fs%divv_y(:,i,j,k)*this%vf%VF(i,j-1:j,k))
+            delta = sqrt(this%grad_vf_y(i,j,k)*this%grad_vf_y(i,j,k) + this%grad_vf_x(i,j,k)*this%grad_vf_x(i,j,k))
+            ! X face
+            mysurf=sum(this%vf%SD(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k)) ! Surface Area
+            ! Next we want to smooth the surface tension 
+            if (mysurf.gt.0.0_WP) then
+                ! Curvature interp
+                mycurv=sum(this%vf%SD(i-1:i,j,k)*this%vf%curv(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k))/mysurf
+                call this%mixed_young_center_normal(i-1,j,k,planeNormal1)
+                call this%mixed_young_center_normal(i,j,k,planeNormal2)
+                ! Tangent Interp
+                planeNormal(1) = -(this%vf%SD(i-1,j,k)*planeNormal1(2)*this%fs%cfg%vol(i-1,j,k) + this%vf%SD(i,j,k)*planeNormal2(2)*this%fs%cfg%vol(i,j,k) )/mysurf
+                ! Gradient Interp
+                myGradient=sum(this%vf%SD(i-1:i,j,k)*this%dStds(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k))/mysurf
+            else
+                mycurv=0.0_WP
+                planeNormal(1) = 0.0_WP
+                myGradient = 0.0_WP 
+            end if
+            this%Fst_x(i,j,k) = myGradient * planeNormal(1) * delta ! Tangent Component
+            this%fs%Pjx(i,j,k) = this%ST_Coeff(i,j,k) * mycurv * this%grad_vf_x(i,j,k)! Normal Component 
+            ! if(this%vf%VF(i,j,k) .gt. VFlo .and. this%vf%VF(i,j,k) .lt. VFhi) then 
+            !     print *,"X Face",myGradient,this%dStds(i-1:i,j,k),this%vf%SD(i-1:i,j,k)
+            ! endif
+
+            ! Y face
+            mysurf=sum(this%vf%SD(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i,j-1:j,k)*this%vf%curv(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))/mysurf
+                call this%mixed_young_center_normal(i,j-1,k,planeNormal1)
+                call this%mixed_young_center_normal(i,j,k,planeNormal2)
+                ! Tangent Interp
+                planeNormal(2) = (this%vf%SD(i,j-1,k)*planeNormal1(1)*this%fs%cfg%vol(i,j-1,k) + this%vf%SD(i,j,k)*planeNormal2(1)*this%fs%cfg%vol(i,j,k) )/mysurf
+                ! Gradient Interp
+                myGradient=sum(this%vf%SD(i,j-1:j,k)*this%dStds(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))/mysurf
+            else
+                mycurv=0.0_WP
+                planeNormal(2) = 0.0_WP
+                myGradient = 0.0_WP 
+            end if
+            this%Fst_y(i,j,k) = myGradient * planeNormal(2) * delta ! Tangent Component
+            this%fs%Pjy(i,j,k) = this%ST_Coeff(i,j,k) * mycurv * this%grad_vf_y(i,j,k)! Normal Component 
+            ! Z face
+            this%fs%Pjz(i,j,k)=0.0_WP
+        end do
+        end do
+    end do
     
-    this%fs%Pjx = this%Fst_x
-    this%fs%Pjy = this%Fst_y
+    this%fs%Pjx = this%Fst_x + this%fs%Pjx
+    this%fs%Pjy = this%Fst_y + this%fs%Pjy
     this%fs%Pjz = this%Fst_z
 
     SELECT CASE (this%SmoothingOption)
@@ -1132,6 +1267,7 @@ subroutine updateSurfaceTensionStresses(this)
     ! Temp Items
     type(SeparatorVariant_type) :: plane
     real(WP), dimension(1:3) :: cen,startPoint,endPoint,Gcen,Lcen,force,pos
+    real(WP), dimension(1:3) :: P0,P1,P2,P3
     integer, dimension(1:3) :: ind,indguess
     real(WP) :: dx,dy,C,xEval,yEval,zEval
 
@@ -1178,14 +1314,14 @@ subroutine updateSurfaceTensionStresses(this)
                 ! ====== Get Stresses
 
                 ! sigma_xx, we go on right of u cell
-                ! The right of the u cell goes y(j) to y(j+1) at xm(i)
+                ! The right of the u cell goes y(j) to y(j+1) at xm(i) 
                 startPoint = (/this%fs%cfg%xm(i),this%fs%cfg%y(j),this%fs%cfg%zm(k)/)
                 endPoint = (/this%fs%cfg%xm(i),this%fs%cfg%y(j+1),this%fs%cfg%zm(k)/)
                 force = (/0.0_WP,0.0_WP,0.0_WP/)
                 call solveEdge(solver,this%fs%sigma,startPoint,endPoint,this%PU_spread*dx,this%PressureOption,this%MarangoniOption,force)
                 
                 ! call solveEdge(solver,fs%sigma,startPoint,endPoint,radius,center,5.0_WP,force)
-                ! We only want the x component of this force, so take it and store it as sigma_xx
+                ! We only want the x component of this force, so take it and store it as sigma_xx 
                 this%sigma_xx(i,j,k) = force(1)
                 ! ====== For Debugging
                 ! No Pressure
@@ -1274,6 +1410,197 @@ subroutine updateSurfaceTensionStresses(this)
     call this%vf%cfg%sync(this%sigma_yy_P)
 end subroutine updateSurfaceTensionStresses
 
+subroutine updateSurfaceTensionStresses3D(this)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in,k_in,shift_first_index,shift_second_index ! Current Cell Location
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PU_RectCub_type) :: solver
+    
+    ! Temp Items
+    type(SeparatorVariant_type) :: plane
+    real(WP), dimension(1:3) :: cen,force,corner,dvec,shift
+    real(WP), dimension(1:3) :: P0,P1,P2,P3,pressure_cell_center,velocity_cell_center,face_center
+    real(WP) :: dx,dy,dz
+    real(WP) :: x_i,y_j,z_k
+
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dy(1)
+    dz = this%vf%cfg%dz(1)
+    dvec = (/dx,dy,dz/)
+    shift = dvec
+    ! Create Neighborhood and solver  
+    call new(neighborhood) 
+    call new(solver)
+    ! Loop over real domain 
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            ! if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then   
+
+                ! Empty Neighborhood
+                call emptyNeighborhood(neighborhood) 
+                ! Add 7x7x7 (3 on each side) stencil, in plane  
+                ! write(*,'(A)') '=============== New: ' 
+                do j_in = -3,3
+                    do i_in = -3,3
+                        do k_in = -3,3
+                            if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. this%vf%VFmin .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. this%vf%VFmax) then
+
+                                cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k+k_in))
+                                ! Get Plane
+                                plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k+k_in)
+                                
+                                call addMember(neighborhood,cen,1.0_WP,plane)
+                            endif
+                        enddo
+                    end do
+                end do
+                ! Set Neighborhood in solver
+                call setNeighborhood(solver,neighborhood)
+                call setThreshold(solver,0.1875_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
+                ! ====== Get Stresses
+                ! call printSolver(solver)
+                ! We are going to loop over the stress components and calculate them
+                x_i = this%fs%cfg%x(i)
+                y_j = this%fs%cfg%y(j)
+                z_k = this%fs%cfg%z(k)
+                corner = (/x_i,y_j,z_k/)
+                ! First, get the cell center of the cell we are in
+                pressure_cell_center = (/this%fs%cfg%xm(i),this%fs%cfg%ym(j),this%fs%cfg%zm(k)/)
+                do i_in = 1,3 ! Cell Loop, This tells us the force direction
+                    ! Set up shift to velocity cell
+                    shift = (/0.0_WP,0.0_WP,0.0_WP/)  
+                    shift(i_in) = dvec(i_in)/2
+                    ! Move center to velocity cell we are looking at
+                    velocity_cell_center = pressure_cell_center - shift
+                    do j_in = 1,3 ! Face Loop, This tells us the normal direction
+                        force = (/0.0_WP,0.0_WP,0.0_WP/)
+                        ! Shift from velocity cell center ot the face center we are looking at:
+                        shift = (/0.0_WP,0.0_WP,0.0_WP/)  
+                        shift(j_in) = dvec(j_in)/2
+                        face_center = velocity_cell_center + shift
+                        ! Now that we have the face center and normal direction (all positive normals)
+                        ! we can use the pattern below to get a CCW orientation:
+                        ! -- =>  +- => ++ => -+
+                        ! The directions we apply this two are the directions perpendicular to our normal, in CCW order. This is to say if our directional order is:
+                        ! (x,y,z) then we use  (y,z) for x normal, (z,x) for y normal, and (x,y) for z normal
+                        ! This is where we define those directions, in indices
+                        shift_first_index = mod(j_in,3)+1
+                        shift_second_index = mod(j_in+1,3)+1
+                        ! Apply to get first corner
+                        shift = dvec/2     
+                        shift(j_in) = 0.0_WP
+                        shift(shift_first_index) = -shift(shift_first_index)
+                        shift(shift_second_index) = -shift(shift_second_index)
+                        P0 = face_center + shift
+
+                        ! Apply to get first corner
+                        shift = dvec/2     
+                        shift(j_in) = 0.0_WP
+                        shift(shift_first_index) = shift(shift_first_index)
+                        shift(shift_second_index) = -shift(shift_second_index)
+                        P1 = face_center + shift
+
+                        ! Apply to get first corner
+                        shift = dvec/2     
+                        shift(j_in) = 0.0_WP
+                        shift(shift_first_index) = shift(shift_first_index)
+                        shift(shift_second_index) = shift(shift_second_index)
+                        P2 = face_center + shift
+
+                        ! Apply to get first corner
+                        shift = dvec/2     
+                        shift(j_in) = 0.0_WP
+                        shift(shift_first_index) = -shift(shift_first_index)
+                        shift(shift_second_index) = shift(shift_second_index)
+                        P3 = face_center + shift
+
+                        ! Now that we have the face corners, run the code and get the force
+                        call solveFace(solver,this%fs%sigma,P0,P1,P2,P3,this%PU_spread*dx,this%PressureOption,this%MarangoniOption,force)
+                        ! print *, force 
+                        this%sigma_3D(i,j,k,i_in,j_in) = force(i_in)
+                        ! Do Prints here
+
+                        ! print *, "==================================="
+                        ! print *, "i_in,j_in: ",i_in,j_in
+                        ! print *, "pressure_cell_center: ", pressure_cell_center
+                        ! print *, "velocity_cell_center: ", velocity_cell_center
+                        ! print *, "face_center: ", face_center 
+                        ! print *, "shift_first_index: ", shift_first_index 
+                        ! print *, "shift_second_index: ", shift_second_index 
+                        ! print *, "P0: ", P0
+                        ! print *, "P1: ", P1
+                        ! print *, "P2: ", P2
+                        ! print *, "P3: ", P3
+                        ! write(*,'(A)', advance='no') "For Desmos: [("
+                        ! write(*,'(F10.5, A, F10.5, A)', advance='no') P0(shift_first_index), ",", P0(shift_second_index), "),("
+                        ! write(*,'(F10.5, A, F10.5, A)', advance='no') P1(shift_first_index), ",", P1(shift_second_index), "),("
+                        ! write(*,'(F10.5, A, F10.5, A)', advance='no') P2(shift_first_index), ",", P2(shift_second_index), "),("
+                        ! write(*,'(F10.5, A, F10.5, A)', advance='yes') P3(shift_first_index), ",", P3(shift_second_index), ")]"
+                    enddo
+                enddo
+        end do
+        end do
+    end do
+    ! Boundary Conditions 
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,1,1))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,1,2))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,1,3))
+
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,2,1))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,2,2))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,2,3))
+
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,1))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,2))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,3))
+
+end subroutine updateSurfaceTensionStresses3D
+
+subroutine updateSurfaceTensionForces3D(this)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k 
+
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            ! X Component
+            this%Fst_x_3D(i,j,k) = (this%sigma_3D(i,j,k,1,1)-this%sigma_3D(i-1,j,k,1,1)) + &
+                                (this%sigma_3D(i,j,k,1,2)-this%sigma_3D(i,j-1,k,1,2)) + &
+                                (this%sigma_3D(i,j,k,1,3)-this%sigma_3D(i,j,k-1,1,3))
+            this%Fst_x_3D(i,j,k) = this%Fst_x_3D(i,j,k) * this%fs%cfg%dxi(i)
+            ! Y Component
+            this%Fst_y_3D(i,j,k) = (this%sigma_3D(i,j,k,2,1)-this%sigma_3D(i-1,j,k,2,1)) + &
+                                (this%sigma_3D(i,j,k,2,2)-this%sigma_3D(i,j-1,k,2,2)) + &
+                                (this%sigma_3D(i,j,k,2,3)-this%sigma_3D(i,j,k-1,2,3))
+            this%Fst_y_3D(i,j,k) = this%Fst_y_3D(i,j,k) * this%fs%cfg%dyi(j)
+            ! Z Component
+            this%Fst_z_3D(i,j,k) = (this%sigma_3D(i,j,k,3,1)-this%sigma_3D(i-1,j,k,3,1)) + &
+                                (this%sigma_3D(i,j,k,3,2)-this%sigma_3D(i,j-1,k,3,2)) + &
+                                (this%sigma_3D(i,j,k,3,3)-this%sigma_3D(i,j,k-1,3,3))
+            this%Fst_z_3D(i,j,k) = this%Fst_z_3D(i,j,k) * this%fs%cfg%dzi(k)
+        end do
+        end do
+    end do
+    ! Here, we would need to do assignment to Fst_xyz to actually use in the operators.  
+    call this%vf%cfg%sync(this%Fst_z_3D(:,:,:))
+    call this%vf%cfg%sync(this%Fst_y_3D(:,:,:))
+    call this%vf%cfg%sync(this%Fst_x_3D(:,:,:))
+end subroutine updateSurfaceTensionForces3D
+
+
 subroutine updateSurfaceTensionForces(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
@@ -1350,7 +1677,7 @@ subroutine applyGradientSmoothing(this)
     
     negativeIndex = -1
     positiveIndex = 1
-    ! Calculate Gradients
+    ! Calculate Gradients   
     do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
         do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
         do i=this%fs%cfg%imin_,this%fs%cfg%imax_
@@ -1559,11 +1886,14 @@ subroutine applyPeskinSmoothing(this)
             sum = 0.0_WP
             do ii = -2,2
                 do jj = -2,2
-                    call this%PeskinDelta(i+ii,j+jj,k,x_curr,y_curr,z_curr,delta_val)
-                    ! print *, "Applying Peskin",delta_val
-                    this%Fst_x(i,j,k) = this%Fst_x(i,j,k) + delta_val * this%fs%Pjx(i+ii,j+jj,k)
-                    this%Fst_y(i,j,k) = this%Fst_y(i,j,k) + delta_val * this%fs%Pjy(i+ii,j+jj,k)
-                    sum = sum + delta_val
+                    do kk = -2,2
+                        call this%PeskinDelta(i+ii,j+jj,k+kk,x_curr,y_curr,z_curr,delta_val)
+                        ! print *, "Applying Peskin",delta_val
+                        this%Fst_x(i,j,k) = this%Fst_x(i,j,k) + delta_val * this%fs%Pjx(i+ii,j+jj,k+kk)
+                        this%Fst_y(i,j,k) = this%Fst_y(i,j,k) + delta_val * this%fs%Pjy(i+ii,j+jj,k+kk)
+                        this%Fst_z(i,j,k) = this%Fst_z(i,j,k) + delta_val * this%fs%Pjz(i+ii,j+jj,k+kk)
+                        sum = sum + delta_val
+                    enddo
                 enddo
             enddo
             ! print *, "Sum Peskin",sum
@@ -1618,8 +1948,9 @@ subroutine PeskinDelta(this,i,j,k,x,y,z,val)
     call this%PeskinDeltaBase(y-this%fs%cfg%ym(j),temp)
     ! print *, "R2,d2 = ",y-i*this%fs%cfg%dx(1),temp
     val = val * temp 
-
-    
+    call this%PeskinDeltaBase(z-this%fs%cfg%zm(k),temp)
+    ! print *, "R2,d2 = ",y-i*this%fs%cfg%dx(1),temp
+    val = val * temp 
 end subroutine PeskinDelta
 
 subroutine get_surface_tension_coefficient(this,x,y,stc)
@@ -1652,7 +1983,7 @@ subroutine update_surface_tension_coefficients(this)
             if(this%vf%VF(i,j,k) .gt. VFlo .and. this%vf%VF(i,j,k) .lt. VFhi) then
                 call get_surface_tension_coefficient(this,this%fs%cfg%xm(i),this%fs%cfg%ym(j),this%ST_Coeff(i,j,k)) ! Surface Tension in interfacial cells
             else
-                this%ST_Coeff(i,j,k) = 0.0_WP
+                call get_surface_tension_coefficient(this,this%fs%cfg%xm(i),this%fs%cfg%ym(j),this%ST_Coeff(i,j,k))
             endif
         end do
         end do
@@ -1852,7 +2183,7 @@ subroutine height_function_curvature(this,i,j,k,dir,curv,dSTds,curv_type)
     ! If Full/Empty, return 0
     if((this%vf%VF(i,j,k) .gt. VFhi) .or. (this%vf%VF(i,j,k) .lt. VFlo)) then
         curv = 0.0_WP
-        dSTds = 0.0_WP / 0.0_WP
+        dSTds = 0.0_WP
         RETURN
     endif
     ! Convert dir to index additions in perpendicular direction
@@ -2109,7 +2440,359 @@ subroutine young_normal_method(this,i,j,k,YoungNormal)
             normal_return(3) = 0.0_WP
          endif
       endif
-
-      normal_return = normal_return/sqrt(normal_return(1)*normal_return(1)+normal_return(2)*normal_return(2))
+      if(sqrt(normal_return(1)*normal_return(1)+normal_return(2)*normal_return(2)) .gt. 0.0_WP) then 
+        normal_return = normal_return/sqrt(normal_return(1)*normal_return(1)+normal_return(2)*normal_return(2))
+      else 
+        normal_return =(/0.0_WP,0.0_WP,0.0_WP/)
+      endif
    end subroutine mixed_young_center_normal
+
+   ! Abu Al Saud Methods
+subroutine populate_levelset_with_pu(this)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in ! Current Cell Location
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PU_RectCub_type) :: solver
+
+    ! Temp Items
+    type(SeparatorVariant_type) :: plane
+    real(WP), dimension(1:3) :: cen,startPoint,endPoint,Gcen,Lcen,force,pos
+    integer, dimension(1:3) :: ind,indguess
+    real(WP) :: dx,dy,C,xEval,yEval,zEval
+
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dy(1)
+    ! Create Neighborhood and solver
+    call new(neighborhood) 
+    call new(solver)
+    ! Loop over real domain 
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+        ! if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then
+
+            ! Empty Neighborhood
+            call emptyNeighborhood(neighborhood) 
+            ! Add 7x7 (3 on each side) stencil, in plane
+            ! write(*,'(A)') '=============== New: '
+            do j_in = -3,3
+                do i_in = -3,3
+                if(this%vf%VF(i+i_in,j+j_in,k) .gt. this%vf%VFmin .and. this%vf%VF(i+i_in,j+j_in,k) .lt. this%vf%VFmax) then
+                    
+                    ! Get Plane
+                    plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k)
+                    cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k))
+                    call addMember(neighborhood,cen,1.0_WP,plane)
+                endif
+                end do
+            end do
+            ! Set Neighborhood in solver
+            call setNeighborhood(solver,neighborhood)
+            call setThreshold(solver,0.1875_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
+            ! Get values and populate phi
+            xEval = this%fs%cfg%xm(i)
+            yEval = this%fs%cfg%ym(j)
+            zEval = this%fs%cfg%zm(k)
+            call getValue(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),this%phi(i,j,k))   
+        end do
+        end do
+    end do
+    ! Boundary Conditions  
+    call this%vf%cfg%sync(this%phi)
+end subroutine populate_levelset_with_pu
+
+subroutine update_levelset_derivatives(this)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in ! Current Cell Location
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PU_RectCub_type) :: solver
+
+    ! Temp Items
+    type(SeparatorVariant_type) :: plane
+    real(WP), dimension(1:3) :: cen,startPoint,endPoint,Gcen,Lcen,force,pos
+    integer, dimension(1:3) :: ind,indguess
+    real(WP) :: dx,dy,numer,denom
+
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dy(1)
+
+    ! Loop over real domain 
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            this%phi_x(i,j,k) = (this%phi(i+1,j,k) - this%phi(i-1,j,k))/(2*dx)
+            this%phi_y(i,j,k) = (this%phi(i,j+1,k) - this%phi(i,j-1,k))/(2*dy)
+            this%phi_xx(i,j,k) = (this%phi(i+1,j,k) - 2*this%phi(i,j,k) + this%phi(i-1,j,k))/(dx*dx)
+            this%phi_yy(i,j,k) = (this%phi(i,j+1,k) - 2*this%phi(i,j,k) + this%phi(i,j-1,k))/(dy)
+            this%phi_xy(i,j,k) = (this%phi(i+1,j+1,k) - this%phi(i-1,j+1,k) - this%phi(i+1,j-1,k)+this%phi(i-1,j-1,k))/(4*dx*dy)
+            
+            numer = this%phi_x(i,j,k)*this%phi_x(i,j,k)*this%phi_yy(i,j,k)
+            numer = numer - 2*this%phi_x(i,j,k)*this%phi_y(i,j,k)*this%phi_xy(i,j,k)
+            numer = numer + this%phi_y(i,j,k)*this%phi_y(i,j,k)*this%phi_xx(i,j,k)
+
+            denom = this%phi_x(i,j,k)*this%phi_x(i,j,k)+this%phi_y(i,j,k)*this%phi_y(i,j,k)
+            denom = denom ** 1.5
+
+            this%curvature_abu(i,j,k) = numer/denom
+        end do
+        end do
+    end do
+    ! Boundary Conditions  
+    call this%vf%cfg%sync(this%phi_x)
+    call this%vf%cfg%sync(this%phi_x)
+    call this%vf%cfg%sync(this%phi_xx)
+    call this%vf%cfg%sync(this%phi_yy)
+    call this%vf%cfg%sync(this%phi_xy)
+end subroutine update_levelset_derivatives
+
+subroutine populate_diagonal(this)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in ! Current Cell Location
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PU_RectCub_type) :: solver
+
+    ! Temp Items
+    type(SeparatorVariant_type) :: plane
+    real(WP), dimension(1:3) :: cen,startPoint,endPoint,Gcen,Lcen,force,pos
+    integer, dimension(1:3) :: ind,indguess
+    real(WP) :: dx,dy,numer,denom,xi,kappa,gamma
+    real(WP) :: tx,ty
+
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dy(1)
+
+    ! Loop over real domain 
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            this%sigma_xx(i,j,k) = 0.0_WP
+            this%sigma_yy(i,j,k) = 0.0_WP
+            do i_in = -1,1
+                ! Sigma_xx
+                if(this%phi(i,j,k)*(this%phi(i,j,k)+this%phi(i,j+i_in,k)) .le. 0.0_WP) then 
+                    xi = this%phi(i,j,k)/(this%phi(i,j,k)-this%phi(i,j+i_in,k))
+                    tx = (this%phi(i,j+1,k) - this%phi(i,j-1,k))/2 + i_in * xi *(this%phi(i,j-1,k)-2*this%phi(i,j,k)+this%phi(i,j+1,k))
+                    tx = tx/dx
+                    kappa =this%curvature_abu(i,j,k) + xi*(this%curvature_abu(i,j+i_in,k)-this%curvature_abu(i,j,k))
+                    gamma = this%fs%sigma
+                    this%sigma_xx(i,j,k) = this%sigma_xx(i,j,k) + gamma * (abs(tx)/dx - sign(1.0_WP,this%phi(i,j,k))*kappa*(0.5-xi))
+                endif
+                ! Sigma_yy
+                if(this%phi(i,j,k)*(this%phi(i,j,k)+this%phi(i+i_in,j,k)) .le. 0.0_WP) then 
+                    xi = this%phi(i,j,k)/(this%phi(i,j,k)-this%phi(i+i_in,j,k))
+                    tx = (this%phi(i+1,j,k) - this%phi(i-1,j,k))/2 + i_in * xi *(this%phi(i-1,j,k)-2*this%phi(i,j,k)+this%phi(i+1,j,k))
+                    tx = tx/dx
+                    kappa =this%curvature_abu(i,j,k) + xi*(this%curvature_abu(i+i_in,j,k)-this%curvature_abu(i,j,k))
+                    gamma = this%fs%sigma
+                    this%sigma_yy(i,j,k) = this%sigma_yy(i,j,k) + gamma * (abs(tx)/dx - sign(1.0_WP,this%phi(i,j,k))*kappa*(0.5-xi))
+                endif
+            enddo
+        end do
+        end do
+    end do
+    ! Boundary Conditions  
+    call this%vf%cfg%sync(this%sigma_xx)
+    call this%vf%cfg%sync(this%sigma_yy)
+end subroutine populate_diagonal
+
+subroutine populate_off_diagonal(this)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in ! Current Cell Location
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PU_RectCub_type) :: solver
+
+    ! Temp Items
+    type(SeparatorVariant_type) :: plane
+    real(WP), dimension(1:3) :: cen,startPoint,endPoint,Gcen,Lcen,force,pos
+    integer, dimension(1:3) :: ind,indguess
+    real(WP) :: dx,dy,numer,denom,xi,kappa,gamma
+    real(WP) :: tx,ty
+
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dy(1)
+
+    ! Loop over real domain 
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            this%sigma_xy(i,j,k) = 0.0_WP
+            this%sigma_yx(i,j,k) = 0.0_WP
+            ! Sigma_xy
+            if((this%phi(i-1,j,k) + this%phi(i-1,j-1,k))*(this%phi(i,j,k)+this%phi(i,j-1,k)) .gt. 0.0_WP) then 
+                this%sigma_xy(i,j,k) = 0.0_WP
+            else
+                numer = this%phi(i-1,j,k)+this%phi(i-1,j-1,k)
+                denom = this%phi(i-1,j,k)+this%phi(i-1,j-1,k)-this%phi(i,j,k)-this%phi(i,j-1,k)
+                xi = numer/denom
+                tx = this%phi(i-1,j,k)-this%phi(i-1,j-1,k)
+                tx = tx + xi * (this%phi(i,j,k)-this%phi(i-1,j,k) + this%phi(i-1,j-1,k)-this%phi(i,j-1,k))
+                tx = tx/dx 
+                gamma = this%fs%sigma
+
+                this%sigma_xy(i,j,k) = -gamma*sign(1.0_WP,this%phi(i,j,k)+this%phi(i,j-1,k))*tx/dx
+            endif
+            ! Sigma_yx
+            if((this%phi(i,j-1,k) + this%phi(i-1,j-1,k))*(this%phi(i,j,k)+this%phi(i-1,j,k)) .gt. 0.0_WP) then 
+                this%sigma_yx(i,j,k) = 0.0_WP
+            else
+                numer = this%phi(i,j-1,k)+this%phi(i-1,j-1,k)
+                denom = this%phi(i,j-1,k)+this%phi(i-1,j-1,k)-this%phi(i,j,k)-this%phi(i-1,j,k)
+                xi = numer/denom
+                tx = this%phi(i,j-1,k)-this%phi(i-1,j-1,k)
+                tx = tx + xi * (this%phi(i,j,k)-this%phi(i,j-1,k) + this%phi(i-1,j-1,k)-this%phi(i-1,j,k))
+                tx = tx/dx 
+                gamma = this%fs%sigma
+
+                this%sigma_yx(i,j,k) = -gamma*sign(1.0_WP,this%phi(i,j,k)+this%phi(i-1,j,k))*tx/dx
+            endif
+        end do
+        end do
+    end do
+    ! Boundary Conditions  
+    call this%vf%cfg%sync(this%phi_x)
+    call this%vf%cfg%sync(this%phi_x)
+    call this%vf%cfg%sync(this%phi_xx)
+    call this%vf%cfg%sync(this%phi_yy)
+    call this%vf%cfg%sync(this%phi_xy)
+end subroutine populate_off_diagonal
+
+subroutine add_Saud_surface_tension_jump(this,dt,div,contact_model) ! Need to Update
+    use messager,  only: die
+    use vfs_class, only: vfs
+    use irl_fortran_interface
+    use f_PUSTNeigh_RectCub_class
+    use f_SeparatorVariant_class 
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    real(WP), intent(inout) :: dt     !< Timestep size over which to advance 
+    real(WP), dimension(this%fs%cfg%imino_:,this%fs%cfg%jmino_:,this%fs%cfg%kmino_:), intent(inout) :: div  !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
+    integer, intent(in), optional :: contact_model
+    integer :: i,j,k
+    real(WP) :: mycurv,mysurf
+    
+    ! Store old jump
+    this%fs%DPjx=this%fs%Pjx
+    this%fs%DPjy=this%fs%Pjy
+    this%fs%DPjz=this%fs%Pjz
+    ! Calculate pressure jump
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_+1
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_+1
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_+1
+            ! X face
+            mysurf=sum(this%vf%SD(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i-1:i,j,k)*this%vf%curv(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjx(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divu_x(:,i,j,k)*this%vf%VF(i-1:i,j,k))
+            ! Y face
+            mysurf=sum(this%vf%SD(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i,j-1:j,k)*this%vf%curv(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjy(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divv_y(:,i,j,k)*this%vf%VF(i,j-1:j,k))
+            ! Z face
+            mysurf=sum(this%vf%SD(i,j,k-1:k)*this%fs%cfg%vol(i,j,k-1:k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i,j,k-1:k)*this%vf%curv(i,j,k-1:k)*this%fs%cfg%vol(i,j,k-1:k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjz(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divw_z(:,i,j,k)*this%vf%VF(i,j,k-1:k))
+        end do
+        end do
+    end do
+
+    this%PjxD = this%fs%Pjx
+    this%PjyD = this%fs%Pjy 
+    this%PjzD = this%fs%Pjz
+
+    ! Update Values
+    call this%populate_levelset_with_pu()
+    call this%update_levelset_derivatives()
+    call this%populate_diagonal()
+    call this%populate_off_diagonal
+    call this%updateSurfaceTensionForces()
+    call this%updateSurfaceTensionForces3D()
+
+    this%fs%Pjx = this%Pjx_ST
+    this%fs%Pjy = this%Pjy_ST
+    this%fs%Pjz = this%Pjz_ST
+    
+    SELECT CASE (this%SmoothingOption)
+        CASE(1)
+        
+        CASE(2)
+        call this%applyLaplacianSmoothing()
+        CASE(3)
+        call this%applyGradientSmoothing()
+        CASE(4)
+        call this%applyPoissonSmoothing()
+        case(5) ! This is using the Peskin Delta Function
+        call this%applyPeskinSmoothing()
+        CASE DEFAULT
+
+    END SELECT
+
+    ! Add wall contact force to pressure jump 
+    if (present(contact_model)) then
+        select case (contact_model)
+        case (1)
+        call this%fs%add_static_contact(vf=this%vf)
+        case default
+        call die('[tpns: add_surface_tension_jump] Unknown contact model!')
+        end select
+    end if
+    
+    ! Compute jump of DP
+    this%fs%DPjx=this%fs%Pjx-this%fs%DPjx
+    this%fs%DPjy=this%fs%Pjy-this%fs%DPjy
+    this%fs%DPjz=this%fs%Pjz-this%fs%DPjz
+    
+    ! Add div(Pjump) to RP
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            this%SurfaceTensionDiv(i,j,k) = dt*(sum(this%fs%divp_x(:,i,j,k)*this%fs%DPjx(i:i+1,j,k)/this%fs%rho_U(i:i+1,j,k))&
+            &                                  +sum(this%fs%divp_y(:,i,j,k)*this%fs%DPjy(i,j:j+1,k)/this%fs%rho_V(i,j:j+1,k)))
+            ! &                           +sum(this%divp_z(:,i,j,k)*this%DPjz(i,j,k:k+1)/this%rho_W(i,j,k:k+1)))
+            ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
+            !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
+            ! endif
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+        end do
+        end do
+    end do
+end subroutine add_Saud_surface_tension_jump
+
+
 end module conservative_st
