@@ -908,64 +908,8 @@ contains
          call vtk_out%add_scalar('VOF',vf%VF)
          call vtk_out%add_scalar('curvature',vf%curv)
          call vtk_out%add_scalar('pressure',fs%P)
-         call vtk_out%add_scalar('sigma_xx',cst%sigma_xx)
-         call vtk_out%add_scalar('sigma_xy',cst%sigma_xy)
-         call vtk_out%add_scalar('sigma_yx',cst%sigma_yx)
-         call vtk_out%add_scalar('sigma_yy',cst%sigma_yy)
-
-         call vtk_out%add_scalar('sigma_xx_P',cst%sigma_xx_P)
-         call vtk_out%add_scalar('sigma_xy_P',cst%sigma_xy_P)
-         call vtk_out%add_scalar('sigma_yx_P',cst%sigma_yx_P)
-         call vtk_out%add_scalar('sigma_yy_P',cst%sigma_yy_P)
-
-         call vtk_out%add_scalar('sigma_xx_NoP',cst%sigma_xx_NoP)
-         call vtk_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
-         call vtk_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
-         call vtk_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
-
-         call vtk_out%add_scalar('Fst_x',cst%Fst_x)
-         call vtk_out%add_scalar('Fst_y',cst%Fst_y)
-         call vtk_out%add_scalar('Fst_z',cst%Fst_z)
-
-         call vtk_out%add_scalar('STx',cst%STx)
-         call vtk_out%add_scalar('STy',cst%STy)
-         call vtk_out%add_scalar('Hx',cst%Hx)
-         call vtk_out%add_scalar('Hy',cst%Hy)
-
-         call vtk_out%add_scalar('HF_DIR',cst%HF_dir)
-
-         call vtk_out%add_scalar('dSTds',cst%dStds)
-         call vtk_out%add_scalar('HF Type',cst%height_function_type)
-
-         call vtk_out%add_scalar('Stp1',cst%Stp1)
-         call vtk_out%add_scalar('St0',cst%St0)
-         call vtk_out%add_scalar('Stm1',cst%Stm1)
-
-         call vtk_out%add_scalar('Hp1',cst%Hp1)
-         call vtk_out%add_scalar('H0',cst%H0)
-         call vtk_out%add_scalar('Hm1',cst%Hm1)
-
-         call vtk_out%add_scalar('Gx',cst%Gx)
-         call vtk_out%add_scalar('Gy',cst%Gy)
-         call vtk_out%add_scalar('Gz',cst%Gz)
-
-         call vtk_out%add_scalar('ST_Coeff',cst%ST_Coeff)
-
-         call vtk_out%add_scalar('Seric_Populated_Initial',cst%Seric_Pop_Storage(:,:,:,0))
-         call vtk_out%add_scalar('Seric_Populated_Iter1',cst%Seric_Pop_Storage(:,:,:,1))
-         call vtk_out%add_scalar('Seric_Populated_Iter2',cst%Seric_Pop_Storage(:,:,:,2))
-
-         call vtk_out%add_scalar('Gx_Initial',cst%Gx_Storage(:,:,:,0))
-         call vtk_out%add_scalar('Gx_Iter1',cst%Gx_Storage(:,:,:,1))
-         call vtk_out%add_scalar('Gx_Iter2',cst%Gx_Storage(:,:,:,2))
-
-         call vtk_out%add_scalar('Gy_Initial',cst%Gy_Storage(:,:,:,0))
-         call vtk_out%add_scalar('Gy_Iter1',cst%Gy_Storage(:,:,:,1))
-         call vtk_out%add_scalar('Gy_Iter2',cst%Gy_Storage(:,:,:,2))
          
-         call vtk_out%add_scalar('curvature_storage Initial',cst%curvature_storage(:,:,:,0))
-         call vtk_out%add_scalar('curvature_storage Iter1',cst%curvature_storage(:,:,:,1))
-         call vtk_out%add_scalar('curvature_storage Iter2',cst%curvature_storage(:,:,:,2))
+         call vtk_out%add_vector('Shift Amount Pre Peskin',cst%DPjx_Marangoni,cst%DPjy_Marangoni,cst%DPjz_Marangoni)
 
          call vtk_out%add_vector('Fst',cst%Fst_x,cst%Fst_y,cst%Fst_z)
          call vtk_out%add_vector('Pj',fs%Pjx,fs%Pjy,fs%Pjz)

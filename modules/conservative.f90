@@ -276,6 +276,8 @@ subroutine add_surface_tension_jump(this)
             call this%add_Saud_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
         case (8)
             call this%add_3D_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
+        case(9)
+            call this%add_3D_CSF_Shift_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
         CASE DEFAULT
             call this%fs%add_surface_tension_jump(dt=this%time%dt,div=this%fs%div,vf=this%vf)
     END SELECT
@@ -963,9 +965,9 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     call updateSurfaceTensionForces(this)
     call this%updateSurfaceTensionForces3D()
     ! Store Force Values
-    this%Pjx_Marangoni = this%Fst_z_3D
-    this%Pjy_Marangoni = this%Fst_z_3D
-    this%Pjz_Marangoni = this%Fst_z_3D
+    this%Pjx_Marangoni = this%Pjx_ST
+    this%Pjy_Marangoni = this%Pjx_ST
+    this%Pjz_Marangoni = this%Pjx_ST
 
     !! THIS IS WHERE WE GET THE PCST VALUES WITH CONSTANT SURFACE TENSION COEFFICIENT
     OldMarangoniOption = this%MarangoniOption
@@ -973,9 +975,9 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     call updateSurfaceTensionStresses(this)
     call updateSurfaceTensionForces(this)
     call this%updateSurfaceTensionForces3D()
-    this%Pjx_NoMarangoni = this%Fst_z_3D
-    this%Pjy_NoMarangoni = this%Fst_z_3D
-    this%Pjz_NoMarangoni = this%Fst_z_3D
+    this%Pjx_NoMarangoni = this%Pjx_ST
+    this%Pjy_NoMarangoni = this%Pjx_ST
+    this%Pjz_NoMarangoni = this%Pjx_ST
 
     this%MarangoniOption = OldMarangoniOption   
 
@@ -1105,19 +1107,19 @@ subroutine add_3D_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     call updateSurfaceTensionStresses3D(this)
     call updateSurfaceTensionForces3D(this)
     ! Store Force Values
-    this%Pjx_Marangoni = this%Pjx_ST
-    this%Pjy_Marangoni = this%Pjy_ST
-    this%Pjz_Marangoni = this%Pjz_ST
+    this%Pjx_Marangoni = this%Fst_x_3D
+    this%Pjy_Marangoni = this%Fst_y_3D
+    this%Pjz_Marangoni = this%Fst_z_3D
 
     !! THIS IS WHERE WE GET THE PCST VALUES WITH CONSTANT SURFACE TENSION COEFFICIENT
     OldMarangoniOption = this%MarangoniOption
     this%MarangoniOption = (/0.0_WP,0.0_WP,0.0_WP/)
-    call updateSurfaceTensionStresses(this)
-    call updateSurfaceTensionForces(this)
-    this%Pjx_NoMarangoni = this%Pjx_ST
-    this%Pjy_NoMarangoni = this%Pjy_ST
-    this%Pjz_NoMarangoni = this%Pjz_ST
-
+    call updateSurfaceTensionStresses3D(this)
+    call updateSurfaceTensionForces3D(this)
+    this%Pjx_NoMarangoni = this%Fst_x_3D
+    this%Pjy_NoMarangoni = this%Fst_y_3D
+    this%Pjz_NoMarangoni = this%Fst_z_3D
+    
     this%MarangoniOption = OldMarangoniOption   
 
     ! Find the Difference caused by Marangoni
@@ -1173,8 +1175,8 @@ subroutine add_3D_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
         do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
         do i=this%fs%cfg%imin_,this%fs%cfg%imax_
             this%SurfaceTensionDiv(i,j,k) = dt*(sum(this%fs%divp_x(:,i,j,k)*this%fs%DPjx(i:i+1,j,k)/this%fs%rho_U(i:i+1,j,k))&
-            &                             +sum(this%fs%divp_y(:,i,j,k)*this%fs%DPjy(i,j:j+1,k)/this%fs%rho_V(i,j:j+1,k)))
-            ! &                           +sum(this%fs%divp_z(:,i,j,k)*this%fs%DPjz(i,j,k:k+1)/this%fs%rho_W(i,j,k:k+1)))
+            &                             +sum(this%fs%divp_y(:,i,j,k)*this%fs%DPjy(i,j:j+1,k)/this%fs%rho_V(i,j:j+1,k))&
+            &                                  +sum(this%fs%divp_z(:,i,j,k)*this%fs%DPjz(i,j,k:k+1)/this%fs%rho_W(i,j,k:k+1)))
             ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
             !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%fs%rho_U(i,j,k),div(i,j,k)
             ! endif

@@ -1,3 +1,5 @@
+from turtle import color
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -20,10 +22,10 @@ color_pink = '#CC79A7'
 datafile = "APS_2025_ARCHIVE/marangoni_drop_translation_true_runs/monitor/PU_Marangoni_128x192"
 data0 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "pressure_term_marangoni/monitor/Marangoni_3D_64_CubicSpline"
+datafile = "pressure_term_marangoni/monitor/Marangoni_3D_64_CubicSpline_Shift"
 data1 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "pressure_term_marangoni/monitor/Marangoni_Seric_Updated_TangentFix_64"
+datafile = "pressure_term_marangoni/monitor/Marangoni_3D_64_CubicSpline"
 data2 = np.loadtxt(datafile, skiprows=2)
  
 datafile = "APS_2025_ARCHIVE/marangoni_drop_translation_true_runs/monitor/Herrmann_Marangoni_256.txt"
@@ -84,8 +86,10 @@ plt.figure()
 
 x = data1[:,1]/tNorm
 y = data1[:,4]/Vygb
-plt.plot(x,y,label = "3D,N=32",linewidth=5,color = color_red)
-
+plt.plot(x,y,label = "3D,Shift,N=32",linewidth=5,color = color_red)
+x = data2[:,1]/tNorm
+y = data2[:,4]/Vygb
+plt.plot(x,y,label = "3D,Base",linewidth=5,color = color_blue)
 # x = data4[:,1]/tNorm
 # y = data4[:,4]/Vygb
 # plt.plot(x,y,label = "ShiftPeskin,N=64",linewidth=5, color = color_blue)
@@ -111,9 +115,6 @@ plt.plot(x,y,label = "3D,N=32",linewidth=5,color = color_red)
 # plt.plot(x,y,label = "ShiftPeskin64",linewidth=2,color = color_orange)
 
 
-
-plt.xlim([0,1.2])
-
 # x = data3[:,0]/tNorm
 # y = data3[:,1]
 # plt.plot(x,y,'k--',label = "Herrmann VOF",linewidth=3)
@@ -126,6 +127,6 @@ plt.xlim([0,1.2])
 plt.ylabel("$v/v_{ygb}$")
 plt.xlabel("Time")
 plt.legend()
-plt.xlim([0,1.2])
+plt.xlim([0,0.4])
 # plt.savefig("marangoni_drop_translation_PUTESTINGb/graphs/MarangoniUpdated.png")
 plt.show()
