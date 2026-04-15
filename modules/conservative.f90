@@ -80,6 +80,7 @@ module conservative_st
         procedure, private :: add_CSF_Shift_surface_tension_jump
         procedure, private :: add_Seric_surface_tension_jump
         procedure, private :: add_3D_surface_tension_jump
+        procedure, private :: add_3D_CSF_Shift_surface_tension_jump
 
         procedure, private :: updateSurfaceTensionStresses
         procedure, private :: updateSurfaceTensionStresses3D
@@ -888,8 +889,8 @@ subroutine add_3D_surface_tension_jump(this,dt,div,contact_model)
         do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
         do i=this%fs%cfg%imin_,this%fs%cfg%imax_
             this%SurfaceTensionDiv(i,j,k) = dt*(sum(this%fs%divp_x(:,i,j,k)*this%fs%DPjx(i:i+1,j,k)/this%fs%rho_U(i:i+1,j,k))&
-            &                                  +sum(this%fs%divp_y(:,i,j,k)*this%fs%DPjy(i,j:j+1,k)/this%fs%rho_V(i,j:j+1,k)))
-            ! &                           +sum(this%divp_z(:,i,j,k)*this%DPjz(i,j,k:k+1)/this%rho_W(i,j,k:k+1)))
+            &                                  +sum(this%fs%divp_y(:,i,j,k)*this%fs%DPjy(i,j:j+1,k)/this%fs%rho_V(i,j:j+1,k))&
+            &                                  +sum(this%fs%divp_z(:,i,j,k)*this%fs%DPjz(i,j,k:k+1)/this%fs%rho_W(i,j,k:k+1)))
             ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
             !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
             ! endif
@@ -962,6 +963,148 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     call updateSurfaceTensionForces(this)
     call this%updateSurfaceTensionForces3D()
     ! Store Force Values
+    this%Pjx_Marangoni = this%Fst_z_3D
+    this%Pjy_Marangoni = this%Fst_z_3D
+    this%Pjz_Marangoni = this%Fst_z_3D
+
+    !! THIS IS WHERE WE GET THE PCST VALUES WITH CONSTANT SURFACE TENSION COEFFICIENT
+    OldMarangoniOption = this%MarangoniOption
+    this%MarangoniOption = (/0.0_WP,0.0_WP,0.0_WP/)
+    call updateSurfaceTensionStresses(this)
+    call updateSurfaceTensionForces(this)
+    call this%updateSurfaceTensionForces3D()
+    this%Pjx_NoMarangoni = this%Fst_z_3D
+    this%Pjy_NoMarangoni = this%Fst_z_3D
+    this%Pjz_NoMarangoni = this%Fst_z_3D
+
+    this%MarangoniOption = OldMarangoniOption   
+
+    ! Find the Difference caused by Marangoni
+    this%DPjx_Marangoni= this%Pjx_Marangoni- this%Pjx_NoMarangoni
+    this%DPjy_Marangoni = this%Pjy_Marangoni- this%Pjy_NoMarangoni
+    this%DPjz_Marangoni = this%Pjz_Marangoni- this%Pjz_NoMarangoni
+
+    ! Assign to Pjx so that we can smooth it
+    this%fs%Pjx = this%DPjx_Marangoni
+    this%fs%Pjy = this%DPjy_Marangoni
+    this%fs%Pjz = this%DPjz_Marangoni
+    ! We might need to smooth this so that the shape of the force field is the same as the CSF model
+    SELECT CASE (this%SmoothingOption)
+        CASE(1)
+        
+        CASE(2)
+            call applyLaplacianSmoothing(this)
+        CASE(3)
+            call applyGradientSmoothing(this)
+        CASE(4)
+            call applyPoissonSmoothing(this)
+        case(5) ! This is using the Peskin Delta Function
+            call this%applyPeskinSmoothing()
+        CASE DEFAULT
+
+    END SELECT
+    ! Repalce for visualization
+    this%DPjx_Marangoni = this%fs%Pjx
+    this%DPjy_Marangoni = this%fs%Pjy
+    this%DPjz_Marangoni = this%fs%Pjz
+    ! Now we have (F_PCST - F_PCST_CONST_ST). We now add this to the CSF values and use that
+    this%fs%Pjx = this%DPjx_Marangoni + this%PjxD
+    this%fs%Pjy = this%DPjy_Marangoni + this%PjyD
+    this%fs%Pjz = this%DPjz_Marangoni + this%PjzD
+
+    ! Add wall contact force to pressure jump 
+    if (present(contact_model)) then
+        select case (contact_model)
+        case (1)
+        call this%fs%add_static_contact(vf=this%vf)
+        case default
+        call die('[tpns: add_surface_tension_jump] Unknown contact model!')
+        end select
+    end if
+    
+    ! Compute jump of DP
+    this%fs%DPjx=this%fs%Pjx-this%fs%DPjx
+    this%fs%DPjy=this%fs%Pjy-this%fs%DPjy
+    this%fs%DPjz=this%fs%Pjz-this%fs%DPjz
+    
+    ! Add div(Pjump) to RP
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            this%SurfaceTensionDiv(i,j,k) = dt*(sum(this%fs%divp_x(:,i,j,k)*this%fs%DPjx(i:i+1,j,k)/this%fs%rho_U(i:i+1,j,k))&
+            &                             +sum(this%fs%divp_y(:,i,j,k)*this%fs%DPjy(i,j:j+1,k)/this%fs%rho_V(i,j:j+1,k)))
+            ! &                           +sum(this%fs%divp_z(:,i,j,k)*this%fs%DPjz(i,j,k:k+1)/this%fs%rho_W(i,j,k:k+1)))
+            ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
+            !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%fs%rho_U(i,j,k),div(i,j,k)
+            ! endif
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+        end do
+        end do
+    end do
+end subroutine add_CSF_Shift_surface_tension_jump
+
+subroutine add_3D_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
+    use messager,  only: die
+    use vfs_class, only: vfs
+    use irl_fortran_interface
+    use f_PUSTNeigh_RectCub_class
+    use f_SeparatorVariant_class 
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    real(WP), intent(inout) :: dt     !< Timestep size over which to advance 
+    real(WP), dimension(this%fs%cfg%imino_:,this%fs%cfg%jmino_:,this%fs%cfg%kmino_:), intent(inout) :: div  !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
+    integer, intent(in), optional :: contact_model
+    integer :: i,j,k
+    real(WP) :: mycurv,mysurf
+    real(WP), dimension(3) :: OldMarangoniOption
+    !! THIS IS WHERE WE GET THE CSF VALUES !!
+    ! Store old jump
+    this%fs%DPjx=this%fs%Pjx
+    this%fs%DPjy=this%fs%Pjy
+    this%fs%DPjz=this%fs%Pjz
+    ! Calculate pressure jump
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_+1
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_+1
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_+1
+            ! X face
+            mysurf=sum(this%vf%SD(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i-1:i,j,k)*this%vf%curv(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjx(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divu_x(:,i,j,k)*this%vf%VF(i-1:i,j,k))
+            ! Y face
+            mysurf=sum(this%vf%SD(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i,j-1:j,k)*this%vf%curv(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjy(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divv_y(:,i,j,k)*this%vf%VF(i,j-1:j,k))
+            ! Z face
+            mysurf=sum(this%vf%SD(i,j,k-1:k)*this%fs%cfg%vol(i,j,k-1:k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i,j,k-1:k)*this%vf%curv(i,j,k-1:k)*this%fs%cfg%vol(i,j,k-1:k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjz(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divw_z(:,i,j,k)*this%vf%VF(i,j,k-1:k))
+        end do
+        end do
+    end do
+
+    this%PjxD = this%fs%Pjx
+    this%PjyD = this%fs%Pjy 
+    this%PjzD = this%fs%Pjz
+
+    !! THIS IS WHERE WE GET THE PCST VALUES, WITH THE CURRENT MARANGONI OPTION
+    ! Update Values
+    call updateSurfaceTensionStresses3D(this)
+    call updateSurfaceTensionForces3D(this)
+    ! Store Force Values
     this%Pjx_Marangoni = this%Pjx_ST
     this%Pjy_Marangoni = this%Pjy_ST
     this%Pjz_Marangoni = this%Pjz_ST
@@ -971,7 +1114,6 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     this%MarangoniOption = (/0.0_WP,0.0_WP,0.0_WP/)
     call updateSurfaceTensionStresses(this)
     call updateSurfaceTensionForces(this)
-    call this%updateSurfaceTensionForces3D()
     this%Pjx_NoMarangoni = this%Pjx_ST
     this%Pjy_NoMarangoni = this%Pjy_ST
     this%Pjz_NoMarangoni = this%Pjz_ST
@@ -1040,7 +1182,7 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
         end do
         end do
     end do
-end subroutine add_CSF_Shift_surface_tension_jump
+end subroutine add_3D_CSF_Shift_surface_tension_jump
 
 subroutine add_Seric_surface_tension_jump(this,dt,div,contact_model)
     use messager,  only: die
@@ -1731,7 +1873,7 @@ subroutine applyGradientSmoothing(this)
                 tot_force = 0.0_WP
             endif
             
-            ! Y Direction
+            ! Y Direction  
             if(abs(this%fs%Pjy(i,j,k)) .gt. 1e-12 .and. this%y_smoothing_tracker(i,j,k) == 1) then  
                 ! Current Cell
                 tot_grad_y = this%grad_vf_y(i,j,k)

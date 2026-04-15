@@ -20,7 +20,7 @@ color_pink = '#CC79A7'
 datafile = "APS_2025_ARCHIVE/marangoni_drop_translation_true_runs/monitor/PU_Marangoni_128x192"
 data0 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "pressure_term_marangoni/monitor/Marangoni_3D_64_Fixed"
+datafile = "pressure_term_marangoni/monitor/Marangoni_3D_64_CubicSpline"
 data1 = np.loadtxt(datafile, skiprows=2)
 
 datafile = "pressure_term_marangoni/monitor/Marangoni_Seric_Updated_TangentFix_64"

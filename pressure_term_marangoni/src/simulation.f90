@@ -995,7 +995,7 @@ contains
          call mfile%add_column(VCOM,'COM V')
          call mfile%add_column(WCOM,'COM W')
 
-         call mfile%add_column(RootMeanSquareVelocity,'Vrms')
+         ! call mfile%add_column(RootMeanSquareVelocity,'Vrms')
          call mfile%write()         
       end block create_monitor
 

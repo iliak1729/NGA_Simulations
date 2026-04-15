@@ -1,8 +1,8 @@
 # Parallelization
-Partition : 2 3 1
+Partition : 2 3 2
 
 # Options
-Monitor File Name : Marangoni_3D_64_Fixed
+Monitor File Name : Marangoni_3D_64_CubicSpline
 
 # 1 For Default, 2 for all Mom, 3 for all Poisson, 4 for Conservative with Default, 5 For CSF Shift, 6 For Seric
 Surface Tension Option : 8
