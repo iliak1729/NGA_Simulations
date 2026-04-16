@@ -2,7 +2,7 @@
 Partition : 2 3 2
 
 # Options
-Monitor File Name : Marangoni_3D_64_CubicSpline_Shift
+Monitor File Name : Marangoni_3D_128_CubicSpline_Shift
 
 # 1 For Default, 2 for all Mom, 3 for all Poisson, 4 for Conservative with Default, 5 For CSF Shift, 6 For Seric
 Surface Tension Option : 9
@@ -22,9 +22,9 @@ Smoothing Option : 5
 Lx :	5.0
 Ly :	7.5
 #Lz :    0.02
-nx :    32
-ny :	48
-nz :	32
+nx :    128
+ny :	192
+nz :	128
 
 # SolveEdge Options Marangon: 0 0.133 -0.1
 Marangoni :                  0 0.133 -0.1
