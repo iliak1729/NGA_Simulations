@@ -1558,7 +1558,7 @@ subroutine updateSurfaceTensionStresses3D(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUSolve_RectCub_class, only: solveFace
 
     implicit none
     class(conservative_st_type), intent(inout) :: this

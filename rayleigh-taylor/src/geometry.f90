@@ -32,10 +32,8 @@ contains
          ! Read in grid definition
          call param_read('Lx',Lx); call param_read('nx',nx); allocate(x(nx+1))
          call param_read('Ly',Ly); call param_read('ny',ny); allocate(y(ny+1))
-         ! Make z 2D
-         call param_read('nz',nz)
-         Lz = nz*Lx/nx
-         allocate(z(nz+1))
+         call param_read('Lz',Lz); call param_read('ny',nz); allocate(z(nz+1))
+
          ! write(*,'(A)')
          ! write(*,'(A)') 'Grid Info'
          ! write(*,'(A)') '================================================'
@@ -60,10 +58,12 @@ contains
          end do
          ! General serial grid object
          call param_read('Boundary Condition Option',BoundaryConditionOption)
+         
          SELECT CASE (BoundaryConditionOption)
             CASE (2)
                grid=sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.false.,yper=.false.,zper=.true.,name='DropTranslation')
             CASE (3)
+               print *, "Case 3 Happening"
                grid=sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.true.,yper=.false.,zper=.true.,name='DropTranslation')
             CASE (4) 
                grid=sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.false.,yper=.true.,zper=.true.,name='DropTranslation')

@@ -54,6 +54,9 @@ module simulation
    real(WP) :: UCOM,VCOM,WCOM,PressureOption,realCatcher
    integer :: npart,SurfaceTensionOption,BoundaryConditionOption,CurvatureOption,ReconstructionOption,i,j,k
    integer :: ierr2, myrank
+   ! Timing
+   integer(kind = 8) :: start_count, end_count, count_rate
+   real(kind=8) :: elapsed_time
 
    character(len = 1000) :: MonitorFileName
    real(WP), parameter :: VFlo=1.0e-10_WP                         !< Minimum VF value considered
@@ -145,6 +148,19 @@ contains
       ! write(*,'(A,3F35.10)') '   center: ', center
       G=0.01*COS(2*PI*xyz(1))-xyz(2)
    end function levelset_capwave
+
+   function levelset_RT(xyz,t) result(G)
+      use param, only: param_read
+      implicit none
+      real(WP), dimension(3),intent(in) :: xyz
+      real(WP), dimension(3) :: dr
+      real(WP), intent(in) :: t
+      real(WP), PARAMETER :: PI = 3.141592653589793
+      real(WP) :: G
+      
+      ! write(*,'(A,3F35.10)') '   center: ', center
+      G=0.01*COS(2*PI*xyz(1))+xyz(2)
+   end function levelset_RT
 
    ! Function that finds the RMS Velocity Magnitude given U,V,W
    function Calc_RMS_Velocity() result(VrmsGlobal)
@@ -391,7 +407,7 @@ contains
                   end do
                   ! Call adaptive refinement code to get volume and barycenters recursively
                   vol=0.0_WP; area=0.0_WP; v_cent=0.0_WP; a_cent=0.0_WP
-                  call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_sphere,0.0_WP,amr_ref_lvl)
+                  call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_RT,0.0_WP,amr_ref_lvl)
                   vf%VF(i,j,k)=vol/vf%cfg%vol(i,j,k)
                   if (vf%VF(i,j,k).ge.VFlo.and.vf%VF(i,j,k).le.VFhi) then
                      vf%Lbary(:,i,j,k)=v_cent
@@ -629,9 +645,8 @@ contains
          call param_read('Surface tension coefficient',fs%sigma)
          call param_read('Surface Tension Option',SurfaceTensionOption);
          ! Assign constant viscosity to each phase
-         fs%visc_l = sqrt(fs%rho_l*fs%sigma*2*radius/laplace_number)
-         fs%visc_g = sqrt(fs%rho_l*fs%sigma*2*radius/laplace_number)
-         
+         call param_read('Liquid dynamic viscosity',fs%visc_l)
+         call param_read('Gas dynamic viscosity',fs%visc_g)
          ! Configure pressure solver
          ps=hypre_str(cfg=cfg,name='Pressure',method=pcg_pfmg,nst=7)
          call param_read('Pressure iteration',ps%maxit)
@@ -666,7 +681,9 @@ contains
          time%dt=time%dtmax
          call fs%apply_bcond(time%t,time%dt)
          time%tmax = max(minTv*Tv,minTc*Tc)
-
+         
+         ! Gravity 
+         fs%gravity=[0.0_WP,-10.0_WP,0.0_WP]
       end block create_and_initialize_flow_solver
       
       create_surface_tension_solver : block
@@ -678,6 +695,8 @@ contains
          call param_read('Curvature Option',cst%CurvatureOption)
          call param_read('PU Spread',cst%PU_spread)
          call cst%temp()
+
+
       end block create_surface_tension_solver
       
       ! Create surfmesh object for interface polygon output
@@ -908,6 +927,7 @@ contains
          call vtk_out%add_scalar('VOF',vf%VF)
          call vtk_out%add_scalar('curvature',vf%curv)
          call vtk_out%add_scalar('pressure',fs%P)
+         call vtk_out%add_scalar('Density',fs%rho_U)
          
          call vtk_out%add_vector('Shift Amount Pre Peskin',cst%DPjx_Marangoni,cst%DPjy_Marangoni,cst%DPjz_Marangoni)
 
@@ -958,8 +978,9 @@ contains
       implicit none
       ! Perform time integration
       do while (.not.time%done())
-         
+         call system_clock(count_rate = count_rate)
          ! Increment time
+         ! 
          call fs%get_cfl(time%dt,time%cfl)
          call time%adjust_dt()
          call time%increment()
@@ -1003,7 +1024,10 @@ contains
             ! write(*,'(A)') 'CASE SELECTION ================================================'
             
             call cst%get_dmomdt(resU,resV,resW)
-           
+            
+            ! Gravity
+            ! Add momentum source terms
+            call fs%addsrc_gravity(resU,resV,resW)
             ! Assemble explicit residual
             resU=-2.0_WP*fs%rho_U*fs%U+(fs%rho_Uold+fs%rho_U)*fs%Uold+time%dt*resU
             resV=-2.0_WP*fs%rho_V*fs%V+(fs%rho_Vold+fs%rho_V)*fs%Vold+time%dt*resV
@@ -1070,13 +1094,13 @@ contains
                   pmesh%vec(:,2,i)=pt%p(i)%acc
               end do
             end block update_pmesh
-            call updatePartitionOfUnity(vf,fs)
+            ! call updatePartitionOfUnity(vf,fs)
             call vtk_out%write_data(time%t)
-            call GhostVtk_Out%write_data(time%t)
-            call PuVtk_Out%write_data(time%t)
+            ! call GhostVtk_Out%write_data(time%t)
+            ! call PuVtk_Out%write_data(time%t)
          end if
          
-         RootMeanSquareVelocity = Calc_RMS_Velocity()
+         ! RootMeanSquareVelocity = Calc_RMS_Velocity()
          ! amp = Calc_Amplitude()
          ! COM = Calc_Center_of_mass()
          realCatcher =  Calc_Center_of_mass_velocity()
