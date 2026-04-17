@@ -1,11 +1,19 @@
 # NGA location if not yet defined
-NGA_HOME ?= /home/iliak2/Repositories/Backup/NGA2
-FFTW_DIR = /usr
-HYPRE_DIR = /home/iliak2/Builds/hypre
-# IRL_DIR = /home/iliak2/Builds/irl
-IRL_DIR = /home/iliak2/Desktop/Spline_Workspace/Bezier_Curves/BSpline_Basis_Functions/CppImplementation/IRL/interface-reconstruction-library/install
-LAPACK_DIR = /usr
-
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    NGA_HOME   ?= /home/iliak2/Repositories/Backup/NGA2
+    FFTW_DIR   = /usr
+    HYPRE_DIR  = /home/iliak2/Builds/hypre
+    IRL_DIR    = /home/iliak2/Desktop/Spline_Workspace/Bezier_Curves/BSpline_Basis_Functions/CppImplementation/IRL/interface-reconstruction-library/install
+    LAPACK_DIR = /usr
+endif
+ifeq ($(UNAME_S),Darwin)
+    NGA_HOME   ?= /Users/iliak/Repositories/NGA2
+    FFTW_DIR   = /opt/homebrew/opt/fftw
+    HYPRE_DIR  = /Users/iliak/Builds/hypre
+    IRL_DIR    = /Users/iliak/Builds/irl
+    LAPACK_DIR = /opt/homebrew/opt/lapack
+endif
 # Compilation parameters
 PRECISION = DOUBLE
 USE_MPI   = TRUE
