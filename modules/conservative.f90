@@ -682,7 +682,7 @@ subroutine add_conservative_surface_tension_jump(this,dt,div,contact_model)
     use messager,  only: die
     use vfs_class, only: vfs
     use irl_fortran_interface
-    use f_PUSTNeigh_RectCub_class
+    use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
     use f_PUSolve_RectCub_class
 
@@ -794,7 +794,7 @@ subroutine add_3D_surface_tension_jump(this,dt,div,contact_model)
     use messager,  only: die
     use vfs_class, only: vfs
     use irl_fortran_interface
-    use f_PUSTNeigh_RectCub_class
+    use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
     use f_PUSolve_RectCub_class
 
@@ -906,7 +906,7 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     use messager,  only: die
     use vfs_class, only: vfs
     use irl_fortran_interface
-    use f_PUSTNeigh_RectCub_class
+    use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
     use f_PUSolve_RectCub_class
 
@@ -1049,7 +1049,7 @@ subroutine add_3D_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     use messager,  only: die
     use vfs_class, only: vfs
     use irl_fortran_interface
-    use f_PUSTNeigh_RectCub_class
+    use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
     use f_PUSolve_RectCub_class
 
@@ -1190,7 +1190,7 @@ subroutine add_Seric_surface_tension_jump(this,dt,div,contact_model)
     use messager,  only: die
     use vfs_class, only: vfs
     use irl_fortran_interface
-    use f_PUSTNeigh_RectCub_class
+    use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
     use f_PUSolve_RectCub_class
 
@@ -2828,7 +2828,7 @@ subroutine add_Saud_surface_tension_jump(this,dt,div,contact_model) ! Need to Up
     use messager,  only: die
     use vfs_class, only: vfs
     use irl_fortran_interface
-    use f_PUSTNeigh_RectCub_class
+    use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
     use f_PUSolve_RectCub_class
 

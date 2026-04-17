@@ -17,7 +17,9 @@ endif
 # Compilation parameters
 PRECISION = DOUBLE
 USE_MPI   = TRUE
-USE_FFTW  = TRUE
+USE_HYPRE = TRUE
+USE_LAPACK= TRUE
+USE_IRL   = TRUE
 PROFILE   = FALSE
 DEBUG     = FALSE
 COMP      = gnu
@@ -25,7 +27,6 @@ EXEBASE   = nga
 
 # Directories that contain user-defined code
 Udirs   := src ../modules
-
 # Include user-defined sources
 Upack   += $(foreach dir, $(Udirs), $(wildcard $(dir)/Make.package))
 Ulocs   += $(foreach dir, $(Udirs), $(wildcard $(dir)))
@@ -33,13 +34,16 @@ include $(Upack)
 INCLUDE_LOCATIONS += $(Ulocs)
 VPATH_LOCATIONS   += $(Ulocs)
 
-# External libraries are defined in .profile/.bashrc/.zshrc, but could be defined here as well
+# Define external libraries - this can also be in .profile
+#HYPRE_DIR = 
+#IRL_DIR   = 
+#LAPACK_DIR= 
 
 # NGA compilation definitions
 include $(NGA_HOME)/tools/GNUMake/Make.defs
 
 # Include NGA base code
-Bdirs   := core variable_density data transform solver config grid libraries
+Bdirs   := core two_phase data solver config grid libraries particles
 Bpack   += $(foreach dir, $(Bdirs), $(NGA_HOME)/src/$(dir)/Make.package)
 include $(Bpack)
 
