@@ -19,7 +19,7 @@ contains
       use param,       only: param_read
       implicit none
       type(sgrid) :: grid
-      logical :: twoD
+      
       ! Create a grid from input params
       create_grid: block
          use sgrid_class, only: cartesian
@@ -30,14 +30,8 @@ contains
          ! Read in grid definition
          call param_read('Lx',Lx); call param_read('nx',nx); allocate(x(nx+1))
          call param_read('Ly',Ly); call param_read('ny',ny); allocate(y(ny+1))
-         call param_read('Lz',Lz); call param_read('nz',nz); 
-         call param_read('Two Dimensional',twoD)
+         call param_read('Lz',Lz); call param_read('nz',nz); allocate(z(nz+1))
          
-         if(twoD) then 
-            Lz = Lx/nx 
-            nz = 1
-         endif
-         allocate(z(nz+1))
          ! Create simple rectilinear grid
          do i=1,nx+1
             x(i)=real(i-1,WP)/real(nx,WP)*Lx-0.5_WP*Lx
@@ -49,8 +43,8 @@ contains
             z(k)=real(k-1,WP)/real(nz,WP)*Lz-0.5_WP*Lz
          end do
          
-         ! General serial grid object - add boundary conditions
-         grid=sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.true.,yper=.false.,zper=.true.,name='RayleighTaylor')
+         ! General serial grid object
+         grid=sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.true.,yper=.false.,zper=.true.,name='RisingBubble')
          
       end block create_grid
       

@@ -12,7 +12,6 @@ module conservative_st
     use surfmesh_class,    only: surfmesh
     use event_class,       only: event
     use monitor_class,     only: monitor
-    use tracer_class,      only: tracer
     use sgrid_class,       only: sgrid
     use config_class,      only: config
     use irl_fortran_interface
@@ -1448,7 +1447,7 @@ subroutine updateSurfaceTensionStresses(this)
                         !    write(*,'(A,3I10.5)') 'Curr Cell: ', i+i_in,j+j_in,k 
                         !    write(*,'(A,3F10.5)') 'Cen: ', cen 
                         !    call printToScreen(plane)
-                        call addMember(neighborhood,cen,1.0_WP,plane)
+                        call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
                     endif
                     end do
                 end do
@@ -1600,7 +1599,7 @@ subroutine updateSurfaceTensionStresses3D(this)
                                 ! Get Plane
                                 plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k+k_in)
                                 
-                                call addMember(neighborhood,cen,1.0_WP,plane)
+                                call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
                             endif
                         enddo
                     end do
@@ -2632,7 +2631,7 @@ subroutine populate_levelset_with_pu(this)
                     ! Get Plane
                     plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k)
                     cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k))
-                    call addMember(neighborhood,cen,1.0_WP,plane)
+                    call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
                 endif
                 end do
             end do

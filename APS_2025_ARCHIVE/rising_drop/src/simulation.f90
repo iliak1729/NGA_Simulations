@@ -2798,7 +2798,7 @@ contains
    ! ============================== Conservative Surface Tension Subroutines
    subroutine updateSurfaceTensionStresses(fs,vf)
       use irl_fortran_interface
-      use f_PUSTNeigh_RectCub_class
+      use f_PUNeigh_RectCub_class
       use f_SeparatorVariant_class
       use f_PUSolve_RectCub_class
 
@@ -2806,8 +2806,8 @@ contains
       class(vfs), intent(inout) :: vf ! Volume Fraction Solver 
       class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
       integer :: i,j,k,j_in,i_in ! Current Cell Location
-      type(PUSTNeigh_RectCub_type) :: neighborhood
-      type(PUST_RectCub_type) :: solver
+      type(PUNeigh_RectCub_type) :: neighborhood
+      type(PU_RectCub_type) :: solver
       
       ! Temp Items
       type(SeparatorVariant_type) :: plane
@@ -2845,7 +2845,7 @@ contains
                            ! Get Plane
                            plane = vf%liquid_gas_interface(i+i_in,j+j_in,k)
 
-                           call addMember(neighborhood,cen,plane)
+                           call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
                         endif
                      end do
                   end do
@@ -3101,7 +3101,7 @@ contains
 
    subroutine updateSurfaceTensionForces(fs)
       use irl_fortran_interface
-      use f_PUSTNeigh_RectCub_class
+      use f_PUNeigh_RectCub_class
       use f_SeparatorVariant_class
       use f_PUSolve_RectCub_class
 
@@ -3145,7 +3145,7 @@ contains
 
    subroutine updatePartitionOfUnity(vf,fs)
       use irl_fortran_interface
-      use f_PUSTNeigh_RectCub_class
+      use f_PUNeigh_RectCub_class
       use f_SeparatorVariant_class
       use f_PUSolve_RectCub_class
 
@@ -3153,8 +3153,8 @@ contains
       class(vfs), intent(inout) :: vf ! Volume Fraction Solver
       class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
       integer :: i,j,k,j_in,i_in,count ! Current Cell Location 
-      type(PUSTNeigh_RectCub_type) :: neighborhood
-      type(PUST_RectCub_type) :: solver
+      type(PUNeigh_RectCub_type) :: neighborhood
+      type(PU_RectCub_type) :: solver
       
       ! Temp Items
       type(SeparatorVariant_type) :: plane
@@ -3206,7 +3206,7 @@ contains
                            ! Get Plane
                            plane = vf%liquid_gas_interface(ind(1)+i_in,ind(2)+j_in,ind(3))
                            ! Add Plane to Neighborhood 
-                           call addMember(neighborhood,cen,plane)
+                           call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
                         endif
                      end do
                   end do
@@ -3238,7 +3238,7 @@ contains
       use messager,  only: die
       use vfs_class, only: vfs
       use irl_fortran_interface
-      use f_PUSTNeigh_RectCub_class
+      use f_PUNeigh_RectCub_class
       use f_SeparatorVariant_class 
       use f_PUSolve_RectCub_class
 

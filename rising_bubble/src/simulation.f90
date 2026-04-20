@@ -11,8 +11,6 @@ module simulation
    use surfmesh_class,       only: surfmesh
    use event_class,          only: event
    use monitor_class,        only: monitor
-   use irl_fortran_interface
-   use conservative_st
    implicit none
    private
    
@@ -22,8 +20,7 @@ module simulation
    type(tpns),           public :: fs
    type(vfs),            public :: vf
    type(timetracker),    public :: time
-   type(conservative_st_type), public :: cst
-
+   
    !> Ensight postprocessing
    type(surfmesh) :: smesh
    type(ensight)  :: ens_out
@@ -39,7 +36,7 @@ module simulation
    real(WP), dimension(:,:,:), allocatable :: Ui,Vi,Wi
    
    !> Problem definition
-   logical :: second_bubble
+   logical :: moving_domain,second_bubble
    real(WP), dimension(3) :: center,center2,gravity
    real(WP) :: volume,radius,radius2,Ycent,Vrise
    real(WP) :: Vin,Vin_old,Vrise_ref,Ycent_ref,G,ti
@@ -58,19 +55,7 @@ contains
       if (second_bubble) G=min(G,-radius2+sqrt(sum((xyz-center2)**2)))
    end function levelset_rising_bubble
    
-   function levelset_RT(xyz,t) result(G)
-      use param, only: param_read
-      implicit none
-      real(WP), dimension(3),intent(in) :: xyz
-      real(WP), dimension(3) :: dr
-      real(WP), intent(in) :: t
-      real(WP), PARAMETER :: PI = 3.141592653589793
-      real(WP) :: G
-      
-      ! write(*,'(A,3F35.10)') '   center: ', center
-      G=0.05*COS(2*PI*xyz(1))+xyz(2)
-   end function levelset_RT
-
+   
    !> Function that localizes the y+ side of the domain
    function yp_locator(pg,i,j,k) result(isIn)
       use pgrid_class, only: pgrid
@@ -126,6 +111,11 @@ contains
    subroutine simulation_init
       use param, only: param_read,param_exists
       implicit none
+      
+
+      ! Check first if we use a moving domain
+      call param_read('Moving domain',moving_domain,default=.false.)
+      
       
       ! Allocate work arrays
       allocate_work_arrays: block
@@ -189,7 +179,7 @@ contains
                   end do
                   ! Call adaptive refinement code to get volume and barycenters recursively
                   vol=0.0_WP; area=0.0_WP; v_cent=0.0_WP; a_cent=0.0_WP
-                  call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_RT,0.0_WP,amr_ref_lvl)
+                  call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_rising_bubble,0.0_WP,amr_ref_lvl)
                   vf%VF(i,j,k)=vol/vf%cfg%vol(i,j,k)
                   if (vf%VF(i,j,k).ge.VFlo.and.vf%VF(i,j,k).le.VFhi) then
                      vf%Lbary(:,i,j,k)=v_cent
@@ -219,6 +209,19 @@ contains
          call vf%reset_volume_moments()
       end block create_and_initialize_vof
       
+
+      ! Prepare PID controller if domain is moving
+      if (moving_domain) then
+         prepare_controller: block
+            ! Store target data
+            Ycent_ref=center(2)
+            Vrise_ref=0.0_WP
+            ! Controller parameters
+            G=0.5_WP
+            ti=time%dtmax
+         end block prepare_controller
+      end if
+      
       
       ! Create a two-phase flow solver without bconds
       create_and_initialize_flow_solver: block
@@ -236,6 +239,11 @@ contains
          call param_read('Surface tension coefficient',fs%sigma)
          ! Assign acceleration of gravity
          call param_read('Gravity',gravity); fs%gravity=gravity
+         ! Dirichlet inflow at the top and clipped Neumann outflow at the bottom
+         if (moving_domain) then
+            call fs%add_bcond(name='inflow' ,type=dirichlet      ,face='y',dir=+1,canCorrect=.false.,locator=yp_locator)
+            call fs%add_bcond(name='outflow',type=clipped_neumann,face='y',dir=-1,canCorrect=.true. ,locator=ym_locator)
+         end if
          ! Configure pressure solver
          ps=hypre_str(cfg=cfg,name='Pressure',method=pcg_pfmg2,nst=7)
          !ps%maxlevel=12
@@ -254,18 +262,7 @@ contains
          call fs%get_div()
       end block create_and_initialize_flow_solver
       
-      ! Create Surface Tension Object
-      create_surface_tension_solver : block
-         call cst%init(fs,vf,time)
-         call param_read('Marangoni',cst%MarangoniOption)
-         call param_read('Pressure',cst%PressureOption)
-         call param_read('Smoothing Option',cst%SmoothingOption)
-         call param_read('Surface Tension Option',cst%SurfaceTensionOption)
-         call param_read('Curvature Option',cst%CurvatureOption)
-         call param_read('PU Spread',cst%PU_spread)
-         call cst%temp()
-      end block create_surface_tension_solver
-
+      
       ! Create surfmesh object for interface polygon output
       create_smesh: block
          smesh=surfmesh(nvar=0,name='plic')
@@ -276,7 +273,7 @@ contains
       ! Add Ensight output
       create_ensight: block
          ! Create Ensight output from cfg
-         ens_out=ensight(cfg=cfg,name='RayleighTaylor')
+         ens_out=ensight(cfg=cfg,name='RisingBubble')
          ! Create event for Ensight output
          ens_evt=event(time=time,name='Ensight output')
          call param_read('Ensight output period',ens_evt%tper)
@@ -353,6 +350,24 @@ contains
          call time%adjust_dt()
          call time%increment()
          
+         ! Control inflow condition
+         if (moving_domain) then
+            control_inflow: block
+               use tpns_class, only: bcond
+               type(bcond), pointer :: mybc
+               integer  :: n,i,j,k
+               ! Get new inflow velocity
+               Vin_old=Vin
+               Vin=G*((Vrise_ref-Vrise)+(Ycent_ref-Ycent)/ti)
+               ! Apply inflow at top
+               call fs%get_bcond('inflow',mybc)
+               do n=1,mybc%itr%no_
+                  i=mybc%itr%map(1,n); j=mybc%itr%map(2,n); k=mybc%itr%map(3,n)
+                  fs%V(i,j,k)=Vin
+               end do
+            end block control_inflow
+         end if
+         
          ! Remember old VOF
          vf%VFold=vf%VF
          
@@ -382,9 +397,10 @@ contains
             call fs%prepare_advection_upwind(dt=time%dt)
             
             ! Explicit calculation of drho*u/dt from NS
-            call cst%get_dmomdt(resU,resV,resW)
+            call fs%get_dmomdt(resU,resV,resW)
             
             ! Add momentum source terms - adjust gravity if accelerating frame of reference
+            if (moving_domain) fs%gravity(2)=gravity(2)+(Vin-Vin_old)/time%dt
             call fs%addsrc_gravity(resU,resV,resW)
             
             ! Assemble explicit residual
@@ -407,7 +423,7 @@ contains
             call fs%update_laplacian()
             call fs%correct_mfr()
             call fs%get_div()
-            call cst%add_surface_tension_jump()
+            call fs%add_surface_tension_jump(dt=time%dt,div=fs%div,vf=vf)
             !call fs%add_surface_tension_jump_thin(dt=time%dt,div=fs%div,vf=vf)
             fs%psolv%rhs=-fs%cfg%vol*fs%div/time%dt
             fs%psolv%sol=0.0_WP
