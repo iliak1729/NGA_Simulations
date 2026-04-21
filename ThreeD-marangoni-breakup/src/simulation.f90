@@ -10,6 +10,7 @@ module simulation
    use ensight_class,        only: ensight
    use surfmesh_class,       only: surfmesh
    use event_class,          only: event
+   use vtk_class,         only: vtk
    use monitor_class,        only: monitor
    use irl_fortran_interface
    use conservative_st
@@ -26,8 +27,8 @@ module simulation
 
    !> Ensight postprocessing
    type(surfmesh) :: smesh
-   type(ensight)  :: ens_out
-   type(event)    :: ens_evt
+   type(vtk)  :: vtk_out
+   type(event)    :: vtk_evt
    
    !> Simulation monitor file
    type(monitor) :: mfile,cflfile,bubblefile
@@ -57,7 +58,16 @@ contains
       G=-radius+sqrt(sum((xyz-center)**2))
       if (second_bubble) G=min(G,-radius2+sqrt(sum((xyz-center2)**2)))
    end function levelset_rising_bubble
-   
+
+   function levelset_cylinder(xyz,t) result(G)
+      implicit none
+      real(WP), dimension(3),intent(in) :: xyz
+      real(WP), intent(in) :: t
+      real(WP) :: G
+      ! Create the bubble
+      G=-radius+sqrt(xyz(1)**2 +xyz(2)**2)
+   end function levelset_cylinder
+
    function levelset_RT(xyz,t) result(G)
       use param, only: param_read
       implicit none
@@ -166,7 +176,7 @@ contains
          !vf%twoplane_thld2=0.8_WP
          ! Initialize a bubble
          call param_read('Bubble position',center,default=[0.0_WP,0.0_WP,0.0_WP])
-         call param_read('Bubble volume',radius); radius=(radius*3.0_WP/(4.0_WP*Pi))**(1.0_WP/3.0_WP)
+         call param_read('Bubble Radius',radius);
          ! Add a second one if needed
          second_bubble=param_exists('Bubble 2 position')
          if (second_bubble) then
@@ -189,7 +199,7 @@ contains
                   end do
                   ! Call adaptive refinement code to get volume and barycenters recursively
                   vol=0.0_WP; area=0.0_WP; v_cent=0.0_WP; a_cent=0.0_WP
-                  call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_RT,0.0_WP,amr_ref_lvl)
+                  call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_cylinder,0.0_WP,amr_ref_lvl)
                   vf%VF(i,j,k)=vol/vf%cfg%vol(i,j,k)
                   if (vf%VF(i,j,k).ge.VFlo.and.vf%VF(i,j,k).le.VFhi) then
                      vf%Lbary(:,i,j,k)=v_cent
@@ -254,7 +264,7 @@ contains
          call fs%get_div()
       end block create_and_initialize_flow_solver
       
-      ! Create Surface Tension Object
+      ! Create Surface Tension Objec t 
       create_surface_tension_solver : block
          call cst%init(fs,vf,time)
          call param_read('Marangoni',cst%MarangoniOption)
@@ -276,18 +286,18 @@ contains
       ! Add Ensight output
       create_ensight: block
          ! Create Ensight output from cfg
-         ens_out=ensight(cfg=cfg,name='RayleighTaylor')
+         vtk_out=vtk(cfg=cfg,name='MaragoniBreakup')
          ! Create event for Ensight output
-         ens_evt=event(time=time,name='Ensight output')
-         call param_read('Ensight output period',ens_evt%tper)
+         vtk_evt=event(time=time,name='VTK output')
+         call param_read('Ensight output period',vtk_evt%tper)
          ! Add variables to output
-         call ens_out%add_vector('velocity',Ui,Vi,Wi)
-         call ens_out%add_scalar('VOF',vf%VF)
-         call ens_out%add_scalar('pressure',fs%P)
-         call ens_out%add_scalar('curvature',vf%curv)
-         call ens_out%add_surface('plic',smesh)
+         call vtk_out%add_vector('velocity',Ui,Vi,Wi)
+         call vtk_out%add_scalar('VOF',vf%VF)
+         call vtk_out%add_scalar('pressure',fs%P)
+         call vtk_out%add_scalar('curvature',vf%curv)
+         call vtk_out%add_surface('plic',smesh)
          ! Output to ensight
-         if (ens_evt%occurs()) call ens_out%write_data(time%t)
+         if (vtk_evt%occurs()) call vtk_out%write_data(time%t)
       end block create_ensight
       
       
@@ -431,9 +441,9 @@ contains
          call fs%get_div()
          
          ! Output to ensight
-         if (ens_evt%occurs()) then
+         if (vtk_evt%occurs()) then
             call vf%update_surfmesh(smesh)
-            call ens_out%write_data(time%t)
+            call vtk_out%write_data(time%t)
          end if
          
          ! Perform and output monitoring
