@@ -50,6 +50,10 @@ Max time :          1.e-4  # Default Values, Overriden
 Timestep factor : 0.5 # Scale on Delta t_max. That is to say, we scale sqrt(rho*delta^3/(pi*sigma)), which is the max time step, by this value to get our Max time step.
 Max cfl number :    0.5 # Changes Time Step
 
+# Temperatures
+Top Temperature : 50
+Bottom Temperature : 100
+
 # Inner Iterations
 Inner Time Iterations : 2
 

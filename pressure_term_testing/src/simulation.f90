@@ -16,6 +16,7 @@ module simulation
    use tracer_class,      only: tracer
    use sgrid_class,       only: sgrid
    use config_class,      only: config
+   use temp_transport
    use irl_fortran_interface
    use conservative_st
    implicit none
@@ -27,6 +28,7 @@ module simulation
    type(tpns),        public :: fs
    type(vfs),         public :: vf
    type(timetracker), public :: time
+   type(tads),           public :: ts
    type(tracer),      public :: pt
    type(conservative_st_type), public :: cst
 
@@ -55,6 +57,7 @@ module simulation
    integer :: npart,SurfaceTensionOption,BoundaryConditionOption,CurvatureOption,ReconstructionOption,i,j,k
    integer :: SmoothingOption,ShapeOption
    integer :: ierr2, myrank
+   real(WP) :: Tbot,Ttop,Ly
 
    character(len = 1000) :: MonitorFileName
    real(WP), parameter :: VFlo=1.0e-10_WP                         !< Minimum VF value considered
@@ -374,7 +377,7 @@ contains
          ! Initialize two droplets
          call param_read('Droplet diameter',radius); radius=0.5_WP*radius
          call param_read('Droplet Center',center)      
-         call param_read('Inital VOF',ShapeOption)
+         call param_read('Initial VOF',ShapeOption)
          do k=vf%cfg%kmino_,vf%cfg%kmaxo_
             do j=vf%cfg%jmino_,vf%cfg%jmaxo_
                do i=vf%cfg%imino_,vf%cfg%imaxo_
@@ -688,6 +691,36 @@ contains
          call cst%temp()
       end block create_surface_tension_solver
          ! print *, "Created CST"
+      
+      create_and_initialize_temperature_solver : block 
+         integer :: i,j,k
+         call ts%init(fs,vf,time)
+         call ts%temp()
+         ts%rho1 = fs%rho_l
+         ts%rho2 = fs%rho_g 
+         ts%cp1 = 1.0_WP
+         ts%cp2 = 1.0_WP 
+         ts%k1 = 0.0_WP
+         ts%k2 = 0.0_WP
+         ! Parameters
+         call param_read('Lx',Lx)
+         call param_read('Ly',Ly)
+         call param_read('Top Temperature',Ttop)
+         call param_read('Bottom Temperature',Tbot)
+         ! Initial Condition
+         do k=vf%cfg%kmino_,vf%cfg%kmaxo_
+            do j=vf%cfg%jmino_,vf%cfg%jmaxo_
+               do i=vf%cfg%imino_,vf%cfg%imaxo_
+                  ! Note that the exact linear profile is:
+                  ! (Ttop-Tbot)*y/Ly + Tbot.
+                  ! Since it is linear, the value in a cell is equal to that at the center
+                  ts%T(i,j,k) = (Ttop - Tbot) * (fs%cfg%ym(j)+Ly/2.0_WP)/Ly + Tbot
+               enddo
+            enddo
+         enddo
+         call ts%populate_enthalpy()
+      end block create_and_initialize_temperature_solver
+
 
       ! Create surfmesh object for interface polygon output
       create_smesh: block
@@ -1110,7 +1143,7 @@ contains
                   pmesh%vec(:,2,i)=pt%p(i)%acc
               end do
             end block update_pmesh
-            call updatePartitionOfUnity(vf,fs)
+            ! call updatePartitionOfUnity(vf,fs)
             call vtk_out%write_data(time%t)
             call GhostVtk_Out%write_data(time%t)
             call PuVtk_Out%write_data(time%t)
@@ -1246,97 +1279,97 @@ contains
       end do
    end subroutine project_tracers
 
-   subroutine updatePartitionOfUnity(vf,fs)
-      use irl_fortran_interface
-      use f_PUNeigh_RectCub_class
-      use f_SeparatorVariant_class
-      use f_PUSolve_RectCub_class
+   ! subroutine updatePartitionOfUnity(vf,fs)
+   !    use irl_fortran_interface
+   !    use f_PUNeigh_RectCub_class
+   !    use f_SeparatorVariant_class
+   !    use f_PUSolve_RectCub_class
 
-      implicit none
-      class(vfs), intent(inout) :: vf ! Volume Fraction Solver
-      class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
-      integer :: i,j,k,j_in,i_in,count ! Current Cell Location 
-      type(PUNeigh_RectCub_type) :: neighborhood
-      type(PU_RectCub_type) :: solver
+   !    implicit none
+   !    class(vfs), intent(inout) :: vf ! Volume Fraction Solver
+   !    class(tpns), intent(inout) :: fs ! Two Phase Flow Solver
+   !    integer :: i,j,k,j_in,i_in,count ! Current Cell Location 
+   !    type(PUNeigh_RectCub_type) :: neighborhood
+   !    type(PU_RectCub_type) :: solver
       
-      ! Temp Items
-      type(SeparatorVariant_type) :: plane
-      real(WP), dimension(1:3) :: cen,Gcen,Lcen,force,pos,tangentHolder
-      integer, dimension(1:3) :: ind,indguess
-      real(WP) :: dx,dy,xEval,yEval,zEval,Scale
-      Scale = PuCfg%nx/cfg%nx
-      ! write(*,'(A,3F35.10)') ' ============================================================================== Scale value: ', Scale 
-      dx = PuCfg%dx(1)
-      dy = PuCfg%dy(1)
-      count = 0
-      ! Create Neighborhood and solver
-      call new(neighborhood) 
-      call new(solver)
-      ! Loop over real domain 
-      do k=PuCfg%kmin_,PuCfg%kmax_
-         do j=PuCfg%jmin_,PuCfg%jmax_
-            do i=PuCfg%imin_,PuCfg%imax_
-               ! write(*,'(A,3I10.5)') ' ==== location: ', i,j,k 
-               ! if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then  
-                  ! Get Points
-                  xEval = PuCfg%xm(i)
-                  yEval = PuCfg%ym(j)
-                  zEval = PuCfg%zm(k)
-                  pos = (/xEval,yEval,zEval/)
-                  ! write(*,'(A,3F10.5)') ' ==== pos: ', pos
-                  ! Get Global Location
-                  indGuess = (/int(i/Scale),int(j/Scale),int(k/Scale)/)
-                  ind = cfg%get_ijk_global(pos,indGuess)
-                  ! write(*,'(A,3I10.5)') ' ==== ind value: ', ind
+   !    ! Temp Items
+   !    type(SeparatorVariant_type) :: plane
+   !    real(WP), dimension(1:3) :: cen,Gcen,Lcen,force,pos,tangentHolder
+   !    integer, dimension(1:3) :: ind,indguess
+   !    real(WP) :: dx,dy,xEval,yEval,zEval,Scale
+   !    Scale = PuCfg%nx/cfg%nx
+   !    ! write(*,'(A,3F35.10)') ' ============================================================================== Scale value: ', Scale 
+   !    dx = PuCfg%dx(1)
+   !    dy = PuCfg%dy(1)
+   !    count = 0
+   !    ! Create Neighborhood and solver
+   !    call new(neighborhood) 
+   !    call new(solver)
+   !    ! Loop over real domain 
+   !    do k=PuCfg%kmin_,PuCfg%kmax_
+   !       do j=PuCfg%jmin_,PuCfg%jmax_
+   !          do i=PuCfg%imin_,PuCfg%imax_
+   !             ! write(*,'(A,3I10.5)') ' ==== location: ', i,j,k 
+   !             ! if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then  
+   !                ! Get Points
+   !                xEval = PuCfg%xm(i)
+   !                yEval = PuCfg%ym(j)
+   !                zEval = PuCfg%zm(k)
+   !                pos = (/xEval,yEval,zEval/)
+   !                ! write(*,'(A,3F10.5)') ' ==== pos: ', pos
+   !                ! Get Global Location
+   !                indGuess = (/int(i/Scale),int(j/Scale),int(k/Scale)/)
+   !                ind = cfg%get_ijk_global(pos,indGuess)
+   !                ! write(*,'(A,3I10.5)') ' ==== ind value: ', ind
                   
-                  ! Now we have the global index in ind, so we can move around based on that.  
-                  ! Empty Neighborhood
-                  call emptyNeighborhood(neighborhood)
-                  ! Add 7x7 (3 on each side) stencil, in plane
-                  ! cen = (/vf%cfg%xm(ind(1)),vf%cfg%ym(ind(2)),vf%cfg%zm(ind(3))/)
-                  ! call addMember(neighborhood,cen,vf%liquid_gas_interface(ind(1),ind(2),ind(3)))
-                  do j_in = -3,3
-                     do i_in = -3,3
-                        if(vf%VF(ind(1)+i_in,ind(2)+j_in,ind(3)) .gt. vf%VFmin .or. vf%VF(ind(1)+i_in,ind(2)+j_in,ind(3)) .lt. vf%VFmax) then
-                           ! write(*,'(A,2I10.5)') ' ====i in, j in: ', i_in,j_in
-                           ! For now, compute centroid as cell center
-                           ! cen = (/vf%cfg%xm(ind(1)+i_in),vf%cfg%ym(ind(2)+j_in),vf%cfg%zm(ind(3))/)
-                           ! ! write(*,'(A,2I10.5)') ' ====i in, j in: ', i_in,j_in
-                           ! Gcen = vf%Gbary(:,ind(1)+i_in,ind(2)+j_in,ind(3))
-                           ! Lcen = vf%Lbary(:,ind(1)+i_in,ind(2)+j_in,ind(3))
-                           ! ! cen = vf%VF(ind(1)+i_in,ind(2)+j_in,ind(3)) * Lcen + (1-vf%VF(ind(1)+i_in,ind(2)+j_in,ind(3))) * Gcen 
-                           ! cen = (Lcen+Gcen)/2
-                           cen = calculateCentroid(vf%interface_polygon(1,ind(1)+i_in,ind(2)+j_in,ind(3)))
-                           ! Get Plane
-                           plane = vf%liquid_gas_interface(ind(1)+i_in,ind(2)+j_in,ind(3))
-                           ! Add Plane to Neighborhood 
-                           call addMember(neighborhood,cen,1.0_WP,plane)
-                        endif
-                     end do
-                  end do
-                  ! Set Neighborhood in solver 
-                  call setNeighborhood(solver,neighborhood)
-                  ! if(ind(1) .eq. 11 .and. ind(2) .eq. 22 .and. count .lt. 1) then 
-                  !    write(*,'(A,F10.8)') '> Time  =  ', time%t
-                  !    ! call printSolver(solver)
-                  !    count = count + 1
-                  ! endif
-                  ! ====== Get Value
-                  call getValue(solver,xEval,yEval,zEval,PU_spread*vf%cfg%dx(1),PartitionOfUnityValue(i,j,k))   
-                  ! write(*,'(A,F10.8)') '> Radius  =  ', radius
-                  ! call getValue(solver,xEval,yEval,zEval,0.25_WP,(/0.0_WP,0.0_WP,0.0_WP/),PartitionOfUnityValue(i,j,k))
-                  call getTangent(solver,xEval,yEval,zEval,PU_spread*vf%cfg%dx(1),tangentHolder) 
-                  ! call getTangent(solver,xEval,yEval,zEval,radius,center,tangentHolder)
-                  PUTangent_x(i,j,k) = tangentHolder(1)
-                  PUTangent_y(i,j,k) = tangentHolder(2)
-                  PUTangent_z(i,j,k) = tangentHolder(3)
-                  call getWeight(solver,xEval,yEval,zEval,PU_spread*vf%cfg%dx(1),PartitionOfUnityWeight(i,j,k)) 
-                  ! call getWeight(solver,xEval,yEval,zEval,radius,center,PartitionOfUnityWeight(i,j,k))
-                  ! write(*,'(A,F35.10)') ' ================= Partition of unity value: ', PartitionOfUnityValue(i,j,k)   
-               ! endif 
-            end do
-         end do
-      end do
-   end subroutine updatePartitionOfUnity
+   !                ! Now we have the global index in ind, so we can move around based on that.  
+   !                ! Empty Neighborhood
+   !                call emptyNeighborhood(neighborhood)
+   !                ! Add 7x7 (3 on each side) stencil, in plane
+   !                ! cen = (/vf%cfg%xm(ind(1)),vf%cfg%ym(ind(2)),vf%cfg%zm(ind(3))/)
+   !                ! call addMember(neighborhood,cen,vf%liquid_gas_interface(ind(1),ind(2),ind(3)))
+   !                do j_in = -3,3
+   !                   do i_in = -3,3
+   !                      if(vf%VF(ind(1)+i_in,ind(2)+j_in,ind(3)) .gt. vf%VFmin .or. vf%VF(ind(1)+i_in,ind(2)+j_in,ind(3)) .lt. vf%VFmax) then
+   !                         ! write(*,'(A,2I10.5)') ' ====i in, j in: ', i_in,j_in
+   !                         ! For now, compute centroid as cell center
+   !                         ! cen = (/vf%cfg%xm(ind(1)+i_in),vf%cfg%ym(ind(2)+j_in),vf%cfg%zm(ind(3))/)
+   !                         ! ! write(*,'(A,2I10.5)') ' ====i in, j in: ', i_in,j_in
+   !                         ! Gcen = vf%Gbary(:,ind(1)+i_in,ind(2)+j_in,ind(3))
+   !                         ! Lcen = vf%Lbary(:,ind(1)+i_in,ind(2)+j_in,ind(3))
+   !                         ! ! cen = vf%VF(ind(1)+i_in,ind(2)+j_in,ind(3)) * Lcen + (1-vf%VF(ind(1)+i_in,ind(2)+j_in,ind(3))) * Gcen 
+   !                         ! cen = (Lcen+Gcen)/2
+   !                         cen = calculateCentroid(vf%interface_polygon(1,ind(1)+i_in,ind(2)+j_in,ind(3)))
+   !                         ! Get Plane
+   !                         plane = vf%liquid_gas_interface(ind(1)+i_in,ind(2)+j_in,ind(3))
+   !                         ! Add Plane to Neighborhood 
+   !                         call addMember(neighborhood,cen,1.0_WP,1.0_WP,plane)
+   !                      endif
+   !                   end do
+   !                end do
+   !                ! Set Neighborhood in solver 
+   !                call setNeighborhood(solver,neighborhood)
+   !                ! if(ind(1) .eq. 11 .and. ind(2) .eq. 22 .and. count .lt. 1) then 
+   !                !    write(*,'(A,F10.8)') '> Time  =  ', time%t
+   !                !    ! call printSolver(solver)
+   !                !    count = count + 1
+   !                ! endif
+   !                ! ====== Get Value
+   !                call getValue(solver,xEval,yEval,zEval,PU_spread*vf%cfg%dx(1),PartitionOfUnityValue(i,j,k))   
+   !                ! write(*,'(A,F10.8)') '> Radius  =  ', radius
+   !                ! call getValue(solver,xEval,yEval,zEval,0.25_WP,(/0.0_WP,0.0_WP,0.0_WP/),PartitionOfUnityValue(i,j,k))
+   !                call getTangent(solver,xEval,yEval,zEval,PU_spread*vf%cfg%dx(1),tangentHolder) 
+   !                ! call getTangent(solver,xEval,yEval,zEval,radius,center,tangentHolder)
+   !                PUTangent_x(i,j,k) = tangentHolder(1)
+   !                PUTangent_y(i,j,k) = tangentHolder(2)
+   !                PUTangent_z(i,j,k) = tangentHolder(3)
+   !                call getWeight(solver,xEval,yEval,zEval,PU_spread*vf%cfg%dx(1),PartitionOfUnityWeight(i,j,k)) 
+   !                ! call getWeight(solver,xEval,yEval,zEval,radius,center,PartitionOfUnityWeight(i,j,k))
+   !                ! write(*,'(A,F35.10)') ' ================= Partition of unity value: ', PartitionOfUnityValue(i,j,k)   
+   !             ! endif 
+   !          end do
+   !       end do
+   !    end do
+   ! end subroutine updatePartitionOfUnity
 
 end module simulation
