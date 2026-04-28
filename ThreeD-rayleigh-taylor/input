@@ -1,5 +1,5 @@
 # Parallelization
-Partition : 2 4 1
+Partition : 4 1 1
 
 # Mesh definition
 Lx : 1 !0.02 !0.2
@@ -15,19 +15,23 @@ Two Dimensional : .true.
 Gravity :                     0 -9.81 0
 Liquid dynamic viscosity :    0.00313
 Gas dynamic viscosity :       0.00313
-Liquid density :              1.225
-Gas density :                 0.1694
-Surface tension coefficient : 0.1
+Liquid density :              1.0
+Gas density :                 0.1
+Surface tension coefficient : 0.0
 
-# Definition of two bubbles
+# Definition of two bubblesxxxx
 #Bubble volume :   1.75e-8                    !9.3e-6    # in m^3
 #Bubble position :  -2.1e-3 0 0               !0 0 0
 #Bubble 2 position : 1.9e-3 0 0
 
+# Temperatures
+Top Temperature : 50
+Bottom Temperature : 100
+# Options
 Marangoni :  0.0 0.0 0.0
 Pressure : 1
 Smoothing Option : 1
-Surface Tension Option : 8
+Surface Tension Option : 1
 Curvature Option : 1
 PU Spread : 2.0
 
