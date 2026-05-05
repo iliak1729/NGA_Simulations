@@ -1,9 +1,16 @@
 # NGA location if not yet defined
-NGA_HOME   ?= /home/iliak2/Repositories/Backup/NGA2
-FFTW_DIR   = /usr
-HYPRE_DIR  = /home/iliak2/Builds/hypre
-IRL_DIR    = /home/iliak2/Builds/irl/
-LAPACK_DIR = /usr
+NGA_HOME   ?= /Users/iliak/Repositories/NGA2
+FFTW_DIR   = /opt/homebrew/opt/fftw
+HYPRE_DIR  = /Users/iliak/Builds/hypre
+IRL_DIR    = /Users/iliak/Builds/irl
+LAPACK_DIR = /opt/homebrew/opt/lapack
+
+
+# NGA_HOME   ?= /home/iliak2/Repositories/Backup/NGA2
+# FFTW_DIR   = /usr
+# HYPRE_DIR  = /home/iliak2/Builds/hypre
+# IRL_DIR    = /home/iliak2/Builds/irl/
+# LAPACK_DIR = /usr
 # Compilation parameters
 PRECISION = DOUBLE
 USE_MPI   = TRUE

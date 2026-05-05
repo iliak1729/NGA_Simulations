@@ -280,8 +280,8 @@ contains
          ts%rho2 = fs%rho_g 
          ts%cp1 = 1.0_WP
          ts%cp2 = 1.0_WP 
-         ts%k1 = 0.0_WP
-         ts%k2 = 0.0_WP
+         ts%k1 = 1.0_WP
+         ts%k2 = 1.0_WP
          ! Parameters
          call param_read('Lx',Lx)
          call param_read('Ly',Ly)

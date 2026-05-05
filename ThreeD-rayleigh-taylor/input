@@ -5,7 +5,7 @@ Partition : 4 1 1
 Lx : 1 !0.02 !0.2
 Ly : 4 !0.02 !0.2
 Lz : 1 !0.02 !0.2
-nx : 64    !128
+nx : 128    !128
 ny : 256    !128
 nz : 1    !128
 
@@ -42,7 +42,7 @@ Bubble volume : 9.3e-6
 # Time integration
 Max timestep size : 5e-4
 Max cfl number :    1.2
-Max time :          1.0
+Max time :          1.2
 
 # Pressure solver
 Pressure tolerance : 1e-4
