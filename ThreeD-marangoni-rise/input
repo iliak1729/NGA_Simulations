@@ -2,11 +2,11 @@
 Partition : 4 1 1
 
 # Mesh definition
-Lx : 1 !0.02 !0.2
-Ly : 4 !0.02 !0.2
+Lx : 5 !0.02 !0.2
+Ly : 7.5 !0.02 !0.2
 Lz : 1 !0.02 !0.2
-nx : 32    !128
-ny : 128    !128
+nx : 64    !128
+ny : 96    !128
 nz : 1    !128
 
 # Are we using a moving domain?
@@ -16,28 +16,29 @@ Gravity :                     0 -9.81 0
 Liquid dynamic viscosity :    0.00313
 Gas dynamic viscosity :       0.00313
 Liquid density :              1.0
-Gas density :                 0.1
+Gas density :                 1.0
 Surface tension coefficient : 0.0
 
 # Definition of two bubblesxxxx
-#Bubble volume :   1.75e-8                    !9.3e-6    # in m^3
-#Bubble position :  -2.1e-3 0 0               !0 0 0
+# Bubble volume :   1.75e-8                    !9.3e-6    # in m^3
+# Bubble position :  -2.1e-3 0 0               !0 0 0
 #Bubble 2 position : 1.9e-3 0 0
 
 # Temperatures
 Top Temperature : 50
 Bottom Temperature : 100
 # Options
-Marangoni :  0.0 0.0 0.0
+Marangoni :  0 10 -0.1
 Pressure : 1
-Smoothing Option : 5
-Surface Tension Option : 5
+Smoothing Option : 1
+Surface Tension Option : 8
 Curvature Option : 1
 PU Spread : 2.0
 
 
 # Definition of single bubble (Weber)
-Bubble volume : 9.3e-6
+Bubble Radius : 0.5
+Bubble position :  0 -2.25 0
 
 # Time integration
 Max timestep size : 5e-4
@@ -49,4 +50,4 @@ Pressure tolerance : 1e-4
 Pressure iteration : 100
 
 # Ensight output
-Ensight output period : 1e-5
+Ensight output period : 1e-12

@@ -1,8 +1,8 @@
 # Parallelization
-Partition : 2 2 1
+Partition : 4 2 2
 
 # Mesh definition
-Lx : 7 !0.02 !0.2
+Lx : 6 !0.02 !0.2
 Ly : 3 !0.02 !0.2
 Lz : 3 !0.02 !0.2
 nx : 64    !128
@@ -10,7 +10,7 @@ ny : 32    !128
 nz : 32    !128
 
 # Are we using a two D?
-Two Dimensional : .true. 
+Two Dimensional : .false. 
 # Fluid properties
 Gravity :                     0 0.0 0
 Liquid dynamic viscosity :    1.0
@@ -27,7 +27,7 @@ Surface tension coefficient : 1.0
 Marangoni :  -1 -1 0
 Pressure : 0
 Smoothing Option : 1
-Surface Tension Option : 4
+Surface Tension Option : 8
 Curvature Option : 1
 PU Spread : 2.0
 
@@ -38,11 +38,11 @@ Bubble Radius : 1.0
 # Time integration
 Max timestep size : 1e-2
 Max cfl number :    0.8
-Max time :          40
+Max time :          100
 
 # Pressure solver
 Pressure tolerance : 1e-4
 Pressure iteration : 100
 
 # Ensight output
-Ensight output period : 1e-3
+Ensight output period : 1e-2

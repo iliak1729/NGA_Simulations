@@ -1453,7 +1453,7 @@ subroutine updateSurfaceTensionStresses(this)
                 end do
                 ! Set Neighborhood in solver
                 call setNeighborhood(solver,neighborhood)
-                call setThreshold(solver,0.1875_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
+                call setThreshold(solver,1e-6_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
                 ! ====== Get Stresses
 
                 ! sigma_xx, we go on right of u cell
@@ -1606,7 +1606,7 @@ subroutine updateSurfaceTensionStresses3D(this)
                 end do
                 ! Set Neighborhood in solver
                 call setNeighborhood(solver,neighborhood)
-                call setThreshold(solver,0.1875_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
+                call setThreshold(solver,1e-6_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
                 ! ====== Get Stresses
                 ! call printSolver(solver)
                 ! We are going to loop over the stress components and calculate them
@@ -1665,10 +1665,12 @@ subroutine updateSurfaceTensionStresses3D(this)
                         P3 = face_center + shift
 
                         ! Now that we have the face corners, run the code and get the force
+                        ! if(this%vf%VF(i,j,k) .gt. 1e-12 .and. this%vf%VF(i,j,k) .lt. 1.0_WP - 1e-12) then 
                         call solveFace(solver,this%fs%sigma,P0,P1,P2,P3,this%PU_spread*dx,this%PressureOption,this%MarangoniOption,force)
+                        ! endif
                         ! print *, force 
                         this%sigma_3D(i,j,k,i_in,j_in) = force(i_in)
-                        ! Do Prints here
+                        ! Do Prints here 
 
                         ! print *, "==================================="
                         ! print *, "i_in,j_in: ",i_in,j_in
@@ -1686,8 +1688,11 @@ subroutine updateSurfaceTensionStresses3D(this)
                         ! write(*,'(F10.5, A, F10.5, A)', advance='no') P1(shift_first_index), ",", P1(shift_second_index), "),("
                         ! write(*,'(F10.5, A, F10.5, A)', advance='no') P2(shift_first_index), ",", P2(shift_second_index), "),("
                         ! write(*,'(F10.5, A, F10.5, A)', advance='yes') P3(shift_first_index), ",", P3(shift_second_index), ")]"
+                        ! print *, "==================================="
+                        
                     enddo
                 enddo
+                ! STOP
         end do
         end do
     end do
@@ -1703,7 +1708,6 @@ subroutine updateSurfaceTensionStresses3D(this)
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,1))
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,2))
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,3))
-
 end subroutine updateSurfaceTensionStresses3D
 
 subroutine updateSurfaceTensionForces3D(this)
@@ -1723,7 +1727,7 @@ subroutine updateSurfaceTensionForces3D(this)
             this%Fst_x_3D(i,j,k) = (this%sigma_3D(i,j,k,1,1)-this%sigma_3D(i-1,j,k,1,1)) + &
                                 (this%sigma_3D(i,j,k,1,2)-this%sigma_3D(i,j-1,k,1,2)) + &
                                 (this%sigma_3D(i,j,k,1,3)-this%sigma_3D(i,j,k-1,1,3))
-            this%Fst_x_3D(i,j,k) = this%Fst_x_3D(i,j,k) * this%fs%cfg%dxi(i)
+            this%Fst_x_3D(i,j,k) = this%Fst_x_3D(i,j,k) * this%fs%cfg%dxi(i) ! This assumes uniform mesh
             ! Y Component
             this%Fst_y_3D(i,j,k) = (this%sigma_3D(i,j,k,2,1)-this%sigma_3D(i-1,j,k,2,1)) + &
                                 (this%sigma_3D(i,j,k,2,2)-this%sigma_3D(i,j-1,k,2,2)) + &

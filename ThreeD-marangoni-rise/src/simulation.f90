@@ -9,11 +9,13 @@ module simulation
    use timetracker_class,    only: timetracker
    use ensight_class,        only: ensight
    use surfmesh_class,       only: surfmesh
-   use event_class,          only: event
    use vtk_class,         only: vtk
+   use event_class,          only: event
    use monitor_class,        only: monitor
+   use temp_transport
    use irl_fortran_interface
    use conservative_st
+   
    implicit none
    private
    
@@ -22,13 +24,14 @@ module simulation
    type(ddadi),          public :: vs
    type(tpns),           public :: fs
    type(vfs),            public :: vf
+   type(tads),           public :: ts
    type(timetracker),    public :: time
    type(conservative_st_type), public :: cst
 
    !> Ensight postprocessing
    type(surfmesh) :: smesh
-   type(vtk)  :: vtk_out
-   type(event)    :: vtk_evt
+   type(vtk)  :: ens_out
+   type(event)    :: ens_evt
    
    !> Simulation monitor file
    type(monitor) :: mfile,cflfile,bubblefile
@@ -36,15 +39,15 @@ module simulation
    public :: simulation_init,simulation_run,simulation_final
    
    !> Private work arrays
-   real(WP), dimension(:,:,:), allocatable :: resU,resV,resW
-   real(WP), dimension(:,:,:), allocatable :: Ui,Vi,Wi
+   real(WP), dimension(:,:,:), allocatable :: resU,resV,resW,resH
+   real(WP), dimension(:,:,:), allocatable :: Ui,Vi,Wi,rho
    
    !> Problem definition
    logical :: second_bubble
    real(WP), dimension(3) :: center,center2,gravity
    real(WP) :: volume,radius,radius2,Ycent,Vrise
    real(WP) :: Vin,Vin_old,Vrise_ref,Ycent_ref,G,ti
-   
+   real(WP) :: Tbot,Ttop,Ly,Lx
 contains
 
 
@@ -55,19 +58,10 @@ contains
       real(WP), intent(in) :: t
       real(WP) :: G
       ! Create the bubble
-      G=-radius+sqrt(sum((xyz-center)**2))
+      G=radius-sqrt(sum((xyz-center)**2))
       if (second_bubble) G=min(G,-radius2+sqrt(sum((xyz-center2)**2)))
    end function levelset_rising_bubble
-
-   function levelset_cylinder(xyz,t) result(G)
-      implicit none
-      real(WP), dimension(3),intent(in) :: xyz
-      real(WP), intent(in) :: t
-      real(WP) :: G
-      ! Create the bubble
-      G=-radius+sqrt(xyz(1)**2 +xyz(2)**2)
-   end function levelset_cylinder
-
+   
    function levelset_RT(xyz,t) result(G)
       use param, only: param_read
       implicit none
@@ -80,6 +74,30 @@ contains
       ! write(*,'(A,3F35.10)') '   center: ', center
       G=0.05*COS(2*PI*xyz(1))+xyz(2)
    end function levelset_RT
+
+   !> Function that defines a level set function for a Sphere
+   function levelset_sphere(xyz,t) result(G)
+      use param, only: param_read
+      implicit none
+      real(WP), dimension(3),intent(in) :: xyz
+      real(WP), intent(in) :: t
+      real(WP) :: G
+
+      G=radius-sqrt(sum((xyz-center)**2))
+   end function levelset_sphere
+
+   !> Function that defines a level set function for a cylinder
+   function levelset_cylinder(xyz,t) result(G)
+      use param, only: param_read
+      implicit none
+      real(WP), dimension(3),intent(in) :: xyz
+      real(WP), dimension(3) :: dr
+      real(WP), intent(in) :: t
+      real(WP) :: G
+      dr = (xyz-center)**2
+      ! write(*,'(A,3F35.10)') '   center: ', center
+      G=radius-sqrt((xyz(1)-center(1))**2+(xyz(2)-center(2))**2)
+   end function levelset_cylinder
 
    !> Function that localizes the y+ side of the domain
    function yp_locator(pg,i,j,k) result(isIn)
@@ -139,12 +157,14 @@ contains
       
       ! Allocate work arrays
       allocate_work_arrays: block
+         allocate(resH(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(resU(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(resV(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(resW(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(Ui  (cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(Vi  (cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(Wi  (cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
+         allocate(rho (cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
       end block allocate_work_arrays
       
       
@@ -197,7 +217,7 @@ contains
                         end do
                      end do
                   end do
-                  ! Call adaptive refinement code to get volume and barycenters recursively 
+                  ! Call adaptive refinement code to get volume and barycenters recursively
                   vol=0.0_WP; area=0.0_WP; v_cent=0.0_WP; a_cent=0.0_WP
                   call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_rising_bubble,0.0_WP,amr_ref_lvl)
                   vf%VF(i,j,k)=vol/vf%cfg%vol(i,j,k)
@@ -264,7 +284,7 @@ contains
          call fs%get_div()
       end block create_and_initialize_flow_solver
       
-      ! Create Surface Tension Objec t 
+      ! Create Surface Tension Object
       create_surface_tension_solver : block
          call cst%init(fs,vf,time)
          call param_read('Marangoni',cst%MarangoniOption)
@@ -275,6 +295,38 @@ contains
          call param_read('PU Spread',cst%PU_spread)
          call cst%temp()
       end block create_surface_tension_solver
+      
+      ! Temperature Solver
+      create_and_initialize_temperature_solver : block 
+         integer :: i,j,k
+         call ts%init(fs,vf,time)
+         call ts%temp()
+         ts%rho1 = fs%rho_l
+         ts%rho2 = fs%rho_g 
+         ts%cp1 = 2.0_WP
+         ts%cp2 = 1.0_WP 
+         ts%k1 = 0.000001_WP
+         ts%k2 = 0.000001_WP
+         ! Parameters
+         call param_read('Lx',Lx)
+         call param_read('Ly',Ly)
+         call param_read('Top Temperature',Ttop)
+         call param_read('Bottom Temperature',Tbot)
+         ! Initial Condition
+         do k=vf%cfg%kmino_,vf%cfg%kmaxo_
+            do j=vf%cfg%jmino_,vf%cfg%jmaxo_
+               do i=vf%cfg%imino_,vf%cfg%imaxo_
+                  ! Note that the exact linear profile is:
+                  ! (Ttop-Tbot)*y/Ly + Tbot.
+                  ! Since it is linear, the value in a cell is equal to that at the center
+                  ts%T(i,j,k) = (Ttop - Tbot) * (fs%cfg%ym(j)+Ly/2.0_WP)/Ly + Tbot
+               enddo
+            enddo
+         enddo
+         call ts%populate_enthalpy()
+      end block create_and_initialize_temperature_solver
+     
+
 
       ! Create surfmesh object for interface polygon output
       create_smesh: block
@@ -286,27 +338,30 @@ contains
       ! Add Ensight output
       create_ensight: block
          ! Create Ensight output from cfg
-         vtk_out=vtk(cfg=cfg,name='MaragoniBreakup')
+         ens_out=vtk(cfg=cfg,name='Marangoni-rise')
          ! Create event for Ensight output
-         vtk_evt=event(time=time,name='VTK output')
-         call param_read('Ensight output period',vtk_evt%tper)
+         ens_evt=event(time=time,name='Ensight output')
+         call param_read('Ensight output period',ens_evt%tper)
          ! Add variables to output
-         call vtk_out%add_vector('velocity',Ui,Vi,Wi)
-         call vtk_out%add_scalar('VOF',vf%VF)
-         call vtk_out%add_scalar('pressure',fs%P)
-         call vtk_out%add_scalar('curvature',vf%curv)
-         call vtk_out%add_surface('plic',smesh)
-         call vtk_out%add_vector('sigma_3d_x*',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
-         call vtk_out%add_vector('sigma_3d_y*',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
-         call vtk_out%add_vector('sigma_3d_z*',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
+         call ens_out%add_vector('velocity',Ui,Vi,Wi)
+         call ens_out%add_scalar('VOF',vf%VF)
+         call ens_out%add_scalar('pressure',fs%P)
+         call ens_out%add_scalar('curvature',vf%curv)
+         call ens_out%add_surface('plic',smesh)
+         call ens_out%add_scalar('Temperature',ts%T)
+         call ens_out%add_scalar('Enthalpy',ts%H)
+         call ens_out%add_vector('sigma_3d_x',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
+         call ens_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
+         call ens_out%add_vector('sigma_3d_z',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
 
-         call vtk_out%add_scalar('sigma_xx_NoP',cst%sigma_xx_NoP)
-         call vtk_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
-         call vtk_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
-         call vtk_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
-         call vtk_out%add_vector('Force',cst%Fst_x_3D,cst%Fst_y_3D,cst%Fst_z_3D)
+         call ens_out%add_scalar('sigma_xx_NoP',cst%sigma_xx_NoP)
+         call ens_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
+         call ens_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
+         call ens_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
+
+         
          ! Output to ensight
-         if (vtk_evt%occurs()) call vtk_out%write_data(time%t)
+         if (ens_evt%occurs()) call ens_out%write_data(time%t)
       end block create_ensight
       
       
@@ -363,7 +418,7 @@ contains
    subroutine simulation_run
       use tpns_class, only: harmonic_visc
       implicit none
-      
+      integer :: i,j,k
       ! Perform time integration
       do while (.not.time%done())
          
@@ -380,6 +435,12 @@ contains
          fs%Vold=fs%V
          fs%Wold=fs%W
          
+         ! Remember old scalar
+         ts%Hold=ts%H
+         call ts%populate_temperature()
+         ts%Told = ts%T
+
+
          ! Prepare old staggered density (at n)
          call fs%get_olddensity(vf=vf)
          
@@ -391,12 +452,50 @@ contains
          
          ! Perform sub-iterations
          do while (time%it.le.time%itmax)
-            
+            ! mid-time Scalar
+            ts%H = 0.5_WP*(ts%H+ts%Hold)
             ! Build mid-time velocity
             fs%U=0.5_WP*(fs%U+fs%Uold)
             fs%V=0.5_WP*(fs%V+fs%Vold)
             fs%W=0.5_WP*(fs%W+fs%Wold)
             
+            ! ============= SCALAR SOLVER =======================
+            rho = vf%VF*fs%rho_l + (1.0_WP-vf%VF)*fs%rho_g
+            resU = rho*fs%U; resV = rho*fs%V; resW = rho*fs%W;
+            ! Explicit Calculation of dHdt
+            call ts%get_dHdt(resH,resU,resV,resW)
+            ! Explicit Update
+            ts%H = ts%Hold + resH * time%dt 
+            call ts%populate_temperature()
+            ! ! Explicit Resdiual
+            ! resH = -2.0_WP *(ts%H - ts%Hold)+time%dt*resH
+            ! ! Form implicit residual
+            ! call ts%solve_implicit(time%dt,resH,resU,resV,resW)
+            ! ! Apply residual
+            ! ts%H = 2*ts%H - ts%Hold + resH
+            ! ! Apply other boundary conditions
+            call ts%apply_bcond(time%t,time%dt)
+
+            ! Dirichlet Boundary Condition
+            do k=vf%cfg%kmino_,vf%cfg%kmaxo_
+               do j=vf%cfg%jmino_,vf%cfg%jmaxo_
+                  do i=vf%cfg%imino_,vf%cfg%imaxo_
+                     ! Note that the exact linear profile is:
+                     ! (Ttop-Tbot)*y/Ly + Tbot.
+                     ! Since it is linear, the value in a cell is equal to that at the center
+                     if(fs%cfg%ym(j) .lt. -Ly/2.0 + fs%cfg%dy(j)) then 
+                        ts%T(:,j,:) = Tbot 
+                     endif
+
+                     if(fs%cfg%ym(j) .gt. Ly/2.0 - fs%cfg%dy(j)) then 
+                        ts%T(:,j,:) = Ttop 
+                     endif
+                  enddo
+               enddo
+            enddo
+            call ts%populate_enthalpy()
+            ! ===================================================
+
             ! Preliminary mass and momentum transport step at the interface
             call fs%prepare_advection_upwind(dt=time%dt)
             
@@ -450,9 +549,9 @@ contains
          call fs%get_div()
          
          ! Output to ensight
-         if (vtk_evt%occurs()) then
+         if (ens_evt%occurs()) then
             call vf%update_surfmesh(smesh)
-            call vtk_out%write_data(time%t)
+            call ens_out%write_data(time%t)
          end if
          
          ! Perform and output monitoring

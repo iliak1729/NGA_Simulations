@@ -325,6 +325,9 @@ contains
          call ens_out%add_surface('plic',smesh)
          call ens_out%add_scalar('Temperature',ts%T)
          call ens_out%add_scalar('Enthalpy',ts%H)
+         ! call ens_out%add_vector('sigma_3d_x*',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
+         ! call ens_out%add_vector('sigma_3d_y*',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
+         ! call ens_out%add_vector('sigma_3d_z*',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
          ! Output to ensight
          if (ens_evt%occurs()) call ens_out%write_data(time%t)
       end block create_ensight
