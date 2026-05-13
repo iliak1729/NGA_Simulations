@@ -16,7 +16,7 @@ Gravity :                     0 -9.81 0
 Liquid dynamic viscosity :    0.00313
 Gas dynamic viscosity :       0.00313
 Liquid density :              1.0
-Gas density :                 0.1
+Gas density :                 1.0
 Surface tension coefficient : 0.0
 
 # Definition of two bubblesxxxx

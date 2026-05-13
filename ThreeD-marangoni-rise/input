@@ -5,8 +5,8 @@ Partition : 4 1 1
 Lx : 5 !0.02 !0.2
 Ly : 7.5 !0.02 !0.2
 Lz : 1 !0.02 !0.2
-nx : 64    !128
-ny : 96    !128
+nx : 128    !128
+ny : 192    !128
 nz : 1    !128
 
 # Are we using a moving domain?
@@ -41,7 +41,7 @@ Bubble Radius : 0.5
 Bubble position :  0 -2.25 0
 
 # Time integration
-Max timestep size : 5e-4
+Max timestep size : 1e-4
 Max cfl number :    1.2
 Max time :          1.2
 
@@ -50,4 +50,4 @@ Pressure tolerance : 1e-4
 Pressure iteration : 100
 
 # Ensight output
-Ensight output period : 1e-12
+Ensight output period : 4e-4
