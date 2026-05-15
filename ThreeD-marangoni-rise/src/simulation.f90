@@ -182,7 +182,7 @@ contains
       ! Initialize our VOF solver and field
       create_and_initialize_vof: block
          use mms_geom,  only: cube_refine_vol
-         use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap
+         use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage
          use mathtools, only: Pi
          integer :: i,j,k,n,si,sj,sk
          real(WP), dimension(3,8) :: cube_vertex
@@ -190,7 +190,7 @@ contains
          real(WP) :: vol,area
          integer, parameter :: amr_ref_lvl=4
          ! Create a VOF solver
-         call vf%initialize(cfg=cfg,reconstruction_method=plicnet,transport_method=remap,name='VOF')
+         call vf%initialize(cfg=cfg,reconstruction_method=plicnet,transport_method=remap_storage,name='VOF')
          !vf%cons_correct=.false.
          !vf%thin_thld_max=1.5_WP
          !vf%twoplane_thld2=0.8_WP
@@ -305,11 +305,18 @@ contains
          ts%rho2 = fs%rho_g 
          ts%cp1 = 1.0_WP
          ts%cp2 = 1.0_WP 
-         ts%k1 = 1.0_WP
-         ts%k2 = 1.0_WP
+         ts%k1 = 0.1_WP
+         ts%k2 = 0.1_WP
          ! Parameters
          call param_read('Lx',Lx)
          call param_read('Ly',Ly)
+         
+         call param_read('k1',ts%k1)
+         call param_read('k2',ts%k2)
+
+         call param_read('cp1',ts%cp1)
+         call param_read('cp2',ts%cp2)
+
          call param_read('Top Temperature',Ttop)
          call param_read('Bottom Temperature',Tbot)
          ! Initial Condition
@@ -358,6 +365,8 @@ contains
          call ens_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
          call ens_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
          call ens_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
+
+         call ens_out%add_scalar('cp',ts%cp)
 
          
          ! Output to ensight
@@ -446,7 +455,6 @@ contains
          
          ! VOF solver step
          call vf%advance(dt=time%dt,U=fs%U,V=fs%V,W=fs%W)
-         
          ! Prepare new staggered viscosity (at n+1)
          call fs%get_viscosity(vf=vf,strat=harmonic_visc)
          
@@ -461,9 +469,9 @@ contains
             
             ! ============= SCALAR SOLVER =======================
             rho = vf%VF*fs%rho_l + (1.0_WP-vf%VF)*fs%rho_g
-            resU = rho*fs%U; resV = rho*fs%V; resW = rho*fs%W;
+            resU = fs%U; resV = fs%V; resW = fs%W;
             ! Explicit Calculation of dHdt
-            call ts%get_dHdt(resH,resU,resV,resW)
+            call ts%get_dHdt_SL(resH,resU,resV,resW,vf%detailed_remap, time%dt)
             ! Explicit Update
             ts%H = ts%Hold + resH * time%dt 
             call ts%populate_temperature()

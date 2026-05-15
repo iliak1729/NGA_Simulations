@@ -1,5 +1,5 @@
 # Parallelization
-Partition : 4 1 1
+Partition : 1 1 1
 
 # Mesh definition
 Lx : 5 !0.02 !0.2
@@ -27,8 +27,13 @@ Surface tension coefficient : 0.0
 # Temperatures
 Top Temperature : 50
 Bottom Temperature : 100
+k1 : 0.01
+k2 : 0.1
+cp1 : 3.0
+cp2 : 3.0
+
 # Options
-Marangoni :  0 10 -0.1
+Marangoni :  0 25 -0.1
 Pressure : 1
 Smoothing Option : 1
 Surface Tension Option : 8
@@ -41,7 +46,7 @@ Bubble Radius : 0.5
 Bubble position :  0 -2.25 0
 
 # Time integration
-Max timestep size : 1e-4
+Max timestep size : 1e-3
 Max cfl number :    1.2
 Max time :          1.2
 
