@@ -190,7 +190,7 @@ contains
          real(WP) :: vol,area
          integer, parameter :: amr_ref_lvl=4
          ! Create a VOF solver
-         call vf%initialize(cfg=cfg,reconstruction_method=plicnet,transport_method=remap_storage,name='VOF')
+         call vf%initialize(cfg=cfg,reconstruction_method=plicnet,transport_method=flux_storage,name='VOF')
          !vf%cons_correct=.false.
          !vf%thin_thld_max=1.5_WP
          !vf%twoplane_thld2=0.8_WP
@@ -471,7 +471,7 @@ contains
             rho = vf%VF*fs%rho_l + (1.0_WP-vf%VF)*fs%rho_g
             resU = fs%U; resV = fs%V; resW = fs%W;
             ! Explicit Calculation of dHdt
-            call ts%get_dHdt_SL(resH,resU,resV,resW,vf%detailed_remap, time%dt)
+            call ts%get_dHdt_SL(resH,resU,resV,resW,vf%detailed_face_flux, time%dt)
             ! Explicit Update
             ts%H = ts%Hold + resH * time%dt 
             call ts%populate_temperature()
