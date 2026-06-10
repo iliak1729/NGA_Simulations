@@ -27,8 +27,8 @@ Surface tension coefficient : 0.0
 # Temperatures
 Top Temperature : 50
 Bottom Temperature : 100
-k1 : 0.00001 # Liquid
-k2 : 0.00001 # Gas
+k1 : 0.001 # Liquid
+k2 : 0.001 # Gas
 cp1 : 2.0 #Liquid
 cp2 : 1.0 #Gas 
 
