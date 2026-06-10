@@ -40,6 +40,7 @@ module simulation
    
    !> Private work arrays
    real(WP), dimension(:,:,:), allocatable :: resU,resV,resW,resH
+   real(WP), dimension(:,:,:), allocatable :: resHG,resHL
    real(WP), dimension(:,:,:), allocatable :: Ui,Vi,Wi,rho
    
    !> Problem definition
@@ -47,7 +48,7 @@ module simulation
    real(WP), dimension(3) :: center,center2,gravity
    real(WP) :: volume,radius,radius2,Ycent,Vrise
    real(WP) :: Vin,Vin_old,Vrise_ref,Ycent_ref,G,ti
-   real(WP) :: Tbot,Ttop,Ly,Lx
+   real(WP) :: Tbot,Ttop,Ly,Lx,dtps
 contains
 
 
@@ -158,6 +159,8 @@ contains
       ! Allocate work arrays
       allocate_work_arrays: block
          allocate(resH(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
+         allocate(resHG(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
+         allocate(resHL(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(resU(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(resV(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          allocate(resW(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
@@ -301,21 +304,21 @@ contains
          integer :: i,j,k
          call ts%init(fs,vf,time)
          call ts%temp()
-         ts%rho1 = fs%rho_l
-         ts%rho2 = fs%rho_g 
-         ts%cp1 = 1.0_WP
-         ts%cp2 = 1.0_WP 
-         ts%k1 = 0.1_WP
-         ts%k2 = 0.1_WP
+         ts%rhoL = fs%rho_l
+         ts%rhoG = fs%rho_g 
+         ts%cpL = 1.0_WP
+         ts%cpG = 1.0_WP 
+         ts%kL = 0.1_WP
+         ts%kG = 0.1_WP
          ! Parameters
          call param_read('Lx',Lx)
          call param_read('Ly',Ly)
          
-         call param_read('k1',ts%k1)
-         call param_read('k2',ts%k2)
+         call param_read('k1',ts%kL)
+         call param_read('k2',ts%kG)
 
-         call param_read('cp1',ts%cp1)
-         call param_read('cp2',ts%cp2)
+         call param_read('cp1',ts%cpL)
+         call param_read('cp2',ts%cpG)
 
          call param_read('Top Temperature',Ttop)
          call param_read('Bottom Temperature',Tbot)
@@ -331,6 +334,8 @@ contains
             enddo
          enddo
          call ts%populate_enthalpy()
+         ts%TG = ts%T
+         ts%TL = ts%T
       end block create_and_initialize_temperature_solver
      
 
@@ -355,7 +360,6 @@ contains
          call ens_out%add_scalar('pressure',fs%P)
          call ens_out%add_scalar('curvature',vf%curv)
          call ens_out%add_surface('plic',smesh)
-         call ens_out%add_scalar('Temperature',ts%T)
          call ens_out%add_scalar('Enthalpy',ts%H)
          call ens_out%add_vector('sigma_3d_x',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
          call ens_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
@@ -367,6 +371,9 @@ contains
          call ens_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
 
          call ens_out%add_scalar('cp',ts%cp)
+         call ens_out%add_scalar('One Fluid Temp',ts%T)
+         call ens_out%add_vector('Temperatures',ts%TPmix,ts%TG,ts%TL)
+         call ens_out%add_vector('Extrapolated Temperatures',ts%TPmix,ts%TGExtrap,ts%TLExtrap)
 
          
          ! Output to ensight
@@ -448,7 +455,8 @@ contains
          ts%Hold=ts%H
          call ts%populate_temperature()
          ts%Told = ts%T
-
+         ts%TGold = ts%TG
+         ts%TLold = ts%TL
 
          ! Prepare old staggered density (at n)
          call fs%get_olddensity(vf=vf)
@@ -462,6 +470,8 @@ contains
          do while (time%it.le.time%itmax)
             ! mid-time Scalar
             ts%H = 0.5_WP*(ts%H+ts%Hold)
+            ts%TG = 0.5_WP*(ts%TG+ts%TGold)
+            ts%TL = 0.5_WP*(ts%TL+ts%TLold)
             ! Build mid-time velocity
             fs%U=0.5_WP*(fs%U+fs%Uold)
             fs%V=0.5_WP*(fs%V+fs%Vold)
@@ -471,7 +481,8 @@ contains
             rho = vf%VF*fs%rho_l + (1.0_WP-vf%VF)*fs%rho_g
             resU = fs%U; resV = fs%V; resW = fs%W;
             ! Explicit Calculation of dHdt
-            call ts%get_dHdt_SL(resH,resU,resV,resW,vf%detailed_face_flux, time%dt)
+            ! call ts%get_dHdt_SL(resH,resU,resV,resW,vf%detailed_face_flux, time%dt)
+            call ts%get_dHdt(resH,resU,resV,resW)
             ! Explicit Update
             ts%H = ts%Hold + resH * time%dt 
             call ts%populate_temperature()
@@ -483,6 +494,20 @@ contains
             ! ts%H = 2*ts%H - ts%Hold + resH
             ! ! Apply other boundary conditions
             call ts%apply_bcond(time%t,time%dt)
+            ! Extrapolate Values
+            dtps = 1e-2
+            call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrap,dtps)
+            call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrap,dtps)
+            ts%TL = ts%TLExtrap
+            ts%TG = ts%TGExtrap
+            ! Step
+            call ts%step_temperature_palmore(resHG,resHL,resU,resV,resW,time%dt)
+            call ts%mix_temperature_palmore()
+
+            call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrap,dtps)
+            call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrap,dtps)
+            ts%TL = ts%TLExtrap
+            ts%TG = ts%TGExtrap
 
             ! Dirichlet Boundary Condition
             do k=vf%cfg%kmino_,vf%cfg%kmaxo_

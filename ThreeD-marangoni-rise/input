@@ -15,7 +15,7 @@ Two Dimensional : .true.
 Gravity :                     0 -9.81 0
 Liquid dynamic viscosity :    0.00313
 Gas dynamic viscosity :       0.00313
-Liquid density :              1.0
+Liquid density :              0.75
 Gas density :                 1.0
 Surface tension coefficient : 0.0
 
@@ -27,10 +27,10 @@ Surface tension coefficient : 0.0
 # Temperatures
 Top Temperature : 50
 Bottom Temperature : 100
-k1 : 0.01
-k2 : 0.1
-cp1 : 3.0
-cp2 : 3.0
+k1 : 0.00001 # Liquid
+k2 : 0.00001 # Gas
+cp1 : 2.0 #Liquid
+cp2 : 1.0 #Gas 
 
 # Options
 Marangoni :  0 25 -0.1
@@ -48,11 +48,11 @@ Bubble position :  0 -2.25 0
 # Time integration
 Max timestep size : 1e-3
 Max cfl number :    1.2
-Max time :          1.2
+Max time :          2.0
 
 # Pressure solver
 Pressure tolerance : 1e-4
 Pressure iteration : 100
 
 # Ensight output
-Ensight output period : 4e-4
+Ensight output period : 1e-6
