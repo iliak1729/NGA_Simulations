@@ -372,6 +372,7 @@ contains
 
          call ens_out%add_scalar('cp',ts%cp)
          call ens_out%add_scalar('One Fluid Temp',ts%T)
+         call ens_out%add_scalar('Interface Temperature',ts%Tinterface)
          call ens_out%add_vector('Temperatures',ts%TPmix,ts%TG,ts%TL)
          call ens_out%add_vector('Extrapolated Temperatures',ts%TPmix,ts%TGExtrap,ts%TLExtrap)
 
