@@ -375,6 +375,7 @@ contains
          call ens_out%add_scalar('Interface Temperature',ts%Tinterface)
          call ens_out%add_vector('Temperatures',ts%TPmix,ts%TG,ts%TL)
          call ens_out%add_vector('Extrapolated Temperatures',ts%TPmix,ts%TGExtrap,ts%TLExtrap)
+         call ens_out%add_vector('Palmore Temperatures',ts%TPmix,ts%TGExtrapPalmore,ts%TLExtrapPalmore)
 
          
          ! Output to ensight
@@ -497,16 +498,18 @@ contains
             call ts%apply_bcond(time%t,time%dt)
             ! Extrapolate Values
             dtps = 1e-2
-            call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrap,dtps)
-            call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrap,dtps)
-            ts%TL = ts%TLExtrap
-            ts%TG = ts%TGExtrap
+            ! call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrapPalmore,dtps)
+            ! call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrapPalmore,dtps)
+
             ! Step
             call ts%step_temperature_palmore(resHG,resHL,resU,resV,resW,time%dt)
             call ts%mix_temperature_palmore()
 
-            call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrap,dtps)
-            call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrap,dtps)
+            call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrapPalmore,dtps)
+            call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrapPalmore,dtps)
+
+            call ts%extrapolate_fields_normal(ts%TL,vf%VF,ts%TLExtrap)
+            call ts%extrapolate_fields_normal(ts%TG,1.0_WP - vf%VF,ts%TGExtrap)
             ts%TL = ts%TLExtrap
             ts%TG = ts%TGExtrap
 
