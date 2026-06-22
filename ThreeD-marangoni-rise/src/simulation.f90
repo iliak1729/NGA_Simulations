@@ -505,9 +505,6 @@ contains
             call ts%step_temperature_palmore(resHG,resHL,resU,resV,resW,time%dt)
             call ts%mix_temperature_palmore()
 
-            call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrapPalmore,dtps)
-            call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrapPalmore,dtps)
-
             call ts%extrapolate_fields_normal(ts%TL,vf%VF,ts%TLExtrap)
             call ts%extrapolate_fields_normal(ts%TG,1.0_WP - vf%VF,ts%TGExtrap)
             ts%TL = ts%TLExtrap

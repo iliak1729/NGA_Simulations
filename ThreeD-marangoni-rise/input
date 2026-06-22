@@ -4,13 +4,13 @@ Partition : 1 1 1
 # Mesh definition
 Lx : 5 !0.02 !0.2
 Ly : 7.5 !0.02 !0.2
-Lz : 1 !0.02 !0.2
-nx : 128    !128
-ny : 192    !128
-nz : 1    !128
+Lz : 5 !0.02 !0.2
+nx : 64    !128
+ny : 96    !128
+nz : 64    !128
 
 # Are we using a moving domain?
-Two Dimensional : .true. 
+Two Dimensional : .false. 
 # Fluid properties
 Gravity :                     0 -9.81 0
 Liquid dynamic viscosity :    0.00313
@@ -33,7 +33,7 @@ cp1 : 2.0 #Liquid
 cp2 : 1.0 #Gas 
 
 # Options
-Marangoni :  0 25 -0.1
+Marangoni :  0 0.133 -0.1
 Pressure : 1
 Smoothing Option : 1
 Surface Tension Option : 8

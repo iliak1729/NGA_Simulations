@@ -27,9 +27,9 @@ Surface tension coefficient : 0.0
 # Temperatures
 Liquid Temperature : 50
 Gas Temperature : 100
-k1 : 0.0 # Liquid
-k2 : 0.0 # Gas
-cp1 : 2.0 #Liquid
+k1 : 0.001 # Liquid
+k2 : 0.001 # Gas
+cp1 : 1.0 #Liquid
 cp2 : 1.0 #Gas 
 
 # Options
@@ -47,7 +47,7 @@ Bubble position :  0 0 0
 Bubble velocity :  0.5 0.5 0
 
 # Time integration
-Max timestep size : 1e-3
+Max timestep size : 1e-4
 Max cfl number :    1.2
 Max time :          1.2
 
