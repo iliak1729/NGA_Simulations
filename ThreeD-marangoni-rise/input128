@@ -1,0 +1,58 @@
+# Parallelization
+Partition : 2 2 2
+
+# Mesh definition
+Lx : 5 !0.02 !0.2
+Ly : 7.5 !0.02 !0.2
+Lz : 5 !0.02 !0.2
+nx : 128    !128
+ny : 192    !128
+nz : 128    !128
+
+# Are we using a moving domain?
+Two Dimensional : .false. 
+# Fluid properties
+Gravity :                     0 0 0
+Liquid dynamic viscosity :    0.1
+Gas dynamic viscosity :       0.1
+Liquid density :              0.2
+Gas density :                 0.2
+Surface tension coefficient : 0.1
+
+# Definition of two bubblesxxxx
+# Bubble volume :   1.75e-8                    !9.3e-6    # in m^3
+# Bubble position :  -2.1e-3 0 0               !0 0 0
+#Bubble 2 position : 1.9e-3 0 0
+
+# Temperatures
+Top Temperature : 1
+Bottom Temperature : 0
+k1 : 0.001 # Liquid
+k2 : 0.001 # Gas
+cp1 : 1.0 #Liquid
+cp2 : 1.0 #Gas 
+
+# Options
+Marangoni :  0 0.133 -0.1
+Pressure : 1
+Smoothing Option : 1
+Surface Tension Option : 8
+Curvature Option : 1
+PU Spread : 2.0
+
+
+# Definition of single bubble (Weber)
+Bubble Radius : 0.5
+Bubble position :  0 -2.25 0
+
+# Time integration
+Max timestep size : 1e-3
+Max cfl number :    1.2
+Max time :          1.2
+
+# Pressure solver
+Pressure tolerance : 1e-4
+Pressure iteration : 100
+
+# Ensight output
+Ensight output period : 12e-3

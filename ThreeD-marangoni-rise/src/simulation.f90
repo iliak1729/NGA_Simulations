@@ -137,9 +137,9 @@ contains
       do k=vf%cfg%kmin_,vf%cfg%kmax_
          do j=vf%cfg%jmin_,vf%cfg%jmax_
             do i=vf%cfg%imin_,vf%cfg%imax_
-               myYcent=myYcent+vf%cfg%ym(j)*(1.0_WP-vf%VF(i,j,k))*cfg%vol(i,j,k)
-               myVrise=myVrise+Vi(i,j,k)*(1.0_WP-vf%VF(i,j,k))*cfg%vol(i,j,k)
-               myvol=myvol+(1.0_WP-vf%VF(i,j,k))*cfg%vol(i,j,k)
+               myYcent=myYcent+vf%cfg%ym(j)*(vf%VF(i,j,k))*cfg%vol(i,j,k)
+               myVrise=myVrise+Vi(i,j,k)*(vf%VF(i,j,k))*cfg%vol(i,j,k)
+               myvol=myvol+(vf%VF(i,j,k))*cfg%vol(i,j,k)
             end do
          end do
       end do
