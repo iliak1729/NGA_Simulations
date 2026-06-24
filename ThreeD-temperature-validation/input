@@ -1,5 +1,5 @@
 # Parallelization
-Partition : 1 1 1
+Partition : 2 2 1
 
 # Mesh definition
 Lx : 1 !0.02 !0.2
@@ -47,7 +47,7 @@ Bubble position :  0 0 0
 Bubble velocity :  0.5 0.5 0
 
 # Time integration
-Max timestep size : 1e-4
+Max timestep size : 1e-3
 Max cfl number :    1.2
 Max time :          1.2
 

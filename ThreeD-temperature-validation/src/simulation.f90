@@ -526,23 +526,6 @@ contains
             ts%TL = ts%TLExtrap
             ts%TG = ts%TGExtrap
 
-            ! Dirichlet Boundary Condition
-            ! do k=vf%cfg%kmino_,vf%cfg%kmaxo_
-            !    do j=vf%cfg%jmino_,vf%cfg%jmaxo_
-            !       do i=vf%cfg%imino_,vf%cfg%imaxo_
-            !          ! Note that the exact linear profile is:
-            !          ! (Ttop-Tbot)*y/Ly + Tbot.
-            !          ! Since it is linear, the value in a cell is equal to that at the center
-            !          if(fs%cfg%ym(j) .lt. -Ly/2.0 + fs%cfg%dy(j)) then 
-            !             ts%T(:,j,:) = Tbot 
-            !          endif
-
-            !          if(fs%cfg%ym(j) .gt. Ly/2.0 - fs%cfg%dy(j)) then 
-            !             ts%T(:,j,:) = Ttop 
-            !          endif
-            !       enddo
-            !    enddo
-            ! enddo
             call ts%populate_enthalpy()
             ! ===================================================
 
