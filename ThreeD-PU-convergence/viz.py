@@ -2,6 +2,7 @@ from turtle import color
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from matplotlib import cm
 import matplotlib.collections as mcoll
 import matplotlib.path as mpath
@@ -19,68 +20,40 @@ color_blue = '#0072B2'
 color_red = '#D55E00'
 color_pink = '#CC79A7'
 # Data
-datafile = "ThreeD-marangoni-rise/OLD/N128-128-192/monitor/bubble"
+datafile = "ThreeD-PU-convergence/monitor/Error Values 2D"
 data1 = np.loadtxt(datafile, skiprows=2)
 
-
-datafile = "ThreeD-marangoni-rise/OLD/N64-64-96/monitor/bubble"
+datafile = "ThreeD-PU-convergence/monitor/Error Values 3D"
 data2 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "ThreeD-marangoni-rise/OLD/N64-64-96-SHIFT/monitor/bubble"
-data3 = np.loadtxt(datafile, skiprows=2)
-
-datafile = "ThreeD-marangoni-rise/OLD/N128-128-192-SHIFT/monitor/bubble"
-data4 = np.loadtxt(datafile, skiprows=2)
 
 
-rho1 = .2
-mu1 = 0.1
-k1 = 0.001
-sigma0 = 0.1
-sigmaT = -0.1
-a = 0.5
-dT = 2/15
 
-kr = 1
-mur = 1
-cp = 1
-
-U0 = -sigmaT*a*dT/mu1
-tNorm = a/U0
-
-Vygb = 2/((2+kr)*(2+3*mur))
-print(Vygb)
-Vygb = -2*sigmaT*dT*a/(6*mu1+9*mu1)
-
-print("Re = ",rho1*U0*a/mu1)
-print("Ca = ",mu1*U0/sigma0)
-print("Ma = ",rho1*cp*a*U0/k1)
-print("Ca Ur = ",mu1/sigma0)
-print("Re Ur = ",rho1*a/mu1)
-print("Tnorm = ",tNorm)
-print("U0 = ",U0)
-print("Vygb =",Vygb)
-
-plt.figure()
+plt.figure
 
 
-x = data1[:,1]/tNorm
-y = data1[:,3]/Vygb
-plt.plot(x,y,label = "3D,PCST,N=128",linewidth=5,color = color_red)
+x = data1[:,1]
+y = data1[:,2]
+refIndex = 1
+refOrder = 2
+plt.loglog(x,y,linewidth=5,color = color_red,label = '2D')
+plt.loglog(x,0.9*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'Second Order',linestyle='--')
 
+x = data2[:,1]
+y = data2[:,2]
+refIndex = 1
+refOrder = 1
+plt.loglog(x,y,linewidth=5,color = color_blue,label = '3D')
+plt.loglog(x,0.9*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='-')
 
-x = data2[:,1]/tNorm
-y = data2[:,3]/Vygb
-plt.plot(x,y,label = "3D,PCST,N=64",linewidth=5,color = color_blue)
+ax = plt.gca()
 
-x = data3[:,1]/tNorm
-y = data3[:,3]/Vygb
-plt.plot(x,y,label = "3D,PCST-SHIFT,N=64",linewidth=5,color = color_black)
+ax.xaxis.set_minor_formatter(ticker.FormatStrFormatter('%g'))
+ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%g'))
+ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%g'))
 
-x = data4[:,1]/tNorm
-y = data4[:,3]/Vygb
-plt.plot(x,y,label = "3D,PCST-SHIFT,N=128",linewidth=5,color = color_orange)
+plt.xlabel('Cells Across Diameter',fontsize=20)
+plt.ylabel('L2 Distance error',fontsize=20)
 
 plt.legend()
-
 plt.show()

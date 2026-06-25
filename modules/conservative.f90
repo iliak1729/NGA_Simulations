@@ -62,13 +62,19 @@ module conservative_st
         real(WP), dimension(:,:,:), allocatable :: curvature_abu
         ! Initailize Boolean
         logical :: initialized = .false.
+        ! Visualization
+        real(WP), dimension(:,:,:), allocatable :: PartitionOfUnityValue,PUTangent_x,PUTangent_y,PUTangent_z,PUTangent_mag,PartitionOfUnityWeight,DistanceField
+        real(WP), dimension(:,:,:), allocatable :: trueDistanceField 
     contains
         procedure :: temp 
         procedure :: init
         procedure :: get_dmomdt
         procedure :: add_surface_tension_jump
         ! procedure :: end ! this is to deallocate variables, clear pointers, etc.
-        
+        ! Visualization
+        procedure, public :: updatePartitionOfUnity
+
+
         !Private Functions
         procedure, private :: get_dmomdt_full_ST
         procedure, private :: get_dmomdt_no_ST
@@ -110,6 +116,8 @@ module conservative_st
         procedure, private :: add_Saud_surface_tension_jump
         ! procedure, private :: updateSaudForces
         ! procedure, private :: height_function_surface_tension
+
+        
     end type conservative_st_type
 contains 
 
@@ -224,6 +232,16 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%phi_xy(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%phi_yy(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%curvature_abu(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+
+    allocate(this%PartitionOfUnityValue(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%PUTangent_x(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%PUTangent_y(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%PUTangent_z(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%PUTangent_mag(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%PartitionOfUnityWeight(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%DistanceField(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%trueDistanceField(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+
 
 end subroutine init
 
@@ -2940,6 +2958,98 @@ subroutine add_Saud_surface_tension_jump(this,dt,div,contact_model) ! Need to Up
         end do
     end do
 end subroutine add_Saud_surface_tension_jump
+
+! Visualization Tools
+
+subroutine updatePartitionOfUnity(this)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in,k_in,count ! Current Cell Location 
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PU_RectCub_type) :: solver
+    
+    ! Temp Items
+    type(SeparatorVariant_type) :: plane
+    real(WP), dimension(1:3) :: cen,Gcen,Lcen,force,pos,tangentHolder
+    integer, dimension(1:3) :: ind,indguess
+    real(WP) :: dx,dy,xEval,yEval,zEval,Scale
+    ! write(*,'(A,3F35.10)') ' ============================================================================== Scale value: ', Scale 
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dx(1)
+    count = 0
+    ! Create Neighborhood and solver
+    call new(neighborhood) 
+    call new(solver)
+    ! Loop over real domain 
+    do k=this%vf%cfg%kmin_,this%vf%cfg%kmax_
+        do j=this%vf%cfg%jmin_,this%vf%cfg%jmax_
+        do i=this%vf%cfg%imin_,this%vf%cfg%imax_
+            ! write(*,'(A,3I10.5)') ' ==== location: ', i,j,k 
+            ! if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then  
+                ! Get Points
+                xEval = this%vf%cfg%xm(i)
+                yEval = this%vf%cfg%ym(j)
+                zEval = this%vf%cfg%zm(k)
+                pos = (/xEval,yEval,zEval/)
+                ! write(*,'(A,3F10.5)') ' ==== pos: ', pos
+                ! Get Global Location
+                indGuess = (/int(i),int(j),int(k)/)
+                ind = this%vf%cfg%get_ijk_global(pos,indGuess)
+                ! write(*,'(A,3I10.5)') ' ==== ind value: ', ind
+                
+                ! Now we have the global index in ind, so we can move around based on that.  
+                ! Empty Neighborhood
+                call emptyNeighborhood(neighborhood)
+                ! Add 7x7 (3 on each side) stencil, in plane
+                ! cen = (/vf%cfg%xm(ind(1)),vf%cfg%ym(ind(2)),vf%cfg%zm(ind(3))/)
+                ! call addMember(neighborhood,cen,vf%liquid_gas_interface(ind(1),ind(2),ind(3)))
+                do j_in = -3,3
+                    do i_in = -3,3
+                        do k_in = -3,3
+                            if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. 1e-12 .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. 1.0_WP - 1e-12) then
+
+                                cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k+k_in))
+                                ! Get Plane
+                                plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k+k_in)
+                                call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
+                            endif
+                        enddo
+                    end do
+                end do
+                ! Set Neighborhood in solver 
+                call setNeighborhood(solver,neighborhood)
+                call setThreshold(solver,1e-6_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
+                ! if(ind(1) .eq. 11 .and. ind(2) .eq. 22 .and. count .lt. 1) then 
+                !    write(*,'(A,F10.8)') '> Time  =  ', time%t
+                !    ! call printSolver(solver)
+                !    count = count + 1
+                ! endif
+                ! ====== Get Value
+                call getValue(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),this%PartitionOfUnityValue(i,j,k))   
+                ! write(*,'(A,F10.8)') '> Radius  =  ', radius
+                ! call getValue(solver,xEval,yEval,zEval,0.25_WP,(/0.0_WP,0.0_WP,0.0_WP/),PartitionOfUnityValue(i,j,k))
+                call getTangent(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),tangentHolder) 
+                ! call getTangent(solver,xEval,yEval,zEval,radius,center,tangentHolder)
+                this%PUTangent_x(i,j,k) = tangentHolder(1)
+                this%PUTangent_y(i,j,k) = tangentHolder(2)
+                this%PUTangent_z(i,j,k) = tangentHolder(3)
+                this%PUTangent_mag(i,j,k) = sqrt(sum(tangentHolder**2))
+                call getWeight(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),this%PartitionOfUnityWeight(i,j,k)) 
+                this%distanceField(i,j,k) = this%PartitionOfUnityValue(i,j,k)/(this%PUTangent_mag(i,j,k)+1e-12)
+                ! call getWeight(solver,xEval,yEval,zEval,radius,center,PartitionOfUnityWeight(i,j,k))
+                ! write(*,'(A,F35.10)') ' ================= Partition of unity value: ', PartitionOfUnityValue(i,j,k)   
+            ! endif 
+        end do
+        end do
+    end do
+end subroutine updatePartitionOfUnity
+
+
 
 
 end module conservative_st

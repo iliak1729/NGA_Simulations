@@ -1,12 +1,12 @@
 # Parallelization
-Partition : 2 2 2
+Partition : 2 2 1
 
 # Mesh definition
-Lx : 5 !0.02 !0.2
-Ly : 7.5 !0.02 !0.2
-Lz : 5 !0.02 !0.2
+Lx : 1 !0.02 !0.2
+Ly : 1 !0.02 !0.2
+Lz : 1 !0.02 !0.2
 nx : 64    !128
-ny : 96    !128
+ny : 64    !128
 nz : 64    !128
 
 # Are we using a moving domain?
@@ -42,8 +42,8 @@ PU Spread : 2.0
 
 
 # Definition of single bubble (Weber)
-Bubble Radius : 0.5
-Bubble position :  0 -2.25 0
+Bubble Radius : 0.25
+Bubble position :  0 0 0
 
 # Time integration
 Max timestep size : 1e-3
