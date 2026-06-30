@@ -10,7 +10,7 @@ ny : 64    !128
 nz : 64    !128
 
 # Are we using a moving domain?
-Two Dimensional : .false. 
+Two Dimensional : .true. 
 # Fluid properties
 Gravity :                     0 0 0
 Liquid dynamic viscosity :    0.1
@@ -56,3 +56,12 @@ Pressure iteration : 100
 
 # Ensight output
 Ensight output period : 12e-3
+
+# Trial Inputs
+Param Min : 0.5
+Param Max : 5.0
+Param Steps : 45
+
+Nmin : 16
+Nmult : 5 !6
+Ratio : 2.0

@@ -41,14 +41,15 @@ module simulation
    !> Private work arrays
    real(WP), dimension(:,:,:), allocatable :: resU,resV,resW,resH
    real(WP), dimension(:,:,:), allocatable :: resHG,resHL
-   real(WP), dimension(:,:,:), allocatable :: Ui,Vi,Wi,errorMatrix
+   real(WP), dimension(:,:,:), allocatable :: Ui,Vi,Wi,errorMatrix_radius,errorMatrix_tangent,errorMatrix_curvature
    
    !> Problem definition
    logical :: second_bubble
    real(WP), dimension(3) :: center,center2,gravity
    real(WP) :: volume,radius,radius2,Ycent,Vrise
    real(WP) :: Vin,Vin_old,Vrise_ref,Ycent_ref,G,ti
-   real(WP) :: Tbot,Ttop,Ly,Lx,dtps,errorNorm,Ncurr,NperDiameter
+   real(WP) :: Tbot,Ttop,Ly,Lx,dtps,Ncurr,NperDiameter,spreadCurr
+   real(WP) :: errorNorm_radius, errorNorm_tangent, errorNorm_curvature
 
 contains
 
@@ -156,16 +157,16 @@ contains
    subroutine simulation_init
       use param, only: param_read,param_exists
       implicit none
-      
-      
       ! Create a monitor file
       create_monitor: block
          ! Create simulation monitor
-         mfile=monitor(cfg%amRoot,'Error Values')
+         mfile=monitor(cfg%amRoot,'Error_Values')
          call mfile%add_column(Ncurr,'Grid Size')
+         call mfile%add_column(spreadCurr,'PU Spread')
          call mfile%add_column(NperDiameter,'Cell/Diam.')
-         call mfile%add_column(errorNorm,'Distance Error')
-
+         call mfile%add_column(errorNorm_radius,'Radius Error')
+         call mfile%add_column(errorNorm_tangent,'Tangent Error')
+         call mfile%add_column(errorNorm_curvature,'Curvature Error')
       end block create_monitor
       
       
@@ -183,19 +184,56 @@ contains
       !> Single config
       type(config) :: cfg
       real(WP) :: Lx,Ly,Lz
-      integer nn
-      real(WP), dimension(3) :: Nset
+      integer :: nn,mm,Nmult,paramSteps
+      real(WP), dimension(:), allocatable :: Nset
+      real(WP), dimension(:), allocatable :: paramSet
       character(len=20) :: suffix
-      
-      Nset = (/32,64,128/)
+      real(WP) :: paramMin, paramMax
+      real(WP) :: Nmin, ratio
 
       call param_read('Lx',Lx); 
       call param_read('Ly',Ly); 
       call param_read('Lz',Lz); 
       
-      do nn = 1, size(Nset) 
+      ! Grid Parameters
+      call param_read('Nmin',Nmin)
+      call param_read('Nmult', Nmult)
+      call param_read('Ratio', ratio)
+
+      allocate(Nset(Nmult+1))
+      do nn = 1, Nmult+1
+         Nset(nn) = Nmin * (ratio ** (nn-1))
+      enddo
+      if(cfg%amRoot) then 
+         print *,"Nset = (",Nset,")"
+      endif
+
+      ! Variable Setup
+      call param_read('Param Min',paramMin)
+      call param_read('Param Max', paramMax)
+      call param_read('Param Steps', paramSteps)
+
+      allocate(paramSet(paramSteps+1))
+      if(paramSteps .eq. 0) then 
+         paramSet(1) = paramMin
+      else
+         do nn = 1, paramSteps+1
+            paramSet(nn) = (paramMin *(paramSteps+1-nn) + paramMax *(nn-1))/paramSteps
+         enddo
+      endif
+      if(cfg%amRoot) then 
+         print *,"paramSet = (",paramSet,")"
+      endif
+
+      print*,""
+      print*,""
+      print*,""
+      print*,""
+      
+      do nn = 1, size(Nset)
+      do mm = 1, size(paramSet)
          write(suffix,'(F0.0)') Nset(nn)
-        
+
          ! Where we make the grid and appropriate Config File
          geometry_init : block 
             type(sgrid) :: grid
@@ -254,9 +292,7 @@ contains
                cfg%VF=1.0_WP
             end block create_walls
          end block geometry_init
-         if(cfg%amRoot) then
-            print *, " Geometry made for N = ",Nset(nn)
-         endif
+         
 
 
          ! Initialize time tracker with 2 subiterations
@@ -268,15 +304,12 @@ contains
             time%dt=time%dtmax
             time%itmax=2
          end block initialize_timetracker
-         if(cfg%amRoot) then
-            print *, " Timetracker made for N = ",Nset(nn)
-         endif
 
          ! Initialize our VOF solver and field
          allocate(vf)
          create_and_initialize_vof: block
             use mms_geom,  only: cube_refine_vol
-            use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage
+            use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage,lvira,jibben
             use mathtools, only: Pi
             integer :: i,j,k,n,si,sj,sk
             real(WP), dimension(3,8) :: cube_vertex
@@ -284,7 +317,7 @@ contains
             real(WP) :: vol,area
             integer, parameter :: amr_ref_lvl=4
             ! Create a VOF solver
-            call vf%initialize(cfg=cfg,reconstruction_method=plicnet,transport_method=flux_storage,name='VOF')
+            call vf%initialize(cfg=cfg,reconstruction_method=jibben,transport_method=flux_storage,name='VOF')
             !vf%cons_correct=.false.
             !vf%thin_thld_max=1.5_WP
             !vf%twoplane_thld2=0.8_WP
@@ -333,13 +366,11 @@ contains
             call vf%subcell_vol()
             ! Calculate curvature
             call vf%get_curvature()
+            ! Perform PPIC reconstruction
+            if (vf%ppic) call vf%build_quadratic_interface()
             ! Reset moments to guarantee compatibility with interface reconstruction
             call vf%reset_volume_moments()
          end block create_and_initialize_vof
-
-         if(cfg%amRoot) then
-            print *, " VF made for N = ",Nset(nn)
-         endif
 
          
          allocate(fs)
@@ -374,10 +405,7 @@ contains
             ! call fs%interp_vel(Ui,Vi,Wi)
             ! call fs%get_div()
          end block create_and_initialize_flow_solver
-         if(cfg%amRoot) then
-            print *, " FS made for N = ",Nset(nn)
-         endif
-         ! ! Create Surface Tension Object
+         ! Create Surface Tension Object
 
          allocate(cst)
          create_surface_tension_solver : block
@@ -388,43 +416,57 @@ contains
             call param_read('Surface Tension Option',cst%SurfaceTensionOption)
             call param_read('Curvature Option',cst%CurvatureOption)
             call param_read('PU Spread',cst%PU_spread)
+            cst%PU_spread = paramSet(mm)
          end block create_surface_tension_solver
-         if(cfg%amRoot) then
-            print *, " CST made for N = ",Nset(nn)
-         endif
 
-         allocate(errorMatrix(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
+         allocate(errorMatrix_radius(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
+         allocate(errorMatrix_tangent(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
+         allocate(errorMatrix_curvature(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          update_distance_fields : block
-            real(WP) :: xEval, yEval, zEval, dist 
-            real(WP), dimension(3) :: pos,dPos
+            
+            real(WP) :: xEval, yEval, zEval, dist, curv, curv_exact
+            real(WP), dimension(3) :: pos,dPos,tangent,normalizedDisplacement
             integer :: i,j,k,count 
+            integer, dimension(3) :: initialIndex
+            logical :: twoD
+
             call cst%updatePartitionOfUnity()
             count = 0
             ! Output True Distance
             do k=vf%cfg%kmin_,vf%cfg%kmax_
                do j=vf%cfg%jmin_,vf%cfg%jmax_
                   do i=vf%cfg%imin_,vf%cfg%imax_
-                     ! write(*,'(A,3I10.5)') ' ==== location: ', i,j,k 
-                     ! if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then  
-                     ! Get Points
-                     xEval = vf%cfg%xm(i)
-                     yEval = vf%cfg%ym(j)
-                     zEval = vf%cfg%zm(k)
-                     pos = (/xEval,yEval,zEval/)
-
-                     dPos = pos - center
-
-                     dist = sqrt(sum(dPos**2))
-                     if(abs(cst%DistanceField(i,j,k)).gt. 1e-8) then 
-                        cst%trueDistanceField(i,j,k) = dist - radius
+                     if(vf%VF(i,j,k) .gt. 1e-12 .and. vf%VF(i,j,k) .lt. 1.0_WP - 1e-12) then
                         count = count +1
-                     endif
 
-                     errorMatrix(i,j,k) = cst%DistanceField(i,j,k) - cst%trueDistanceField(i,j,k)
+                        initialIndex = (/i,j,k/)
+                        ! Get Projected Values
+                        call cst%getProjectedGeometry(initialIndex,pos,tangent,curv)
+
+                        ! Radius Error
+                        dPos = pos - center
+                        dist = sqrt(sum(dPos**2))
+                        errorMatrix_radius(i,j,k) = (dist - radius)/radius 
+
+                        ! Tangent Error
+                        normalizedDisplacement = dPos/dist
+                        errorMatrix_tangent(i,j,k) = normalizedDisplacement(1)*tangent(1) + normalizedDisplacement(2)*tangent(2)+normalizedDisplacement(3)*tangent(3)
+
+                        ! Curvature Error
+                        call param_read('Two Dimensional',twoD)
+                        if(twoD) then 
+                           curv_exact = 1/radius
+                        else
+                           curv_exact = 2/radius
+                        endif
+                        errorMatrix_curvature(i,j,k) = (curv - curv_exact)/curv_exact
+                     endif
                   enddo
                enddo
             enddo 
-         errorNorm = sqrt(sum(errorMatrix**2)/count)
+         errorNorm_radius = sqrt(sum(errorMatrix_radius**2)/count)
+         errorNorm_tangent = sqrt(sum(errorMatrix_tangent**2)/count)
+         errorNorm_curvature = sqrt(sum(errorMatrix_curvature**2)/count)
 
          end block update_distance_fields
 
@@ -445,14 +487,16 @@ contains
             call vtk_out%add_scalar('PU Value',cst%PartitionOfUnityValue)
             call vtk_out%add_scalar('PU Weight',cst%PartitionOfUnityWeight)
             call vtk_out%add_scalar('PU Grad Mag',cst%PUTangent_mag)
-            call vtk_out%add_scalar('True Distance Field',cst%trueDistanceField)
-            call vtk_out%add_scalar('Error',errorMatrix)
+            call vtk_out%add_scalar('Radius Error',errorMatrix_radius)
+            call vtk_out%add_scalar('Tangent Error',errorMatrix_tangent)
+            call vtk_out%add_scalar('Curvature Error',errorMatrix_curvature)
             ! Output to vtk
             call vtk_out%write_data(time%t)
 
             ! Update for File
             Ncurr = Nset(nn)
             NperDiameter = Ncurr * 2 * radius / Lx
+            spreadCurr = paramSet(mm)
             call mfile%write()
          end block create_vtk
 
@@ -462,9 +506,15 @@ contains
          deallocate(vf)
          deallocate(fs)
          deallocate(cst)
-         deallocate(errorMatrix)
+         
+         deallocate(errorMatrix_radius)
+         deallocate(errorMatrix_tangent)
+         deallocate(errorMatrix_curvature)
+         if(cfg%amRoot) then
+            print *, " COMPLETE for (N,P) = (",Nset(nn),paramSet(mm),")"
+         endif
       enddo
-      
+      enddo
    end subroutine simulation_run
    
    

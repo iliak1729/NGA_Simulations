@@ -2,15 +2,20 @@
 
 
 # Run 128 Cases
-echo "Running with input64 ..."
-time mpiexec -n 8 ./nga.dp.gnu.opt.mpi.exe -i input64 -v 2
+echo "Running with input2D ..."
+time mpiexec -n 4 ./nga.dp.gnu.opt.mpi.exe -i input2D -v 0
 echo "Complete"
 
-echo "Copying DATA to OLD file"
+echo "Copying Data"
+cp ./monitor/Error_Values ./monitor/Error_Values_2D_ProjectedMetricConvergence_Jibben
+echo "COPY COMPLETE"
 
-cp -r ./vtk ./OLD/N64-64-96-LowCP/
-cp -r ./monitor ./OLD/N64-64-96-LowCP/
+echo "Running with input3D ..."
+time mpiexec -n 8 ./nga.dp.gnu.opt.mpi.exe -i input3D -v 0
+echo "Complete"
 
+echo "Copying Data"
+cp ./monitor/Error_Values ./monitor/Error_Values_3D_ProjectedMetricConvergence_Jibben
 echo "COPY COMPLETE"
 
 echo "All runs complete."

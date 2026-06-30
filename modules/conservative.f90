@@ -73,7 +73,7 @@ module conservative_st
         ! procedure :: end ! this is to deallocate variables, clear pointers, etc.
         ! Visualization
         procedure, public :: updatePartitionOfUnity
-
+        procedure, public :: getProjectedGeometry
 
         !Private Functions
         procedure, private :: get_dmomdt_full_ST
@@ -3048,6 +3048,76 @@ subroutine updatePartitionOfUnity(this)
         end do
     end do
 end subroutine updatePartitionOfUnity
+
+subroutine getProjectedGeometry(this,initialIndex,projectedPoint,tangent,curvature,value,weight)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in,k_in,count ! Current Cell Location 
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PU_RectCub_type) :: solver
+    real(WP), dimension(1:3) :: initialPoint,projectedPoint,tangent
+    integer, dimension(1:3) :: initialIndex
+    real(WP) :: curvature
+    real(WP),optional :: value, weight
+    ! Temp Items
+    type(SeparatorVariant_type) :: plane
+    real(WP), dimension(1:3) :: cen,Gcen,Lcen,force,pos,tangentHolder,cenInitial
+    real(WP) :: dx,dy,xEval,yEval,zEval,Scale
+    ! write(*,'(A,3F35.10)') ' ============================================================================== Scale value: ', Scale 
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dy(1)
+    ! Create Neighborhood and solver
+    call new(neighborhood) 
+    call new(solver)
+    call emptyNeighborhood(neighborhood)
+    ! Add 7x7 (3 on each side) stencil, in plane
+    ! cen = (/vf%cfg%xm(ind(1)),vf%cfg%ym(ind(2)),vf%cfg%zm(ind(3))/)
+    ! call addMember(neighborhood,cen,vf%liquid_gas_interface(ind(1),ind(2),ind(3)))
+    i = initialIndex(1)
+    j = initialIndex(2)
+    k = initialIndex(3) 
+    
+    do j_in = -3,3
+        do i_in = -3,3
+            do k_in = -3,3
+                if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. 1e-12 .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. 1.0_WP - 1e-12) then
+                    cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k+k_in))
+                    ! Get Plane
+                    plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k+k_in)
+                    call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
+                endif
+            enddo
+        end do
+    end do
+    ! Set Neighborhood in solver 
+    call setNeighborhood(solver,neighborhood)
+    call setThreshold(solver,1e-6_WP) 
+
+    ! Project to PU
+    cenInitial = calculateCentroid(this%vf%interface_polygon(1,i,j,k))
+    call projectToPU(solver,cenInitial,this%PU_spread*this%vf%cfg%dx(1),projectedPoint)
+    xEval = projectedPoint(1)
+    yEval = projectedPoint(2)
+    zEval = projectedPoint(3)
+    ! ===== Get Value
+    if(present(value)) then 
+        call getValue(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),value)   
+    endif
+    ! ===== Tangent Value
+    call getTangent(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),tangent) 
+    ! ===== Curvature
+    call getCurvature(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),curvature)
+    ! ===== Optional Weight
+    if(present(weight)) then 
+        call getWeight(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),this%PartitionOfUnityWeight(i,j,k)) 
+    endif
+
+end subroutine getProjectedGeometry
 
 
 
