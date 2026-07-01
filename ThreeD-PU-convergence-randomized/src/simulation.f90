@@ -49,7 +49,7 @@ module simulation
    real(WP) :: volume,radius,radius2,Ycent,Vrise
    real(WP) :: Vin,Vin_old,Vrise_ref,Ycent_ref,G,ti
    real(WP) :: Tbot,Ttop,Ly,Lx,dtps,Ncurr,NperDiameter,spreadCurr
-   real(WP) :: errorNorm_radius, errorNorm_tangent, errorNorm_curvature,maxValue,minWeight
+   real(WP) :: errorNorm_radius, errorNorm_tangent, errorNorm_curvature
 
 contains
 
@@ -424,7 +424,7 @@ contains
          allocate(errorMatrix_curvature(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
          update_distance_fields : block
             
-            real(WP) :: xEval, yEval, zEval, dist, curv, curv_exact,val,weight
+            real(WP) :: xEval, yEval, zEval, dist, curv, curv_exact
             real(WP), dimension(3) :: pos,dPos,tangent,normalizedDisplacement
             integer :: i,j,k,count 
             integer, dimension(3) :: initialIndex
@@ -432,11 +432,6 @@ contains
 
             call cst%updatePartitionOfUnity()
             count = 0
-            maxValue = 0
-            minWeight = 10000000
-            errorMatrix_radius = 0.0;
-            errorMatrix_tangent = 0.0;
-            errorMatrix_curvature =0.0;
             ! Output True Distance
             do k=vf%cfg%kmin_,vf%cfg%kmax_
                do j=vf%cfg%jmin_,vf%cfg%jmax_
@@ -445,17 +440,15 @@ contains
                         count = count +1
 
                         initialIndex = (/i,j,k/)
-                        ! Get Projected Values  
-                        call cst%getProjectedGeometry(initialIndex,pos,tangent,curv,val,weight)
-                        
+                        ! Get Projected Values
+                        call cst%getProjectedGeometry(initialIndex,pos,tangent,curv)
+
                         ! Radius Error
                         dPos = pos - center
                         dist = sqrt(sum(dPos**2))
                         errorMatrix_radius(i,j,k) = (dist - radius)/radius 
-                        if(abs(errorMatrix_radius(i,j,k)) .gt. 1.0) then 
-                           print *, "Outside value of: ", errorMatrix_radius(i,j,k)
-                        endif
-                        ! Tangent Error 
+
+                        ! Tangent Error
                         normalizedDisplacement = dPos/dist
                         errorMatrix_tangent(i,j,k) = normalizedDisplacement(1)*tangent(1) + normalizedDisplacement(2)*tangent(2)+normalizedDisplacement(3)*tangent(3)
 
@@ -467,16 +460,6 @@ contains
                            curv_exact = 2/radius
                         endif
                         errorMatrix_curvature(i,j,k) = (curv - curv_exact)/curv_exact
-
-                        ! Update Trackers  
-                        if(abs(val) .gt. abs(maxValue)) then
-                           maxValue = val;
-                        endif
-
-                        if (abs(weight) .lt. abs(minWeight)) then 
-                           minWeight = weight
-                        endif
-
                      endif
                   enddo
                enddo
@@ -484,7 +467,7 @@ contains
          errorNorm_radius = sqrt(sum(errorMatrix_radius**2)/count)
          errorNorm_tangent = sqrt(sum(errorMatrix_tangent**2)/count)
          errorNorm_curvature = sqrt(sum(errorMatrix_curvature**2)/count)
-         
+
          end block update_distance_fields
 
                
@@ -517,15 +500,9 @@ contains
             call mfile%write()
          end block create_vtk
 
-         if(errorNorm_radius .gt. 1) then 
-            print *, " STOPPING for (N,P) = (",Nset(nn),paramSet(mm),") Because Error Is: ",errorNorm_radius
-            print *, "Max Value was: ",maxValue
-            print *, "Min weight was: ",minWeight
-            STOP
-         endif
          ! 
-         ! All objects are made. Now we can compute 
-         ! Kill VF and FS 
+         ! All objects are made. Now we can compute
+         ! Kill VF and FS
          deallocate(vf)
          deallocate(fs)
          deallocate(cst)
@@ -536,8 +513,6 @@ contains
          if(cfg%amRoot) then
             print *, " COMPLETE for (N,P) = (",Nset(nn),paramSet(mm),")"
          endif
-
-         
       enddo
       enddo
    end subroutine simulation_run

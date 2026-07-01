@@ -3075,7 +3075,7 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,tangent,curvatu
     call new(neighborhood) 
     call new(solver)
     call emptyNeighborhood(neighborhood)
-    ! Add 7x7 (3 on each side) stencil, in plane
+    ! Add 7x7 (3 on each side) stencil, in plane 
     ! cen = (/vf%cfg%xm(ind(1)),vf%cfg%ym(ind(2)),vf%cfg%zm(ind(3))/)
     ! call addMember(neighborhood,cen,vf%liquid_gas_interface(ind(1),ind(2),ind(3)))
     i = initialIndex(1)
@@ -3104,6 +3104,12 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,tangent,curvatu
     xEval = projectedPoint(1)
     yEval = projectedPoint(2)
     zEval = projectedPoint(3)
+
+    if(abs(sqrt(sum((projectedPoint)**2))-0.5)/0.5 .gt. 1) then 
+        print *, "Initial Point:", cenInitial
+        print *, "Final Point: ", projectedPoint
+        print *, "Distance: ", sqrt(sum((cenInitial-projectedPoint)**2))
+    endif 
     ! ===== Get Value
     if(present(value)) then 
         call getValue(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),value)   
@@ -3114,7 +3120,7 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,tangent,curvatu
     call getCurvature(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),curvature)
     ! ===== Optional Weight
     if(present(weight)) then 
-        call getWeight(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),this%PartitionOfUnityWeight(i,j,k)) 
+        call getWeight(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),weight) 
     endif
 
 end subroutine getProjectedGeometry

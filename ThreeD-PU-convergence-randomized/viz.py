@@ -20,147 +20,147 @@ color_blue = '#0072B2'
 color_red = '#D55E00'
 color_pink = '#CC79A7'
 
-# # Radius Convergence Plot =====================================================================================
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence"
-# data1 = np.loadtxt(datafile, skiprows=2)
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence"
-# data2 = np.loadtxt(datafile, skiprows=2)
+# Radius Convergence Plot =====================================================================================
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence"
+data1 = np.loadtxt(datafile, skiprows=2)
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence"
+data2 = np.loadtxt(datafile, skiprows=2)
 
-# plt.figure()
-# x = data2[:,2]
-# y = data2[:,3]
-# refIndex = 1
-# refOrder = 1
-# plt.loglog(x,y,linewidth=5,color = color_blue,label = '3D')
-# x = data1[:,2]
-# y = data1[:,3]
-# refIndex = 1
-# refOrder = 2
-# plt.loglog(x,y,linewidth=5,color = color_red,label = '2D')
-# plt.loglog(x,0.6*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'Second Order',linestyle='--')
-
-
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence_Jibben"
-# data1 = np.loadtxt(datafile, skiprows=2)
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence_Jibben"
-# data2 = np.loadtxt(datafile, skiprows=2)
-# x = data2[:,2]
-# y = data2[:,3]
-# refIndex = 1
-# refOrder = 1
-# plt.loglog(x,y,linewidth=5,color = color_teal,label = '3D Jibben')
-# x = data1[:,2]
-# y = data1[:,3]
-# refIndex = 1
-# refOrder = 2
-# plt.loglog(x,y,linewidth=5,color = color_pink,label = '2D Jibben')
-# # plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'Second Order',linestyle='--')
-
-# plt.xlabel('Cells Across Diameter',fontsize=15)
-# plt.ylabel('L2 Radius error',fontsize=15)
-# plt.legend()
-# plt.title("Radius Error Convergence Plot",fontsize=15)
-
-# plt.show()
-
-# # Tangent Convergence Plot =====================================================================================
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence"
-# data1 = np.loadtxt(datafile, skiprows=2)
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence"
-# data2 = np.loadtxt(datafile, skiprows=2)
-
-# plt.figure()
-# x = data2[:,2]
-# y = data2[:,4]
-# refIndex = 1
-# refOrder = 1
-# plt.loglog(x,y,linewidth=5,color = color_blue,label = '3D')
-# # plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
-# x = data1[:,2]
-# y = data1[:,4]
-# refIndex = 1
-# refOrder = 1
-# plt.loglog(x,y,linewidth=5,color = color_red,label = '2D')
-# plt.loglog(x,0.6*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
+plt.figure()
+x = data2[:,2]
+y = data2[:,3]
+refIndex = 1
+refOrder = 1
+plt.loglog(x,y,linewidth=5,color = color_blue,label = '3D')
+x = data1[:,2]
+y = data1[:,3]
+refIndex = 1
+refOrder = 2
+plt.loglog(x,y,linewidth=5,color = color_red,label = '2D')
+plt.loglog(x,0.6*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'Second Order',linestyle='--')
 
 
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence_Jibben"
-# data1 = np.loadtxt(datafile, skiprows=2)
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence_Jibben"
-# data2 = np.loadtxt(datafile, skiprows=2)
-# x = data2[:,2]
-# y = data2[:,4]
-# refIndex = 1
-# refOrder = 1
-# plt.loglog(x,y,linewidth=5,color = color_teal,label = '3D Jibben')
-# # plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
-# x = data1[:,2]
-# y = data1[:,4]
-# refIndex = 1
-# refOrder = 1
-# plt.loglog(x,y,linewidth=5,color = color_pink,label = '2D Jibben')
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence_Jibben"
+data1 = np.loadtxt(datafile, skiprows=2)
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence_Jibben"
+data2 = np.loadtxt(datafile, skiprows=2)
+x = data2[:,2]
+y = data2[:,3]
+refIndex = 1
+refOrder = 1
+plt.loglog(x,y,linewidth=5,color = color_teal,label = '3D Jibben')
+x = data1[:,2]
+y = data1[:,3]
+refIndex = 1
+refOrder = 2
+plt.loglog(x,y,linewidth=5,color = color_pink,label = '2D Jibben')
+# plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'Second Order',linestyle='--')
+
+plt.xlabel('Cells Across Diameter',fontsize=15)
+plt.ylabel('L2 Radius error',fontsize=15)
+plt.legend()
+plt.title("Radius Error Convergence Plot",fontsize=15)
+
+plt.show()
+
+# Tangent Convergence Plot =====================================================================================
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence"
+data1 = np.loadtxt(datafile, skiprows=2)
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence"
+data2 = np.loadtxt(datafile, skiprows=2)
+
+plt.figure()
+x = data2[:,2]
+y = data2[:,4]
+refIndex = 1
+refOrder = 1
+plt.loglog(x,y,linewidth=5,color = color_blue,label = '3D')
 # plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
-# refIndex = 1
-# refOrder = 2
-# plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'Second Order',linestyle='-.')
-
-# plt.xlabel('Cells Across Diameter',fontsize=15)
-# plt.ylabel('L2 Tangent error',fontsize=15)
-# plt.legend()
-# plt.title("Tangent Error Convergence Plot",fontsize=15)
-
-# plt.show()
+x = data1[:,2]
+y = data1[:,4]
+refIndex = 1
+refOrder = 1
+plt.loglog(x,y,linewidth=5,color = color_red,label = '2D')
+plt.loglog(x,0.6*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
 
 
-# # Tangent Convergence Plot =====================================================================================
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence"
-# data1 = np.loadtxt(datafile, skiprows=2)
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence"
-# data2 = np.loadtxt(datafile, skiprows=2)
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence_Jibben"
+data1 = np.loadtxt(datafile, skiprows=2)
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence_Jibben"
+data2 = np.loadtxt(datafile, skiprows=2)
+x = data2[:,2]
+y = data2[:,4]
+refIndex = 1
+refOrder = 1
+plt.loglog(x,y,linewidth=5,color = color_teal,label = '3D Jibben')
+# plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
+x = data1[:,2]
+y = data1[:,4]
+refIndex = 1
+refOrder = 1
+plt.loglog(x,y,linewidth=5,color = color_pink,label = '2D Jibben')
+plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
+refIndex = 1
+refOrder = 2
+plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'Second Order',linestyle='-.')
 
-# plt.figure()
-# x = data2[:,2]
-# y = data2[:,5]
-# refIndex = 1
-# refOrder = 1
-# plt.loglog(x,y,linewidth=5,color = color_blue,label = '3D')
-# # plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
-# x = data1[:,2]
-# y = data1[:,5]
-# refIndex = 1
-# refOrder = 0
-# plt.loglog(x,y,linewidth=5,color = color_red,label = '2D')
-# plt.loglog(x,0.6*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
+plt.xlabel('Cells Across Diameter',fontsize=15)
+plt.ylabel('L2 Tangent error',fontsize=15)
+plt.legend()
+plt.title("Tangent Error Convergence Plot",fontsize=15)
+
+plt.show()
 
 
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence_Jibben"
-# data1 = np.loadtxt(datafile, skiprows=2)
-# datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence_Jibben"
-# data2 = np.loadtxt(datafile, skiprows=2)
-# x = data2[:,2]
-# y = data2[:,5]
-# refIndex = 1
-# refOrder = 1
-# plt.loglog(x,y,linewidth=5,color = color_teal,label = '3D Jibben')
-# # plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
-# x = data1[:,2]
-# y = data1[:,5]
-# refIndex = 1
-# refOrder = 1
-# plt.loglog(x,y,linewidth=5,color = color_pink,label = '2D Jibben')
-# plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'Zeroth Order',linestyle='--')
+# Tangent Convergence Plot =====================================================================================
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence"
+data1 = np.loadtxt(datafile, skiprows=2)
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence"
+data2 = np.loadtxt(datafile, skiprows=2)
 
-# plt.xlabel('Cells Across Diameter',fontsize=15)
-# plt.ylabel('L2 Curvature error',fontsize=15)
-# plt.legend()
-# plt.title("Curvature Error Convergence Plot",fontsize=15)
+plt.figure()
+x = data2[:,2]
+y = data2[:,5]
+refIndex = 1
+refOrder = 1
+plt.loglog(x,y,linewidth=5,color = color_blue,label = '3D')
+# plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
+x = data1[:,2]
+y = data1[:,5]
+refIndex = 1
+refOrder = 0
+plt.loglog(x,y,linewidth=5,color = color_red,label = '2D')
+plt.loglog(x,0.6*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
 
-# plt.show()
+
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_2D_ProjectedMetricConvergence_Jibben"
+data1 = np.loadtxt(datafile, skiprows=2)
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetricConvergence/Error_Values_3D_ProjectedMetricConvergence_Jibben"
+data2 = np.loadtxt(datafile, skiprows=2)
+x = data2[:,2]
+y = data2[:,5]
+refIndex = 1
+refOrder = 1
+plt.loglog(x,y,linewidth=5,color = color_teal,label = '3D Jibben')
+# plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'First Order',linestyle='--')
+x = data1[:,2]
+y = data1[:,5]
+refIndex = 1
+refOrder = 1
+plt.loglog(x,y,linewidth=5,color = color_pink,label = '2D Jibben')
+plt.loglog(x,1.3*y[refIndex]*x**(-refOrder)*x[refIndex]**(refOrder),linewidth=2,color = color_black,label = 'Zeroth Order',linestyle='--')
+
+plt.xlabel('Cells Across Diameter',fontsize=15)
+plt.ylabel('L2 Curvature error',fontsize=15)
+plt.legend()
+plt.title("Curvature Error Convergence Plot",fontsize=15)
+
+plt.show()
 
 
 
 # Spread Variance 2D =====================================================================================
-datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetric_Sweep_Fixed/Error_Values_2D_ProjectedMetric_Sweep"
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetric_Sweep/Error_Values_2D_ProjectedMetric_Sweep"
 data1 = np.loadtxt(datafile, skiprows=2)
 
 plt.figure()
@@ -210,7 +210,7 @@ plt.legend()
 
 plt.show()
 # Spread Variance 2D Jibben =====================================================================================
-datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetric_Sweep_Fixed/Error_Values_2D_ProjectedMetric_Sweep_Jibben"
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetric_Sweep/Error_Values_2D_ProjectedMetric_Sweep_Jibben"
 data1 = np.loadtxt(datafile, skiprows=2)
 
 plt.figure()
@@ -262,7 +262,7 @@ plt.show()
 
 
 # Spread Variance 3D =====================================================================================
-datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetric_Sweep_Fixed/Error_Values_3D_ProjectedMetric_Sweep"
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetric_Sweep/Error_Values_3D_ProjectedMetric_Sweep"
 data1 = np.loadtxt(datafile, skiprows=2)
 
 plt.figure()
@@ -312,7 +312,7 @@ plt.legend()
 
 plt.show()
 # Spread Variance 3D Jibben =====================================================================================
-datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetric_Sweep_Fixed/Error_Values_3D_ProjectedMetric_Sweep_Jibben"
+datafile = "ThreeD-PU-convergence/OLD_SHARE/ProjectedMetric_Sweep/Error_Values_3D_ProjectedMetric_Sweep_Jibben"
 data1 = np.loadtxt(datafile, skiprows=2)
 
 plt.figure()
