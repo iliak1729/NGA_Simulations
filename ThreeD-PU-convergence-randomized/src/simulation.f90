@@ -42,7 +42,7 @@ module simulation
    real(WP), dimension(:,:,:), allocatable :: resU,resV,resW,resH
    real(WP), dimension(:,:,:), allocatable :: resHG,resHL
    real(WP), dimension(:,:,:), allocatable :: Ui,Vi,Wi,errorMatrix_radius,errorMatrix_tangent,errorMatrix_curvature
-   
+   logical :: twoD
    !> Problem definition
    logical :: second_bubble
    real(WP), dimension(3) :: center,center2,gravity
@@ -152,7 +152,23 @@ contains
       Vrise=Vrise/bubble_vol
    end subroutine
    
-   
+   subroutine random_stduniform(u)
+      implicit none
+      real(WP),intent(out) :: u
+      real(WP) :: r
+      call random_number(r)
+      u = 1 - r
+   end subroutine random_stduniform
+
+   subroutine random_uniform(a,b,x)
+      implicit none
+      real(WP),intent(in) :: a,b
+      real(WP),intent(out) :: x
+      real(WP) :: u
+      call random_stduniform(u)
+      x = (b-a)*u + a
+   end subroutine random_uniform
+
    !> Initialization of problem solver
    subroutine simulation_init
       use param, only: param_read,param_exists
@@ -162,11 +178,15 @@ contains
          ! Create simulation monitor
          mfile=monitor(cfg%amRoot,'Error_Values')
          call mfile%add_column(Ncurr,'Grid Size')
-         call mfile%add_column(spreadCurr,'PU Spread')
          call mfile%add_column(NperDiameter,'Cell/Diam.')
+         call mfile%add_column(center(1),'Center X')
+         call mfile%add_column(center(2),'Center Y')
+         call mfile%add_column(center(3),'Center Z')
          call mfile%add_column(errorNorm_radius,'Radius Error')
          call mfile%add_column(errorNorm_tangent,'Tangent Error')
          call mfile%add_column(errorNorm_curvature,'Curvature Error')
+
+         call param_read('Two Dimensional',twoD)
       end block create_monitor
       
       
@@ -186,7 +206,7 @@ contains
       real(WP) :: Lx,Ly,Lz
       integer :: nn,mm,Nmult,paramSteps
       real(WP), dimension(:), allocatable :: Nset
-      real(WP), dimension(:), allocatable :: paramSet
+      real(WP), dimension(:,:), allocatable :: centerSet
       character(len=20) :: suffix
       real(WP) :: paramMin, paramMax
       real(WP) :: Nmin, ratio
@@ -211,33 +231,16 @@ contains
       ! Variable Setup
       call param_read('Param Min',paramMin)
       call param_read('Param Max', paramMax)
-      call param_read('Param Steps', paramSteps)
+      call param_read('Randomized Trials', paramSteps)
 
-      allocate(paramSet(paramSteps+1))
-      if(paramSteps .eq. 0) then 
-         paramSet(1) = paramMin
-      else
-         do nn = 1, paramSteps+1
-            paramSet(nn) = (paramMin *(paramSteps+1-nn) + paramMax *(nn-1))/paramSteps
-         enddo
-      endif
-      if(cfg%amRoot) then 
-         print *,"paramSet = (",paramSet,")"
-      endif
 
-      print*,""
-      print*,""
-      print*,""
-      print*,""
-      
       do nn = 1, size(Nset)
-      do mm = 1, size(paramSet)
+      do mm = 1, paramSteps+1
          write(suffix,'(F0.0)') Nset(nn)
 
          ! Where we make the grid and appropriate Config File
          geometry_init : block 
             type(sgrid) :: grid
-            logical :: twoD
             ! Create a grid from input params
             create_grid: block
                use sgrid_class, only: cartesian
@@ -251,7 +254,7 @@ contains
                ny = Nset(nn)
                nz = Nset(nn)
 
-               call param_read('Two Dimensional',twoD)
+               
                if(twoD) then 
                   Lz = Lx/nx 
                   nz = 1
@@ -304,7 +307,17 @@ contains
             time%dt=time%dtmax
             time%itmax=2
          end block initialize_timetracker
-
+            
+         if(paramSteps .eq. 0) then 
+            call param_read('Bubble position',center,default=[0.0_WP,0.0_WP,0.0_WP])
+         else
+            call random_uniform(paramMin*cfg%dx(1),paramMax*cfg%dx(1),center(1))
+            call random_uniform(paramMin*cfg%dx(1),paramMax*cfg%dx(1),center(2))
+            call random_uniform(paramMin*cfg%dx(1),paramMax*cfg%dx(1),center(3))
+            if(twoD) then 
+               center(3) = 0.0_WP 
+            endif
+         endif
          ! Initialize our VOF solver and field
          allocate(vf)
          create_and_initialize_vof: block
@@ -316,13 +329,13 @@ contains
             real(WP), dimension(3) :: v_cent,a_cent
             real(WP) :: vol,area
             integer, parameter :: amr_ref_lvl=4
+            
             ! Create a VOF solver
-            call vf%initialize(cfg=cfg,reconstruction_method=jibben,transport_method=flux_storage,name='VOF')
+            call vf%initialize(cfg=cfg,reconstruction_method=lvira,transport_method=flux_storage,name='VOF')
             !vf%cons_correct=.false.
             !vf%thin_thld_max=1.5_WP
             !vf%twoplane_thld2=0.8_WP
             ! Initialize a bubble
-            call param_read('Bubble position',center,default=[0.0_WP,0.0_WP,0.0_WP])
             call param_read('Bubble Radius',radius);
 
             ! Generate interface
@@ -416,7 +429,6 @@ contains
             call param_read('Surface Tension Option',cst%SurfaceTensionOption)
             call param_read('Curvature Option',cst%CurvatureOption)
             call param_read('PU Spread',cst%PU_spread)
-            cst%PU_spread = paramSet(mm)
          end block create_surface_tension_solver
 
          allocate(errorMatrix_radius(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
@@ -428,7 +440,6 @@ contains
             real(WP), dimension(3) :: pos,dPos,tangent,normalizedDisplacement
             integer :: i,j,k,count 
             integer, dimension(3) :: initialIndex
-            logical :: twoD
 
             call cst%updatePartitionOfUnity()
             count = 0
@@ -453,7 +464,6 @@ contains
                         errorMatrix_tangent(i,j,k) = normalizedDisplacement(1)*tangent(1) + normalizedDisplacement(2)*tangent(2)+normalizedDisplacement(3)*tangent(3)
 
                         ! Curvature Error
-                        call param_read('Two Dimensional',twoD)
                         if(twoD) then 
                            curv_exact = 1/radius
                         else
@@ -473,32 +483,31 @@ contains
                
          ! Visual Output
          ! Add Ensight output
-         create_vtk: block
-            ! Create Ensight output from cfg
-            vtk_out=vtk(cfg=cfg,name='ConvergenceVisualization' // trim(suffix))
-            ! Create event for Ensight output
-            vtk_evt=event(time=time,name='Ensight output')
-            call param_read('Ensight output period',vtk_evt%tper)
-            ! Add variables to output
-            call vtk_out%add_scalar('VOF',vf%VF)
-            call vtk_out%add_scalar('curvature',vf%curv)
-            call vtk_out%add_scalar('pressure',fs%P)
-            call vtk_out%add_scalar('PU distance',cst%DistanceField)
-            call vtk_out%add_scalar('PU Value',cst%PartitionOfUnityValue)
-            call vtk_out%add_scalar('PU Weight',cst%PartitionOfUnityWeight)
-            call vtk_out%add_scalar('PU Grad Mag',cst%PUTangent_mag)
-            call vtk_out%add_scalar('Radius Error',errorMatrix_radius)
-            call vtk_out%add_scalar('Tangent Error',errorMatrix_tangent)
-            call vtk_out%add_scalar('Curvature Error',errorMatrix_curvature)
-            ! Output to vtk
-            call vtk_out%write_data(time%t)
+         ! create_vtk: block
+         !    ! Create Ensight output from cfg
+         !    vtk_out=vtk(cfg=cfg,name='ConvergenceVisualization' // trim(suffix))
+         !    ! Create event for Ensight output
+         !    vtk_evt=event(time=time,name='Ensight output')
+         !    call param_read('Ensight output period',vtk_evt%tper)
+         !    ! Add variables to output
+         !    call vtk_out%add_scalar('VOF',vf%VF)
+         !    call vtk_out%add_scalar('curvature',vf%curv)
+         !    call vtk_out%add_scalar('pressure',fs%P)
+         !    call vtk_out%add_scalar('PU distance',cst%DistanceField)
+         !    call vtk_out%add_scalar('PU Value',cst%PartitionOfUnityValue)
+         !    call vtk_out%add_scalar('PU Weight',cst%PartitionOfUnityWeight)
+         !    call vtk_out%add_scalar('PU Grad Mag',cst%PUTangent_mag)
+         !    call vtk_out%add_scalar('Radius Error',errorMatrix_radius)
+         !    call vtk_out%add_scalar('Tangent Error',errorMatrix_tangent)
+         !    call vtk_out%add_scalar('Curvature Error',errorMatrix_curvature)
+         !    ! Output to vtk
+         !    ! call vtk_out%write_data(time%t)
 
-            ! Update for File
-            Ncurr = Nset(nn)
-            NperDiameter = Ncurr * 2 * radius / Lx
-            spreadCurr = paramSet(mm)
-            call mfile%write()
-         end block create_vtk
+         !    ! Update for File
+         !    Ncurr = Nset(nn)
+         !    NperDiameter = Ncurr * 2 * radius / Lx
+         !    call mfile%write()
+         ! end block create_vtk
 
          ! 
          ! All objects are made. Now we can compute
@@ -511,7 +520,7 @@ contains
          deallocate(errorMatrix_tangent)
          deallocate(errorMatrix_curvature)
          if(cfg%amRoot) then
-            print *, " COMPLETE for (N,P) = (",Nset(nn),paramSet(mm),")"
+            print *, " COMPLETE for (N,T) = (",Nset(nn),mm,"), Center = ",center
          endif
       enddo
       enddo

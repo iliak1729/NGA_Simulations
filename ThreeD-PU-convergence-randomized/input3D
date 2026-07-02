@@ -57,10 +57,10 @@ Pressure iteration : 100
 # Ensight output
 Ensight output period : 12e-3
 
-# Trial Inputs
-Param Min : 2.3
-Param Max : 5.0
-Param Steps : 0
+# Trial Inputs - In Delta X
+Param Min : -0.5
+Param Max : 0.5
+Randomized Trials : 100
 
 Nmin : 16
 Nmult : 3 !3
