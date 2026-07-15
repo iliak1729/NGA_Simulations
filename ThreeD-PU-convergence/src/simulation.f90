@@ -317,7 +317,7 @@ contains
             real(WP) :: vol,area
             integer, parameter :: amr_ref_lvl=4
             ! Create a VOF solver
-            call vf%initialize(cfg=cfg,reconstruction_method=jibben,transport_method=flux_storage,name='VOF')
+            call vf%initialize(cfg=cfg,reconstruction_method=lvira,transport_method=flux_storage,name='VOF')
             !vf%cons_correct=.false.
             !vf%thin_thld_max=1.5_WP
             !vf%twoplane_thld2=0.8_WP
@@ -462,13 +462,15 @@ contains
                         ! Curvature Error
                         call param_read('Two Dimensional',twoD)
                         if(twoD) then 
-                           curv_exact = 1/radius
+                           curv_exact = 0.5_WP/radius
                         else
-                           curv_exact = 2/radius
+                           curv_exact = 1.0_WP/radius
                         endif
+                        ! print *," Curv = ",curv
+                        ! print *," Curv Exact = ",curv_exact
                         errorMatrix_curvature(i,j,k) = (curv - curv_exact)/curv_exact
 
-                        ! Update Trackers  
+                        ! Update Trackers   
                         if(abs(val) .gt. abs(maxValue)) then
                            maxValue = val;
                         endif

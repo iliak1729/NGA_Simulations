@@ -33,7 +33,7 @@ cp1 : 0.1 #Liquid
 cp2 : 0.1 #Gas 
 
 # Options
-Marangoni :  0 0.133 -0.1
+Marangoni :  0 0 0
 Pressure : 1
 Smoothing Option : 1
 Surface Tension Option : 9
@@ -57,11 +57,19 @@ Pressure iteration : 100
 # Ensight output
 Ensight output period : 12e-3
 
-# Trial Inputs - In Delta X
-Param Min : -0.5
-Param Max : 0.5
-Randomized Trials : 1000
+# Trial Inputs - Delta Range
+Param Min : 0.5
+Param Max : 5.0
+Param Steps : 45
 
-Nmin : 16
-Nmult : 2 !3
+Nmin : 16 !16
+Nmult : 3 !3
 Ratio : 2.0
+
+# Geometry
+Polar Angle : 1
+Azimuthal Angle : 0
+
+Semiaxis 1 : 0.1
+Semiaxis 2 : 0.15
+Semiaxis 3 : 0.2

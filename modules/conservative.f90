@@ -40,10 +40,11 @@ module conservative_st
         real(WP), dimension(:,:,:), allocatable :: sigma_xx,sigma_yy,sigma_xy,sigma_yx ! Used Stress Tensor components
         real(WP), dimension(:,:,:), allocatable :: sigma_xx_P,sigma_yy_P,sigma_xy_P,sigma_yx_P ! Pressure Component
         real(WP), dimension(:,:,:), allocatable :: sigma_xx_NoP,sigma_yy_NoP,sigma_xy_NoP,sigma_yx_NoP ! Tangent Component
-        real(WP), dimension(:,:,:,:,:), allocatable :: sigma_3D
+        real(WP), dimension(:,:,:,:,:), allocatable :: sigma_3D,sigma_3D_Exact
         real(WP), dimension(:,:,:), allocatable :: force_potential_field,poisson_source ! Potential Field Tools
         real(WP), dimension(:,:,:), allocatable :: Fst_x,Fst_y,Fst_z ! Forces sent to momentum equation
         real(WP), dimension(:,:,:), allocatable :: Fst_x_3D,Fst_y_3D,Fst_z_3D
+        real(WP), dimension(:,:,:), allocatable :: Fst_x_3D_Exact,Fst_y_3D_Exact,Fst_z_3D_Exact
         real(WP), dimension(:,:,:), allocatable :: PjxD,PjyD,PjzD ! CSF Forces
         real(WP), dimension(:,:,:), allocatable :: Pjx_ST,Pjy_ST,Pjz_ST ! Forces from UpdateSTForces
         real(WP), dimension(:,:,:), allocatable :: Pjx_Marangoni,Pjy_Marangoni,Pjz_Marangoni ! Storage
@@ -74,7 +75,10 @@ module conservative_st
         ! Visualization
         procedure, public :: updatePartitionOfUnity
         procedure, public :: getProjectedGeometry
-
+        procedure, public :: getProjectedGeometryEllipsoid
+        procedure, public :: updateStresses
+        procedure, public :: updateForces
+        procedure, public :: getValuePU
         !Private Functions
         procedure, private :: get_dmomdt_full_ST
         procedure, private :: get_dmomdt_no_ST
@@ -89,8 +93,10 @@ module conservative_st
 
         procedure, private :: updateSurfaceTensionStresses
         procedure, private :: updateSurfaceTensionStresses3D
+        procedure, private :: updateSurfaceTensionStresses3DEllipsoid
         procedure, private :: updateSurfaceTensionForces
         procedure, private :: updateSurfaceTensionForces3D
+        procedure, private :: updateSurfaceTensionForces3DEllipsoid
 
         procedure, private :: applyLaplacianSmoothing
         procedure, private :: applyGradientSmoothing
@@ -159,6 +165,10 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%Fst_y_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%Fst_z_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
 
+    allocate(this%Fst_x_3D_Exact(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%Fst_y_3D_Exact(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%Fst_z_3D_Exact(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+
     allocate(this%PjxD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%PjyD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%PjzD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
@@ -224,6 +234,7 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%Gy_Storage(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,0:2))
     allocate(this%curvature_storage(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,0:2))
     allocate(this%sigma_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
+    allocate(this%sigma_3D_Exact(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
     
     allocate(this%phi(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%phi_x(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
@@ -241,8 +252,6 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%PartitionOfUnityWeight(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%DistanceField(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%trueDistanceField(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
-
-
 end subroutine init
 
 subroutine get_dmomdt(this,resU,resV,resW)
@@ -1611,7 +1620,7 @@ subroutine updateSurfaceTensionStresses3D(this)
                 do j_in = -3,3
                     do i_in = -3,3
                         do k_in = -3,3
-                            if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. this%vf%VFmin .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. this%vf%VFmax) then
+                            if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. 1e-12 .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. 1.0_WP - 1e-12) then
 
                                 cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k+k_in))
                                 ! Get Plane
@@ -1728,6 +1737,176 @@ subroutine updateSurfaceTensionStresses3D(this)
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,3))
 end subroutine updateSurfaceTensionStresses3D
 
+subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class, only: solveFace,solveFaceEllipsoid
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in,k_in,shift_first_index,shift_second_index ! Current Cell Location
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PU_RectCub_type) :: solver
+    real(WP),dimension(3,3) :: A
+    real(WP),dimension(3) :: v
+    ! Temp Items
+    type(SeparatorVariant_type) :: plane
+    real(WP), dimension(1:3) :: cen,force,corner,dvec,shift,forceB
+    real(WP), dimension(1:3) :: P0,P1,P2,P3,pressure_cell_center,velocity_cell_center,face_center
+    real(WP) :: dx,dy,dz
+    real(WP) :: x_i,y_j,z_k
+
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dy(1)
+    dz = this%vf%cfg%dz(1)
+    dvec = (/dx,dy,dz/)
+    shift = dvec
+    ! Create Neighborhood and solver  
+    call new(neighborhood) 
+    call new(solver)
+    ! Loop over real domain 
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            ! if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then   
+                ! Empty Neighborhood
+                call emptyNeighborhood(neighborhood) 
+                ! Set Neighborhood in solver
+                do j_in = -3,3
+                    do i_in = -3,3
+                        do k_in = -3,3
+                            if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. 1e-12 .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. 1.0_WP - 1e-12) then
+
+                                cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k+k_in))
+                                ! Get Plane
+                                plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k+k_in)
+                                
+                                call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
+                            endif
+                        enddo
+                    end do
+                end do
+
+                call setNeighborhood(solver,neighborhood)
+                call setThreshold(solver,1e-6_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
+                ! ====== Get Stresses
+                ! call printSolver(solver)
+                ! We are going to loop over the stress components and calculate them
+                x_i = this%fs%cfg%x(i)
+                y_j = this%fs%cfg%y(j)
+                z_k = this%fs%cfg%z(k)
+                corner = (/x_i,y_j,z_k/)
+                ! First, get the cell center of the cell we are in
+                pressure_cell_center = (/this%fs%cfg%xm(i),this%fs%cfg%ym(j),this%fs%cfg%zm(k)/)
+                do i_in = 1,3 ! Cell Loop, This tells us the force direction
+                    ! Set up shift to velocity cell
+                    shift = (/0.0_WP,0.0_WP,0.0_WP/)  
+                    shift(i_in) = dvec(i_in)/2
+                    ! Move center to velocity cell we are looking at
+                    velocity_cell_center = pressure_cell_center - shift
+                    do j_in = 1,3 ! Face Loop, This tells us the normal direction
+                        force = (/0.0_WP,0.0_WP,0.0_WP/)
+                        ! Shift from velocity cell center ot the face center we are looking at:
+                        shift = (/0.0_WP,0.0_WP,0.0_WP/)  
+                        shift(j_in) = dvec(j_in)/2
+                        face_center = velocity_cell_center + shift
+                        ! Now that we have the face center and normal direction (all positive normals)
+                        ! we can use the pattern below to get a CCW orientation:
+                        ! -- =>  +- => ++ => -+
+                        ! The directions we apply this two are the directions perpendicular to our normal, in CCW order. This is to say if our directional order is:
+                        ! (x,y,z) then we use  (y,z) for x normal, (z,x) for y normal, and (x,y) for z normal
+                        ! This is where we define those directions, in indices
+                        shift_first_index = mod(j_in,3)+1
+                        shift_second_index = mod(j_in+1,3)+1
+                        ! Apply to get first corner
+                        shift = dvec/2     
+                        shift(j_in) = 0.0_WP
+                        shift(shift_first_index) = -shift(shift_first_index)
+                        shift(shift_second_index) = -shift(shift_second_index)
+                        P0 = face_center + shift
+
+                        ! Apply to get first corner
+                        shift = dvec/2     
+                        shift(j_in) = 0.0_WP
+                        shift(shift_first_index) = shift(shift_first_index)
+                        shift(shift_second_index) = -shift(shift_second_index)
+                        P1 = face_center + shift
+
+                        ! Apply to get first corner 
+                        shift = dvec/2     
+                        shift(j_in) = 0.0_WP
+                        shift(shift_first_index) = shift(shift_first_index)
+                        shift(shift_second_index) = shift(shift_second_index)
+                        P2 = face_center + shift
+
+                        ! Apply to get first corner
+                        shift = dvec/2     
+                        shift(j_in) = 0.0_WP
+                        shift(shift_first_index) = -shift(shift_first_index)
+                        shift(shift_second_index) = shift(shift_second_index)
+                        P3 = face_center + shift
+
+                        ! Now that we have the face corners, run the code and get the force
+                        ! if(this%vf%VF(i,j,k) .gt. 1e-12 .and. this%vf%VF(i,j,k) .lt. 1.0_WP - 1e-12) then 
+                        
+                        call solveFaceEllipsoid(solver,this%fs%sigma,P0,P1,P2,P3,A(:,1),A(:,2),A(:,3),v,this%PressureOption,this%MarangoniOption,force)
+                        call solveFace(solver,this%fs%sigma,P0,P1,P2,P3,this%PU_spread*dx,this%PressureOption,this%MarangoniOption,forceB)
+                        if(this%vf%cfg%amRoot .and. i_in .eq. 2 .and. sqrt(sum(force ** 2)) .gt. 1e-6 .and. j_in .eq. 2) then
+                            if(abs(force(3)-forceB(3)) .gt. 1) then 
+                                print *,"Component: ",i_in,j_in," at ",i,j,k
+                                print *,"Force: ",force 
+                                print *,"Force B : ",forceB
+                            endif
+                            ! STOP
+                        endif
+                        ! endif
+                        ! print *, force  
+                        this%sigma_3D_Exact(i,j,k,i_in,j_in) = force(i_in)
+                        if(force(i_in) .gt. 1e6) then 
+                            Stop
+                        endif
+                        ! Do Prints here 
+
+                        ! print *, "==================================="
+                        ! print *, "i_in,j_in: ",i_in,j_in
+                        ! print *, "pressure_cell_center: ", pressure_cell_center
+                        ! print *, "velocity_cell_center: ", velocity_cell_center
+                        ! print *, "face_center: ", face_center 
+                        ! print *, "shift_first_index: ", shift_first_index 
+                        ! print *, "shift_second_index: ", shift_second_index 
+                        ! print *, "P0: ", P0
+                        ! print *, "P1: ", P1
+                        ! print *, "P2: ", P2
+                        ! print *, "P3: ", P3
+                        ! write(*,'(A)', advance='no') "For Desmos: [("
+                        ! write(*,'(F10.5, A, F10.5, A)', advance='no') P0(shift_first_index), ",", P0(shift_second_index), "),("
+                        ! write(*,'(F10.5, A, F10.5, A)', advance='no') P1(shift_first_index), ",", P1(shift_second_index), "),("
+                        ! write(*,'(F10.5, A, F10.5, A)', advance='no') P2(shift_first_index), ",", P2(shift_second_index), "),("
+                        ! write(*,'(F10.5, A, F10.5, A)', advance='yes') P3(shift_first_index), ",", P3(shift_second_index), ")]"
+                        ! print *, "==================================="
+                        
+                    enddo
+                enddo
+                ! STOP
+        end do
+        end do
+    end do
+    ! Boundary Conditions 
+    call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,1,1))
+    call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,1,2))
+    call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,1,3))
+
+    call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,2,1))
+    call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,2,2))
+    call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,2,3))
+
+    call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,3,1))
+    call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,3,2))
+    call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,3,3))
+    ! print *, "full sum stress",sqrt(sum(this%sigma_3D_Exact**2)) 
+end subroutine updateSurfaceTensionStresses3DEllipsoid
+
 subroutine updateSurfaceTensionForces3D(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
@@ -1764,6 +1943,43 @@ subroutine updateSurfaceTensionForces3D(this)
     call this%vf%cfg%sync(this%Fst_y_3D(:,:,:))
     call this%vf%cfg%sync(this%Fst_x_3D(:,:,:))
 end subroutine updateSurfaceTensionForces3D
+
+subroutine updateSurfaceTensionForces3DEllipsoid(this)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k 
+
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            ! X Component
+            this%Fst_x_3D_Exact(i,j,k) = (this%sigma_3D_Exact(i,j,k,1,1)-this%sigma_3D_Exact(i-1,j,k,1,1)) + &
+                                (this%sigma_3D_Exact(i,j,k,1,2)-this%sigma_3D_Exact(i,j-1,k,1,2)) + &
+                                (this%sigma_3D_Exact(i,j,k,1,3)-this%sigma_3D_Exact(i,j,k-1,1,3))
+            this%Fst_x_3D_Exact(i,j,k) = this%Fst_x_3D_Exact(i,j,k) * this%fs%cfg%dxi(i) ! This assumes uniform mesh
+            ! Y Component
+            this%Fst_y_3D_Exact(i,j,k) = (this%sigma_3D_Exact(i,j,k,2,1)-this%sigma_3D_Exact(i-1,j,k,2,1)) + &
+                                (this%sigma_3D_Exact(i,j,k,2,2)-this%sigma_3D_Exact(i,j-1,k,2,2)) + &
+                                (this%sigma_3D_Exact(i,j,k,2,3)-this%sigma_3D_Exact(i,j,k-1,2,3))
+            this%Fst_y_3D_Exact(i,j,k) = this%Fst_y_3D_Exact(i,j,k) * this%fs%cfg%dyi(j)
+            ! Z Component
+            this%Fst_z_3D_Exact(i,j,k) = (this%sigma_3D_Exact(i,j,k,3,1)-this%sigma_3D_Exact(i-1,j,k,3,1)) + &
+                                (this%sigma_3D_Exact(i,j,k,3,2)-this%sigma_3D_Exact(i,j-1,k,3,2)) + &
+                                (this%sigma_3D_Exact(i,j,k,3,3)-this%sigma_3D_Exact(i,j,k-1,3,3))
+            this%Fst_z_3D_Exact(i,j,k) = this%Fst_z_3D_Exact(i,j,k) * this%fs%cfg%dzi(k)
+        end do
+        end do
+    end do
+    ! Here, we would need to do assignment to Fst_xyz to actually use in the operators.  
+    call this%vf%cfg%sync(this%Fst_z_3D_Exact(:,:,:))
+    call this%vf%cfg%sync(this%Fst_y_3D_Exact(:,:,:))
+    call this%vf%cfg%sync(this%Fst_x_3D_Exact(:,:,:))
+end subroutine updateSurfaceTensionForces3DEllipsoid
 
 
 subroutine updateSurfaceTensionForces(this)
@@ -3049,7 +3265,7 @@ subroutine updatePartitionOfUnity(this)
     end do
 end subroutine updatePartitionOfUnity
 
-subroutine getProjectedGeometry(this,initialIndex,projectedPoint,tangent,curvature,value,weight)
+subroutine getProjectedGeometry(this,initialIndex,projectedPoint,normal,curvature,value,weight)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
@@ -3060,7 +3276,7 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,tangent,curvatu
     integer :: i,j,k,j_in,i_in,k_in,count ! Current Cell Location 
     type(PUNeigh_RectCub_type) :: neighborhood
     type(PU_RectCub_type) :: solver
-    real(WP), dimension(1:3) :: initialPoint,projectedPoint,tangent
+    real(WP), dimension(1:3) :: initialPoint,projectedPoint,normal
     integer, dimension(1:3) :: initialIndex
     real(WP) :: curvature
     real(WP),optional :: value, weight
@@ -3094,7 +3310,7 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,tangent,curvatu
             enddo
         end do
     end do
-    ! Set Neighborhood in solver 
+    ! Set Neighborhood in solver  
     call setNeighborhood(solver,neighborhood)
     call setThreshold(solver,1e-6_WP) 
 
@@ -3115,7 +3331,7 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,tangent,curvatu
         call getValue(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),value)   
     endif
     ! ===== Tangent Value
-    call getTangent(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),tangent) 
+    call getNormalPU(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),normal) 
     ! ===== Curvature
     call getCurvature(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),curvature)
     ! ===== Optional Weight
@@ -3125,7 +3341,163 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,tangent,curvatu
 
 end subroutine getProjectedGeometry
 
+subroutine getProjectedGeometryEllipsoid(this,initialIndex,A,v,projectedPoint,normal,curvature,evaluationPoint)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in,k_in,count ! Current Cell Location 
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PU_RectCub_type) :: solver
+    real(WP), dimension(1:3) :: initialPoint,projectedPoint,tangent
+    real(WP), dimension(1:3), optional :: evaluationPoint,normal
+    real(WP), optional :: curvature
+    real(WP), dimension(3) :: v
+    real(WP), dimension(3,3) :: A
+    integer, dimension(1:3) :: initialIndex
+    ! Temp Items
+    type(SeparatorVariant_type) :: plane
+    real(WP), dimension(1:3) :: cen,Gcen,Lcen,force,pos,tangentHolder,cenInitial
+    real(WP) :: dx,dy,xEval,yEval,zEval,Scale
+    ! write(*,'(A,3F35.10)') ' ============================================================================== Scale value: ', Scale 
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dy(1)
+    ! Create Neighborhood and solver 
+    call new(neighborhood) 
+    call new(solver)
+    call emptyNeighborhood(neighborhood)
+    ! Add 7x7 (3 on each side) stencil, in plane 
+    ! cen = (/vf%cfg%xm(ind(1)),vf%cfg%ym(ind(2)),vf%cfg%zm(ind(3))/)
+    ! call addMember(neighborhood,cen,vf%liquid_gas_interface(ind(1),ind(2),ind(3)))
+    i = initialIndex(1)
+    j = initialIndex(2)
+    k = initialIndex(3) 
+    
+    ! Set Neighborhood in solver 
+    call setNeighborhood(solver,neighborhood)
+    call setThreshold(solver,1e-6_WP) 
+
+    ! Project to PU
+    cenInitial = calculateCentroid(this%vf%interface_polygon(1,i,j,k))
+    call projectToEllipsoid(solver,cenInitial,A(:,1),A(:,2),A(:,3),v,projectedPoint)
+    
+    
+    ! If the evaluation Point is present, use that to get normal and curvature of ellipsoide.
+    ! Else use the Projected Point
+    if(present(evaluationPoint)) then 
+        xEval = evaluationPoint(1)
+        yEval = evaluationPoint(2)
+        zEval = evaluationPoint(3)
+    else 
+        xEval = projectedPoint(1)
+        yEval = projectedPoint(2)
+        zEval = projectedPoint(3)
+    endif 
+    ! Only evaluate if these are present 
+    if(present(normal)) then 
+        call getNormalEllipsoid(solver,xEval,yEval,zEval,A(:,1),A(:,2),A(:,3),v,normal)
+    endif
+
+    if(present(curvature)) then 
+        call getMeanCurvatureEllipsoid(solver,xEval,yEval,zEval,A(:,1),A(:,2),A(:,3),v,curvature)
+    endif
 
 
+end subroutine getProjectedGeometryEllipsoid
+
+subroutine getValuePU(this,pt,value)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in,k_in ! Current Cell Location 
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PU_RectCub_type) :: solver
+    integer, dimension(1:3) :: initialIndex,indGuess
+    real(WP) :: value
+    ! Temp Items
+    type(SeparatorVariant_type) :: plane
+    real(WP), dimension(1:3) :: cen,pt
+    real(WP) :: dx,dy
+    ! write(*,'(A,3F35.10)') ' ============================================================================== Scale value: ', Scale 
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dy(1)
+    ! Create Neighborhood and solver
+    call new(neighborhood) 
+    call new(solver)
+    call emptyNeighborhood(neighborhood)
+    ! Add 7x7 (3 on each side) stencil, in plane 
+    indGuess = (/1,1,1/)
+    initialIndex = this%vf%cfg%get_ijk_global(pt,indGuess)
+    ! print *,"Got Index"  
+    i = initialIndex(1)
+    j = initialIndex(2)
+    k = initialIndex(3) 
+    ! print *,"Assigned IJK",i,j,k
+    do j_in = -3,3
+        do i_in = -3,3
+            do k_in = -3,3
+                if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. 1e-12 .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. 1.0_WP - 1e-12) then
+                    if(i+i_in .gt. -2 .and. i+i_in .lt. this%vf%cfg%imax+3 .and. & 
+                       j+j_in .gt. -2 .and. j+j_in .lt. this%vf%cfg%jmax+3 .and. & 
+                       k+k_in .gt. -2 .and. k+k_in .lt. this%vf%cfg%kmax+3) then 
+                        cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k+k_in))
+                        ! Get Plane
+                        plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k+k_in)
+                        call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
+                    endif
+                endif
+            enddo
+        end do
+    end do
+    ! print *,"Set Neighborhood"  
+    ! Set Neighborhood in solver  
+    call setNeighborhood(solver,neighborhood)
+    call setThreshold(solver,1e-6_WP) 
+    ! print *,"Done Solver"
+
+
+    ! ===== Get Value
+    call getValue(solver,pt(1),pt(2),pt(3),this%PU_spread*this%vf%cfg%dx(1),value) 
+    ! print *,"Got Value"  
+end subroutine getValuePU
+
+subroutine updateStresses(this, A,v)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    real(WP), dimension(3) :: v
+    real(WP), dimension(3,3) :: A
+
+    call this%updateSurfaceTensionStresses3D()
+    
+    call this%updateSurfaceTensionStresses3DEllipsoid(A,v)
+
+end subroutine updateStresses
+
+subroutine updateForces(this, A,v)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    real(WP), dimension(3) :: v
+    real(WP), dimension(3,3) :: A
+
+    call this%updateSurfaceTensionForces3D()
+
+    call this%updateSurfaceTensionForces3DEllipsoid()
+
+end subroutine updateForces
 
 end module conservative_st

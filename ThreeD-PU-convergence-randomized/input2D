@@ -60,8 +60,8 @@ Ensight output period : 12e-3
 # Trial Inputs - In Delta X
 Param Min : -0.5
 Param Max : 0.5
-Randomized Trials : 100
+Randomized Trials : 1000
 
 Nmin : 16
-Nmult : 5 !5
+Nmult : 4 !5
 Ratio : 2.0
