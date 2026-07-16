@@ -48,7 +48,7 @@ Bubble position :  0 -2.25 0
 # Time integration
 Max timestep size : 1e-3
 Max cfl number :    1.2
-Max time :          1.2
+Max time :          2.4
 
 # Pressure solver
 Pressure tolerance : 1e-4

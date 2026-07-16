@@ -1924,17 +1924,17 @@ subroutine updateSurfaceTensionForces3D(this)
             this%Fst_x_3D(i,j,k) = (this%sigma_3D(i,j,k,1,1)-this%sigma_3D(i-1,j,k,1,1)) + &
                                 (this%sigma_3D(i,j,k,1,2)-this%sigma_3D(i,j-1,k,1,2)) + &
                                 (this%sigma_3D(i,j,k,1,3)-this%sigma_3D(i,j,k-1,1,3))
-            this%Fst_x_3D(i,j,k) = this%Fst_x_3D(i,j,k) * this%fs%cfg%dxi(i) ! This assumes uniform mesh
+            this%Fst_x_3D(i,j,k) = this%Fst_x_3D(i,j,k) * this%fs%cfg%dzi(k) * this%fs%cfg%dyi(j) ! This assumes uniform mesh 
             ! Y Component
             this%Fst_y_3D(i,j,k) = (this%sigma_3D(i,j,k,2,1)-this%sigma_3D(i-1,j,k,2,1)) + &
                                 (this%sigma_3D(i,j,k,2,2)-this%sigma_3D(i,j-1,k,2,2)) + &
                                 (this%sigma_3D(i,j,k,2,3)-this%sigma_3D(i,j,k-1,2,3))
-            this%Fst_y_3D(i,j,k) = this%Fst_y_3D(i,j,k) * this%fs%cfg%dyi(j)
+            this%Fst_y_3D(i,j,k) = this%Fst_y_3D(i,j,k) * this%fs%cfg%dzi(k) * this%fs%cfg%dxi(i)
             ! Z Component
             this%Fst_z_3D(i,j,k) = (this%sigma_3D(i,j,k,3,1)-this%sigma_3D(i-1,j,k,3,1)) + &
                                 (this%sigma_3D(i,j,k,3,2)-this%sigma_3D(i,j-1,k,3,2)) + &
                                 (this%sigma_3D(i,j,k,3,3)-this%sigma_3D(i,j,k-1,3,3))
-            this%Fst_z_3D(i,j,k) = this%Fst_z_3D(i,j,k) * this%fs%cfg%dzi(k)
+            this%Fst_z_3D(i,j,k) = this%Fst_z_3D(i,j,k) * this%fs%cfg%dxi(i) * this%fs%cfg%dyi(j)
         end do
         end do
     end do
@@ -1961,17 +1961,17 @@ subroutine updateSurfaceTensionForces3DEllipsoid(this)
             this%Fst_x_3D_Exact(i,j,k) = (this%sigma_3D_Exact(i,j,k,1,1)-this%sigma_3D_Exact(i-1,j,k,1,1)) + &
                                 (this%sigma_3D_Exact(i,j,k,1,2)-this%sigma_3D_Exact(i,j-1,k,1,2)) + &
                                 (this%sigma_3D_Exact(i,j,k,1,3)-this%sigma_3D_Exact(i,j,k-1,1,3))
-            this%Fst_x_3D_Exact(i,j,k) = this%Fst_x_3D_Exact(i,j,k) * this%fs%cfg%dxi(i) ! This assumes uniform mesh
+            this%Fst_x_3D_Exact(i,j,k) = this%Fst_x_3D_Exact(i,j,k) * this%fs%cfg%dzi(k) * this%fs%cfg%dyi(j)! This assumes uniform mesh
             ! Y Component
             this%Fst_y_3D_Exact(i,j,k) = (this%sigma_3D_Exact(i,j,k,2,1)-this%sigma_3D_Exact(i-1,j,k,2,1)) + &
                                 (this%sigma_3D_Exact(i,j,k,2,2)-this%sigma_3D_Exact(i,j-1,k,2,2)) + &
                                 (this%sigma_3D_Exact(i,j,k,2,3)-this%sigma_3D_Exact(i,j,k-1,2,3))
-            this%Fst_y_3D_Exact(i,j,k) = this%Fst_y_3D_Exact(i,j,k) * this%fs%cfg%dyi(j)
+            this%Fst_y_3D_Exact(i,j,k) = this%Fst_y_3D_Exact(i,j,k) * this%fs%cfg%dzi(k) * this%fs%cfg%dxi(i)
             ! Z Component
             this%Fst_z_3D_Exact(i,j,k) = (this%sigma_3D_Exact(i,j,k,3,1)-this%sigma_3D_Exact(i-1,j,k,3,1)) + &
                                 (this%sigma_3D_Exact(i,j,k,3,2)-this%sigma_3D_Exact(i,j-1,k,3,2)) + &
                                 (this%sigma_3D_Exact(i,j,k,3,3)-this%sigma_3D_Exact(i,j,k-1,3,3))
-            this%Fst_z_3D_Exact(i,j,k) = this%Fst_z_3D_Exact(i,j,k) * this%fs%cfg%dzi(k)
+            this%Fst_z_3D_Exact(i,j,k) = this%Fst_z_3D_Exact(i,j,k) * this%fs%cfg%dxi(i) * this%fs%cfg%dyi(j)
         end do
         end do
     end do
