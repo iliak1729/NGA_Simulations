@@ -8,8 +8,8 @@ echo "Complete"
 
 echo "Copying DATA to OLD file"
 
-cp -r ./vtk ./OLD/N128-128-192-3D/
-cp -r ./monitor ./OLD/N128-128-192-3D/
+cp -r ./vtk ./OLD/N128-128-192-3DB/
+cp -r ./monitor ./OLD/N128-128-192-3DB/
 
 echo "COPY COMPLETE"
 
