@@ -2,9 +2,9 @@
 Partition : 4 2 2
 
 # Mesh definition
-Lx : 6 !0.02 !0.2
-Ly : 3 !0.02 !0.2
-Lz : 3 !0.02 !0.2
+Lx : 3.5 !0.02 !0.2
+Ly : 1.5 !0.02 !0.2
+Lz : 1.5 !0.02 !0.2
 nx : 64    !128
 ny : 32    !128
 nz : 32    !128
@@ -15,8 +15,8 @@ Two Dimensional : .false.
 Gravity :                     0 0.0 0
 Liquid dynamic viscosity :    1.0
 Gas dynamic viscosity :       25.0
-Liquid density :              1.72
-Gas density :                 43.0
+Liquid density :              0.539163866017
+Gas density :                 13.4790966504
 Surface tension coefficient : 1.0
 
 # Definition of two bubbles
@@ -24,7 +24,7 @@ Surface tension coefficient : 1.0
 #Bubble position :  -2.1e-3 0 0               !0 0 0
 #Bubble 2 position : 1.9e-3 0 0
 
-Marangoni :  -1 -1 0
+Marangoni :  -1 -1 -1
 Pressure : 0
 Smoothing Option : 1
 Surface Tension Option : 8
@@ -33,16 +33,16 @@ PU Spread : 2.0
 
 
 # Definition of single bubble (Weber)
-Bubble Radius : 1.0
+Bubble Radius : 0.5
 
 # Time integration
 Max timestep size : 1e-2
 Max cfl number :    0.8
-Max time :          100
+Max time :          10
 
 # Pressure solver
 Pressure tolerance : 1e-4
-Pressure iteration : 100
+Pressure iteration : 10
 
 # Ensight output
 Ensight output period : 1e-2

@@ -9,8 +9,8 @@ echo "Complete"
 
 echo "Copying DATA to OLD file"
 
-cp -r ./vtk ./OLD/N64-64-96-3D-NOSHIFT/
-cp -r ./monitor ./OLD/N64-64-96-3D-NOSHIFT/
+# cp -r ./vtk ./OLD/N64-64-96-3D-NOSHIFT/
+# cp -r ./monitor ./OLD/N64-64-96-3D-NOSHIFT/
 
 echo "COPY COMPLETE"
 

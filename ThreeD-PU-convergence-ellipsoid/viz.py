@@ -34,13 +34,13 @@ def safe_float(x):
 
 
 # Get Data
-datafile = "ThreeD-PU-convergence-ellipsoid/OLD_SHARE/Final/Error_Values_2D_EllipsoidStress_SpreadSweep"
+datafile = "ThreeD-PU-convergence-ellipsoid/OLD_SHARE/Final/Error_Values_2D_EllipsoidStress_SpreadSweepACOS"
 d1 = np.loadtxt(datafile, skiprows=2,converters=(safe_float))
-datafile = "ThreeD-PU-convergence-ellipsoid/OLD_SHARE/Final/Error_Values_2D_EllipsoidStress_SpreadSweep_Jibben"
+datafile = "ThreeD-PU-convergence-ellipsoid/OLD_SHARE/Final/Error_Values_2D_EllipsoidStress_SpreadSweepACOS_Jibben"
 d2 = np.loadtxt(datafile, skiprows=2,converters=(safe_float))
-datafile = "ThreeD-PU-convergence-ellipsoid/OLD_SHARE/Final/Error_Values_3D_EllipsoidStress_SpreadSweep"
+datafile = "ThreeD-PU-convergence-ellipsoid/OLD_SHARE/Final/Error_Values_3D_EllipsoidStress_SpreadSweepACOS"
 d3 = np.loadtxt(datafile, skiprows=2,converters=(safe_float))
-datafile = "ThreeD-PU-convergence-ellipsoid/OLD_SHARE/Final/Error_Values_3D_EllipsoidStress_SpreadSweep_Jibben"
+datafile = "ThreeD-PU-convergence-ellipsoid/OLD_SHARE/Final/Error_Values_3D_EllipsoidStress_SpreadSweepACOS_Jibben"
 d4 = np.loadtxt(datafile, skiprows=2,converters=(safe_float))
 
 # Extra Values for N=  16,32,64,128,256,512 for 2D and N= 16,32,64,128 for 3D
@@ -109,63 +109,63 @@ output_dir = Path("ThreeD-PU-convergence-ellipsoid/OLD_SHARE/Output")
 output_dir.mkdir(parents=True, exist_ok=True)
 count = 0
 
-# for col, name in zip(columns, names):
-#     count = count + 1
-#     # 2D 
-#     plt.figure()
-#     plt.semilogy(data2D16[:, 2], data2D16[:, col], 'o-', label='N=16', color=color_orange)
-#     plt.semilogy(data2D32[:, 2], data2D32[:, col], 'o-', label='N=32', color=color_skyblue)
-#     plt.semilogy(data2D64[:, 2], data2D64[:, col], 'o-', label='N=64', color=color_teal)
-#     plt.semilogy(data2D128[:, 2], data2D128[:, col], 'o-', label='N=128', color=color_yellow)
-#     plt.semilogy(data2D256[:, 2], data2D256[:, col], 'o-', label='N=256', color=color_blue)
-#     plt.semilogy(data2D512[:, 2], data2D512[:, col], 'o-', label='N=512', color=color_red)
+for col, name in zip(columns, names):
+    count = count + 1
+    # 2D 
+    plt.figure()
+    plt.semilogy(data2D16[:, 2], data2D16[:, col], 'o-', label='N=16', color=color_orange)
+    plt.semilogy(data2D32[:, 2], data2D32[:, col], 'o-', label='N=32', color=color_skyblue)
+    plt.semilogy(data2D64[:, 2], data2D64[:, col], 'o-', label='N=64', color=color_teal)
+    plt.semilogy(data2D128[:, 2], data2D128[:, col], 'o-', label='N=128', color=color_yellow)
+    plt.semilogy(data2D256[:, 2], data2D256[:, col], 'o-', label='N=256', color=color_blue)
+    plt.semilogy(data2D512[:, 2], data2D512[:, col], 'o-', label='N=512', color=color_red)
 
-#     plt.xlabel('Spread')
-#     plt.ylabel(name)
-#     plt.title(f'{name} vs Spread for 2D Ellipse')
-#     plt.legend()
-#     plt.savefig(output_dir / f"{count}_{name.replace(' ', '_')}_2D.png", dpi=300, bbox_inches="tight")
-#     # 2D Jibben
-#     plt.figure()
-#     plt.semilogy(data2D16J[:, 2], data2D16J[:, col], 'o-', label='N=16', color=color_orange)
-#     plt.semilogy(data2D32J[:, 2], data2D32J[:, col], 'o-', label='N=32', color=color_skyblue)
-#     plt.semilogy(data2D64J[:, 2], data2D64J[:, col], 'o-', label='N=64', color=color_teal)
-#     plt.semilogy(data2D128J[:, 2], data2D128J[:, col], 'o-', label='N=128', color=color_yellow)
-#     plt.semilogy(data2D256J[:, 2], data2D256J[:, col], 'o-', label='N=256', color=color_blue)
-#     plt.semilogy(data2D512J[:, 2], data2D512J[:, col], 'o-', label='N=512', color=color_red)
+    plt.xlabel('Spread')
+    plt.ylabel(name)
+    plt.title(f'{name} vs Spread for 2D Ellipse')
+    plt.legend()
+    plt.savefig(output_dir / f"{count}_{name.replace(' ', '_')}_2D.png", dpi=300, bbox_inches="tight")
+    # 2D Jibben
+    plt.figure()
+    plt.semilogy(data2D16J[:, 2], data2D16J[:, col], 'o-', label='N=16', color=color_orange)
+    plt.semilogy(data2D32J[:, 2], data2D32J[:, col], 'o-', label='N=32', color=color_skyblue)
+    plt.semilogy(data2D64J[:, 2], data2D64J[:, col], 'o-', label='N=64', color=color_teal)
+    plt.semilogy(data2D128J[:, 2], data2D128J[:, col], 'o-', label='N=128', color=color_yellow)
+    plt.semilogy(data2D256J[:, 2], data2D256J[:, col], 'o-', label='N=256', color=color_blue)
+    plt.semilogy(data2D512J[:, 2], data2D512J[:, col], 'o-', label='N=512', color=color_red)
 
-#     plt.xlabel('Spread')
-#     plt.ylabel(name)
-#     plt.title(f'{name} vs Spread for 2D Ellipse (Jibben)')
-#     plt.legend()
-#     plt.savefig(output_dir / f"{count}_{name.replace(' ', '_')}_2D_Jibben.png", dpi=300, bbox_inches="tight")
-#     # 3D 
-#     plt.figure()
-#     plt.semilogy(data3D16[:, 2], data3D16[:, col], 'o-', label='N=16', color=color_orange)
-#     plt.semilogy(data3D32[:, 2], data3D32[:, col], 'o-', label='N=32', color=color_skyblue)
-#     plt.semilogy(data3D64[:, 2], data3D64[:, col], 'o-', label='N=64', color=color_teal)
-#     plt.semilogy(data3D128[:, 2], data3D128[:, col], 'o-', label='N=128', color=color_yellow)
+    plt.xlabel('Spread')
+    plt.ylabel(name)
+    plt.title(f'{name} vs Spread for 2D Ellipse (Jibben)')
+    plt.legend()
+    plt.savefig(output_dir / f"{count}_{name.replace(' ', '_')}_2D_Jibben.png", dpi=300, bbox_inches="tight")
+    # 3D 
+    plt.figure()
+    plt.semilogy(data3D16[:, 2], data3D16[:, col], 'o-', label='N=16', color=color_orange)
+    plt.semilogy(data3D32[:, 2], data3D32[:, col], 'o-', label='N=32', color=color_skyblue)
+    plt.semilogy(data3D64[:, 2], data3D64[:, col], 'o-', label='N=64', color=color_teal)
+    plt.semilogy(data3D128[:, 2], data3D128[:, col], 'o-', label='N=128', color=color_yellow)
 
-#     plt.xlabel('Spread')
-#     plt.ylabel(name)
-#     plt.title(f'{name} vs Spread for 3D Ellipse')
-#     plt.legend()
-#     plt.savefig(output_dir / f"{count}_{name.replace(' ', '_')}_3D.png", dpi=300, bbox_inches="tight")
-#     # 3D Jibben
-#     plt.figure()
-#     plt.semilogy(data3D16J[:, 2], data3D16J[:, col], 'o-', label='N=16', color=color_orange)
-#     plt.semilogy(data3D32J[:, 2], data3D32J[:, col], 'o-', label='N=32', color=color_skyblue)
-#     plt.semilogy(data3D64J[:, 2], data3D64J[:, col], 'o-', label='N=64', color=color_teal)
-#     plt.semilogy(data3D128J[:, 2], data3D128J[:, col], 'o-', label='N=128', color=color_yellow)
+    plt.xlabel('Spread')
+    plt.ylabel(name)
+    plt.title(f'{name} vs Spread for 3D Ellipse')
+    plt.legend()
+    plt.savefig(output_dir / f"{count}_{name.replace(' ', '_')}_3D.png", dpi=300, bbox_inches="tight")
+    # 3D Jibben
+    plt.figure()
+    plt.semilogy(data3D16J[:, 2], data3D16J[:, col], 'o-', label='N=16', color=color_orange)
+    plt.semilogy(data3D32J[:, 2], data3D32J[:, col], 'o-', label='N=32', color=color_skyblue)
+    plt.semilogy(data3D64J[:, 2], data3D64J[:, col], 'o-', label='N=64', color=color_teal)
+    plt.semilogy(data3D128J[:, 2], data3D128J[:, col], 'o-', label='N=128', color=color_yellow)
 
-#     plt.xlabel('Spread')
-#     plt.ylabel(name)
-#     plt.title(f'{name} vs Spread for 3D Ellipse (Jibben)')
-#     plt.legend()
-#     plt.savefig(output_dir / f"{count}_{name.replace(' ', '_')}_3D_Jibben.png", dpi=300, bbox_inches="tight")
+    plt.xlabel('Spread')
+    plt.ylabel(name)
+    plt.title(f'{name} vs Spread for 3D Ellipse (Jibben)')
+    plt.legend()
+    plt.savefig(output_dir / f"{count}_{name.replace(' ', '_')}_3D_Jibben.png", dpi=300, bbox_inches="tight")
     
-#     plt.close('all')  # Close all figures to free memory
-#     print(f"Saved plots for {name}")
+    plt.close('all')  # Close all figures to free memory
+    print(f"Saved plots for {name}")
 
 
 
@@ -249,8 +249,8 @@ for col, name in zip(cols, names):
     plt.grid(True, which='both', ls=':')
     plt.legend()
     plt.show()
-    # plt.savefig(output_dir / f"{name.replace(' ','_')}_Spread2_Convergence.png",
-    #             dpi=300, bbox_inches="tight")
+    plt.savefig(output_dir / f"{name.replace(' ','_')}_Spread2_Convergence.png",
+                dpi=300, bbox_inches="tight")
     plt.close()
     
     print(f"Saved {name}")

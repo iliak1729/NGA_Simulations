@@ -435,7 +435,7 @@ contains
             integer, parameter :: amr_ref_lvl=4
             
             ! Create a VOF solver
-            call vf%initialize(cfg=cfg,reconstruction_method=jibben,transport_method=flux_storage,name='VOF')
+            call vf%initialize(cfg=cfg,reconstruction_method=lvira,transport_method=flux_storage,name='VOF')
             !vf%cons_correct=.false.
             !vf%thin_thld_max=1.5_WP
             !vf%twoplane_thld2=0.8_WP 
@@ -607,9 +607,10 @@ contains
                         ! Tangent Error
                         ! Normalize Tangents
                         normal = normal / sqrt(sum(normal**2))
-                        normal_exact = normal_exact / sqrt(sum(normal_exact**2))
+                        normal_exact = -normal_exact / sqrt(sum(normal_exact**2))
 
-                        errorMatrix_tangent(i,j,k) = 1.0_WP + sum(normal*normal_exact)
+                        ! errorMatrix_tangent(i,j,k) = 1.0_WP - sum(normal*normal_exact)
+                        errorMatrix_tangent(i,j,k) = ACOS(sum(normal*normal_exact))
 
                         ! Curvature Error
                         errorMatrix_curvature(i,j,k) = (abs(curv)-abs(curv_exact))/abs(curv_exact)
