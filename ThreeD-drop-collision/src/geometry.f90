@@ -24,14 +24,22 @@ contains
       create_grid: block
          use sgrid_class, only: cartesian
          integer :: i,j,k,nx,ny,nz
-         real(WP) :: Lx,Ly,Lz
+         real(WP) :: Lx,Ly,Lz,diameter
+         real(WP) :: Lx_D,Ly_D,Lz_D
          real(WP), dimension(:), allocatable :: x,y,z
          
          ! Read in grid definition
-         call param_read('Lx',Lx); call param_read('nx',nx); allocate(x(nx+1))
-         call param_read('Ly',Ly); call param_read('ny',ny); allocate(y(ny+1))
-         call param_read('Lz',Lz); call param_read('nz',nz); 
+         call param_read('Lx_D',Lx_D); call param_read('nx',nx); allocate(x(nx+1))
+         call param_read('Ly_D',Ly_D); call param_read('ny',ny); allocate(y(ny+1))
+         call param_read('Lz_D',Lz_D); call param_read('nz',nz); 
+         
          call param_read('Two Dimensional',twoD)
+         call param_read('Droplet Radius', diameter)
+         diameter = 2*diameter 
+
+         Lx = diameter*Lx_D 
+         Ly = diameter*Ly_D
+         Lz = diameter*Lz_D 
          
          if(twoD) then 
             Lz = Lx/nx 

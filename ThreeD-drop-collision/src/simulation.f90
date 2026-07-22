@@ -61,7 +61,7 @@ contains
       real(WP) :: G
       ! Create the bubble
       G=radius-sqrt(sum((xyz-center)**2))
-      if (second_bubble) G=max(G,radius2-sqrt(sum((xyz-center2)**2)))
+      G=max(G,radius2-sqrt(sum((xyz-center2)**2)))
    end function levelset_rising_bubble
    
    function levelset_RT(xyz,t) result(G)
@@ -193,22 +193,20 @@ contains
          real(WP), dimension(3) :: v_cent,a_cent
          real(WP) :: vol,area
          integer, parameter :: amr_ref_lvl=4
+         real(WP) :: B
          ! Create a VOF solver
-         call vf%initialize(cfg=cfg,reconstruction_method=plicnet,transport_method=flux_storage,name='VOF')
+         call vf%initialize(cfg=cfg,reconstruction_method=lvira,transport_method=flux_storage,name='VOF')
          !vf%cons_correct=.false.
          !vf%thin_thld_max=1.5_WP
          !vf%twoplane_thld2=0.8_WP
          ! Initialize a bubble
-         call param_read('Bubble position',center,default=[0.0_WP,0.0_WP,0.0_WP])
-         call param_read('Bubble Radius',radius);
-         ! Add a second one if needed
-         second_bubble=param_exists('Bubble 2 position')
-         if (second_bubble) then
-            call param_read('Bubble 2 position',center2)
-            call param_read('Bubble 2 Radius',radius2)
-            print *, "Center2 = ",center2
-            print *, "radius2 = ",radius2
-         end if
+         call param_read('Droplet Radius',radius)
+         call param_read('Impact Parameter', B)
+         ! Now that we have radius and Impact Parameter
+         ! Assume the droplets move in the X directio only, and are separated in the Y direction. 
+         center = (/-1.5*radius,-radius*B,0.0_WP/)
+         center2 = (/1.5*radius,radius*B,0.0_WP/)
+         radius2 = radius
          ! Generate interface
          do k=vf%cfg%kmino_,vf%cfg%kmaxo_
             do j=vf%cfg%jmino_,vf%cfg%jmaxo_
@@ -261,6 +259,7 @@ contains
          use tpns_class,      only: clipped_neumann,dirichlet
          integer :: i,j,k
          real(WP),dimension(3) :: xyz
+         real(WP) :: Re,We,U
          ! Create flow solver
          fs=tpns(cfg=cfg,name='Two-phase NS')
          ! Assign constant viscosity to each phase
@@ -269,8 +268,6 @@ contains
          ! Assign constant density to each phase
          call param_read('Liquid density',fs%rho_l)
          call param_read('Gas density',fs%rho_g)
-         ! Read in surface tension coefficient
-         call param_read('Surface tension coefficient',fs%sigma)
          ! Assign acceleration of gravity
          call param_read('Gravity',gravity); fs%gravity=gravity
          ! Configure pressure solver
@@ -282,9 +279,15 @@ contains
          vs=ddadi(cfg=cfg,name='Velocity',nst=7)
          ! Setup the solver
          call fs%setup(pressure_solver=ps,implicit_solver=vs)
-         ! Zero initial field
-         call param_read('Bubble 1 Velocity',U1)
-         call param_read('Bubble 2 Velocity',U2)
+         ! initial field
+         call param_read('Reynolds Number',Re)
+         U = fs%visc_l * Re /(2*fs%rho_l*radius)
+         U1 = (/U,0.0_WP,0.0_WP/)
+         U2 = (/-U,0.0_WP,0.0_WP/)
+
+         ! Surface Tension
+         call param_read('Weber Number',We)
+         fs%sigma = 2*radius*fs%rho_l*U*U/We
 
          do k=vf%cfg%kmino_,vf%cfg%kmaxo_
             do j=vf%cfg%jmino_,vf%cfg%jmaxo_
@@ -294,7 +297,7 @@ contains
                      fs%U(i,j,k) = U1(1)*vf%VF(i,j,k)
                      fs%V(i,j,k) = U1(2)*vf%VF(i,j,k)
                      fs%W(i,j,k) = U1(3)*vf%VF(i,j,k)
-                  else if(sqrt(sum((xyz-center2)**2)) .lt. radius2+2*vf%cfg%dx(i)) then ! Near Droplet 2
+                  else if(sqrt(sum((xyz-center2)**2)) .lt. radius+2*vf%cfg%dx(i)) then ! Near Droplet 2
                      fs%U(i,j,k) = U2(1)*vf%VF(i,j,k)
                      fs%V(i,j,k) = U2(2)*vf%VF(i,j,k)
                      fs%W(i,j,k) = U2(3)*vf%VF(i,j,k)
@@ -326,44 +329,44 @@ contains
          call cst%temp()
       end block create_surface_tension_solver
       
-      ! Temperature Solver
-      create_and_initialize_temperature_solver : block 
-         integer :: i,j,k
-         call ts%init(fs,vf,time)
-         call ts%temp()
-         ts%rhoL = fs%rho_l
-         ts%rhoG = fs%rho_g 
-         ts%cpL = 1.0_WP
-         ts%cpG = 1.0_WP 
-         ts%kL = 0.1_WP
-         ts%kG = 0.1_WP
-         ! Parameters
-         call param_read('Lx',Lx)
-         call param_read('Ly',Ly)
+      ! ! Temperature Solver
+      ! create_and_initialize_temperature_solver : block 
+      !    integer :: i,j,k
+      !    call ts%init(fs,vf,time)
+      !    call ts%temp()
+      !    ts%rhoL = fs%rho_l
+      !    ts%rhoG = fs%rho_g 
+      !    ts%cpL = 1.0_WP
+      !    ts%cpG = 1.0_WP 
+      !    ts%kL = 0.1_WP
+      !    ts%kG = 0.1_WP
+      !    ! Parameters
+      !    call param_read('Lx',Lx)
+      !    call param_read('Ly',Ly)
          
-         call param_read('k1',ts%kL)
-         call param_read('k2',ts%kG)
+      !    call param_read('k1',ts%kL)
+      !    call param_read('k2',ts%kG)
 
-         call param_read('cp1',ts%cpL)
-         call param_read('cp2',ts%cpG)
+      !    call param_read('cp1',ts%cpL)
+      !    call param_read('cp2',ts%cpG)
 
-         call param_read('Top Temperature',Ttop)
-         call param_read('Bottom Temperature',Tbot)
-         ! Initial Condition
-         do k=vf%cfg%kmino_,vf%cfg%kmaxo_
-            do j=vf%cfg%jmino_,vf%cfg%jmaxo_
-               do i=vf%cfg%imino_,vf%cfg%imaxo_
-                  ! Note that the exact linear profile is:
-                  ! (Ttop-Tbot)*y/Ly + Tbot.
-                  ! Since it is linear, the value in a cell is equal to that at the center
-                  ts%T(i,j,k) = (Ttop - Tbot) * (fs%cfg%ym(j)+Ly/2.0_WP)/Ly + Tbot
-               enddo
-            enddo
-         enddo
-         call ts%populate_enthalpy()
-         ts%TG = ts%T
-         ts%TL = ts%T
-      end block create_and_initialize_temperature_solver
+      !    call param_read('Top Temperature',Ttop)
+      !    call param_read('Bottom Temperature',Tbot)
+      !    ! Initial Condition
+      !    do k=vf%cfg%kmino_,vf%cfg%kmaxo_
+      !       do j=vf%cfg%jmino_,vf%cfg%jmaxo_
+      !          do i=vf%cfg%imino_,vf%cfg%imaxo_
+      !             ! Note that the exact linear profile is:
+      !             ! (Ttop-Tbot)*y/Ly + Tbot.
+      !             ! Since it is linear, the value in a cell is equal to that at the center
+      !             ts%T(i,j,k) = (Ttop - Tbot) * (fs%cfg%ym(j)+Ly/2.0_WP)/Ly + Tbot
+      !          enddo
+      !       enddo
+      !    enddo
+      !    call ts%populate_enthalpy()
+      !    ts%TG = ts%T
+      !    ts%TL = ts%T
+      ! end block create_and_initialize_temperature_solver
      
 
 
@@ -387,7 +390,6 @@ contains
          call ens_out%add_scalar('pressure',fs%P)
          call ens_out%add_scalar('curvature',vf%curv)
          call ens_out%add_surface('plic',smesh)
-         call ens_out%add_scalar('Enthalpy',ts%H)
          call ens_out%add_vector('sigma_3d_x',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
          call ens_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
          call ens_out%add_vector('sigma_3d_z',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
@@ -396,13 +398,6 @@ contains
          call ens_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
          call ens_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
          call ens_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
-
-         call ens_out%add_scalar('cp',ts%cp)
-         call ens_out%add_scalar('One Fluid Temp',ts%T)
-         call ens_out%add_scalar('Interface Temperature',ts%Tinterface)
-         call ens_out%add_vector('Temperatures',ts%TPmix,ts%TG,ts%TL)
-         call ens_out%add_vector('Extrapolated Temperatures',ts%TPmix,ts%TGExtrap,ts%TLExtrap)
-         call ens_out%add_vector('Palmore Temperatures',ts%TPmix,ts%TGExtrapPalmore,ts%TLExtrapPalmore)
 
          
          ! Output to ensight
@@ -466,7 +461,8 @@ contains
       integer :: i,j,k
       ! Perform time integration
       do while (.not.time%done())
-         
+         print *,"Time = ",time%t,"/",time%tmax
+         print *,"dt = ",time%dt
          ! Increment time
          call fs%get_cfl(time%dt,time%cfl)
          call time%adjust_dt()
@@ -480,12 +476,12 @@ contains
          fs%Vold=fs%V
          fs%Wold=fs%W
          
-         ! Remember old scalar
-         ts%Hold=ts%H
-         call ts%populate_temperature()
-         ts%Told = ts%T
-         ts%TGold = ts%TG
-         ts%TLold = ts%TL
+         ! ! Remember old scalar
+         ! ts%Hold=ts%H
+         ! call ts%populate_temperature()
+         ! ts%Told = ts%T
+         ! ts%TGold = ts%TG
+         ! ts%TLold = ts%TL
 
          ! Prepare old staggered density (at n)
          call fs%get_olddensity(vf=vf)
@@ -498,64 +494,64 @@ contains
          ! Perform sub-iterations
          do while (time%it.le.time%itmax)
             ! mid-time Scalar
-            ts%H = 0.5_WP*(ts%H+ts%Hold)
-            ts%TG = 0.5_WP*(ts%TG+ts%TGold)
-            ts%TL = 0.5_WP*(ts%TL+ts%TLold)
+            ! ts%H = 0.5_WP*(ts%H+ts%Hold)
+            ! ts%TG = 0.5_WP*(ts%TG+ts%TGold)
+            ! ts%TL = 0.5_WP*(ts%TL+ts%TLold)
             ! Build mid-time velocity
             fs%U=0.5_WP*(fs%U+fs%Uold)
             fs%V=0.5_WP*(fs%V+fs%Vold)
             fs%W=0.5_WP*(fs%W+fs%Wold)
             
-            ! ============= SCALAR SOLVER =======================
-            rho = vf%VF*fs%rho_l + (1.0_WP-vf%VF)*fs%rho_g
-            resU = fs%U; resV = fs%V; resW = fs%W;
-            ! Explicit Calculation of dHdt
-            ! call ts%get_dHdt_SL(resH,resU,resV,resW,vf%detailed_face_flux, time%dt)
-            call ts%get_dHdt(resH,resU,resV,resW)
-            ! Explicit Update
-            ts%H = ts%Hold + resH * time%dt 
-            call ts%populate_temperature()
-            ! ! Explicit Resdiual
-            ! resH = -2.0_WP *(ts%H - ts%Hold)+time%dt*resH
-            ! ! Form implicit residual
-            ! call ts%solve_implicit(time%dt,resH,resU,resV,resW)
-            ! ! Apply residual
-            ! ts%H = 2*ts%H - ts%Hold + resH
-            ! ! Apply other boundary conditions
-            call ts%apply_bcond(time%t,time%dt)
-            ! Extrapolate Values
-            dtps = 1e-2
-            ! call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrapPalmore,dtps)
-            ! call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrapPalmore,dtps)
+            ! ! ============= SCALAR SOLVER =======================
+            ! ! rho = vf%VF*fs%rho_l + (1.0_WP-vf%VF)*fs%rho_g
+            ! resU = fs%U; resV = fs%V; resW = fs%W;
+            ! ! Explicit Calculation of dHdt
+            ! ! call ts%get_dHdt_SL(resH,resU,resV,resW,vf%detailed_face_flux, time%dt)
+            ! call ts%get_dHdt(resH,resU,resV,resW)
+            ! ! Explicit Update
+            ! ts%H = ts%Hold + resH * time%dt 
+            ! call ts%populate_temperature()
+            ! ! ! Explicit Resdiual
+            ! ! resH = -2.0_WP *(ts%H - ts%Hold)+time%dt*resH
+            ! ! ! Form implicit residual
+            ! ! call ts%solve_implicit(time%dt,resH,resU,resV,resW)
+            ! ! ! Apply residual
+            ! ! ts%H = 2*ts%H - ts%Hold + resH
+            ! ! ! Apply other boundary conditions
+            ! call ts%apply_bcond(time%t,time%dt)
+            ! ! Extrapolate Values
+            ! dtps = 1e-2
+            ! ! call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrapPalmore,dtps)
+            ! ! call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrapPalmore,dtps)
 
-            ! Step
-            call ts%step_temperature_palmore(resHG,resHL,resU,resV,resW,time%dt)
-            call ts%mix_temperature_palmore()
+            ! ! Step
+            ! call ts%step_temperature_palmore(resHG,resHL,resU,resV,resW,time%dt)
+            ! call ts%mix_temperature_palmore()
 
-            call ts%extrapolate_fields_normal(ts%TL,vf%VF,ts%TLExtrap)
-            call ts%extrapolate_fields_normal(ts%TG,1.0_WP - vf%VF,ts%TGExtrap)
-            ts%TL = ts%TLExtrap
-            ts%TG = ts%TGExtrap
+            ! call ts%extrapolate_fields_normal(ts%TL,vf%VF,ts%TLExtrap)
+            ! call ts%extrapolate_fields_normal(ts%TG,1.0_WP - vf%VF,ts%TGExtrap)
+            ! ts%TL = ts%TLExtrap
+            ! ts%TG = ts%TGExtrap
 
-            ! Dirichlet Boundary Condition
-            do k=vf%cfg%kmino_,vf%cfg%kmaxo_
-               do j=vf%cfg%jmino_,vf%cfg%jmaxo_
-                  do i=vf%cfg%imino_,vf%cfg%imaxo_
-                     ! Note that the exact linear profile is:
-                     ! (Ttop-Tbot)*y/Ly + Tbot.
-                     ! Since it is linear, the value in a cell is equal to that at the center
-                     if(fs%cfg%ym(j) .lt. -Ly/2.0 + fs%cfg%dy(j)) then 
-                        ts%T(:,j,:) = Tbot 
-                     endif
+            ! ! Dirichlet Boundary Condition
+            ! do k=vf%cfg%kmino_,vf%cfg%kmaxo_
+            !    do j=vf%cfg%jmino_,vf%cfg%jmaxo_
+            !       do i=vf%cfg%imino_,vf%cfg%imaxo_
+            !          ! Note that the exact linear profile is:
+            !          ! (Ttop-Tbot)*y/Ly + Tbot.
+            !          ! Since it is linear, the value in a cell is equal to that at the center
+            !          if(fs%cfg%ym(j) .lt. -Ly/2.0 + fs%cfg%dy(j)) then 
+            !             ts%T(:,j,:) = Tbot 
+            !          endif
 
-                     if(fs%cfg%ym(j) .gt. Ly/2.0 - fs%cfg%dy(j)) then 
-                        ts%T(:,j,:) = Ttop 
-                     endif
-                  enddo
-               enddo
-            enddo
-            call ts%populate_enthalpy()
-            ! ===================================================
+            !          if(fs%cfg%ym(j) .gt. Ly/2.0 - fs%cfg%dy(j)) then 
+            !             ts%T(:,j,:) = Ttop 
+            !          endif
+            !       enddo
+            !    enddo
+            ! enddo
+            ! call ts%populate_enthalpy()
+            ! ! ===================================================
 
             ! Preliminary mass and momentum transport step at the interface
             call fs%prepare_advection_upwind(dt=time%dt)

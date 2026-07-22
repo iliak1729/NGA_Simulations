@@ -1,14 +1,13 @@
 # Parallelization
 Partition : 2 2 1
 
-# 
-# Mesh definition
-Lx : 0.0024 
-Ly : 0.0012
-Lz : 0.0012
-nx : 96    !128
-ny : 48    !128
-nz : 48    !128
+# Mesh Definition as Multiples of Diameter
+Lx_D = 10
+Ly_D = 10
+Lz_D = 10
+nx : 64    !128
+ny : 64    !128
+nz : 64    !128
 
 # Are we using a moving domain?
 Two Dimensional : .true. 
@@ -23,15 +22,15 @@ Gas density :                 1.225
 Marangoni :  0 0 0
 Pressure : 1
 Smoothing Option : 1
-Surface Tension Option : 8
+Surface Tension Option : 1
 Curvature Option : 1
 PU Spread : 2.0
 
 # Simulation Parameters
-Droplet Radius : 120e-6
-Weber Number : 0.2
-Reynolds Number : 14.8
-Impact Parameter : 0.2
+Droplet Radius : 131e-6
+Weber Number : 8.6
+Reynolds Number : 105.9
+Impact Parameter :0.1
 
 # Time integration
 Max timestep size : 1e-5

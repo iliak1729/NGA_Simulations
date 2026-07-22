@@ -3,12 +3,12 @@ Partition : 2 2 1
 
 # 
 # Mesh definition
-Lx : 0.0024 
-Ly : 0.0012
-Lz : 0.0012
-nx : 96    !128
-ny : 48    !128
-nz : 48    !128
+Lx_D = 10
+Ly_D = 10
+Lz_D = 10
+nx : 64    !128
+ny : 64    !128
+nz : 64    !128
 
 # Are we using a moving domain?
 Two Dimensional : .true. 
@@ -28,10 +28,10 @@ Curvature Option : 1
 PU Spread : 2.0
 
 # Simulation Parameters
-Droplet Radius : 120e-6
-Weber Number : 0.2
-Reynolds Number : 14.8
-Impact Parameter : 0.2
+Droplet Radius : 167e-6
+Weber Number : 61.4
+Reynolds Number : 295.3
+Impact Parameter : 0.11
 
 # Time integration
 Max timestep size : 1e-5

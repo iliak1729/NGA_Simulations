@@ -1,5 +1,5 @@
 # Parallelization
-Partition : 2 2 2
+Partition : 1 1 1
 
 # Mesh definition
 Lx : 5 !0.02 !0.2
@@ -32,7 +32,7 @@ cp2 : 0.1 #Gas
 Marangoni :  0 0 0
 Pressure : 1
 Smoothing Option : 1
-Surface Tension Option : 8
+Surface Tension Option : 1
 Curvature Option : 1
 PU Spread : 2.0
 
@@ -42,8 +42,6 @@ Tube Radius : 0.5
 Wave Amplitude : 0.45
 Wavelenth : 1
 Phase : 0.0
-
-
 
 # Time integration
 Max timestep size : 1e-1
