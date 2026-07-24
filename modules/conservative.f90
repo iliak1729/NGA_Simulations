@@ -30,6 +30,7 @@ module conservative_st
         ! Options
         real(WP), dimension(3) :: MarangoniOption
         integer :: SurfaceTensionOption,CurvatureOption,SmoothingOption
+        logical :: TwoD
         real(WP) :: PressureOption
         ! Solvers
         type(tpns),pointer,public :: fs => null()
@@ -881,7 +882,7 @@ subroutine add_3D_surface_tension_jump(this,dt,div,contact_model)
     this%fs%Pjx = this%Fst_x_3D 
     this%fs%Pjy = this%Fst_y_3D
     this%fs%Pjz = this%Fst_z_3D
-    
+    print *,sqrt(sum(this%Fst_z_3D**2))
     SELECT CASE (this%SmoothingOption)
         CASE(1)
         
@@ -1723,6 +1724,11 @@ subroutine updateSurfaceTensionStresses3D(this)
         end do
         end do
     end do
+    ! Two Dimensional Adjustment
+    if(this%TwoD) then 
+        this%sigma_3D(:,:,:,:,3) = 0.0_WP
+        this%sigma_3D(:,:,:,3,:) = 0.0_WP 
+    endif
     ! Boundary Conditions 
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,1,1))
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,1,2))
@@ -1735,6 +1741,7 @@ subroutine updateSurfaceTensionStresses3D(this)
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,1))
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,2))
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,3))
+
 end subroutine updateSurfaceTensionStresses3D
 
 subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
@@ -1892,6 +1899,10 @@ subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
         end do
         end do
     end do
+    if(this%TwoD) then 
+        this%sigma_3D(:,:,:,:,3) = 0.0_WP
+        this%sigma_3D(:,:,:,3,:) = 0.0_WP 
+    endif
     ! Boundary Conditions 
     call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,1,1))
     call this%vf%cfg%sync(this%sigma_3D_Exact(:,:,:,1,2))
@@ -1922,22 +1933,34 @@ subroutine updateSurfaceTensionForces3D(this)
         do i=this%fs%cfg%imin_,this%fs%cfg%imax_
             ! X Component
             this%Fst_x_3D(i,j,k) = (this%sigma_3D(i,j,k,1,1)-this%sigma_3D(i-1,j,k,1,1)) + &
-                                (this%sigma_3D(i,j,k,1,2)-this%sigma_3D(i,j-1,k,1,2)) + &
+                                (this%sigma_3D(i,j,k,1,2)-this%sigma_3D(i,j-1,k,1,2)) 
+            if(.not. this%TwoD) then 
+                this%Fst_x_3D(i,j,k) = this%Fst_x_3D(i,j,k) + &
                                 (this%sigma_3D(i,j,k,1,3)-this%sigma_3D(i,j,k-1,1,3))
+            endif
+
             this%Fst_x_3D(i,j,k) = this%Fst_x_3D(i,j,k) * this%fs%cfg%dzi(k) * this%fs%cfg%dyi(j) ! This assumes uniform mesh 
             ! Y Component
             this%Fst_y_3D(i,j,k) = (this%sigma_3D(i,j,k,2,1)-this%sigma_3D(i-1,j,k,2,1)) + &
-                                (this%sigma_3D(i,j,k,2,2)-this%sigma_3D(i,j-1,k,2,2)) + &
+                                (this%sigma_3D(i,j,k,2,2)-this%sigma_3D(i,j-1,k,2,2))
+            if(.not. this%TwoD) then 
+                this%Fst_y_3D(i,j,k) = this%Fst_y_3D(i,j,k) + &
                                 (this%sigma_3D(i,j,k,2,3)-this%sigma_3D(i,j,k-1,2,3))
+            endif
+                                
             this%Fst_y_3D(i,j,k) = this%Fst_y_3D(i,j,k) * this%fs%cfg%dzi(k) * this%fs%cfg%dxi(i)
             ! Z Component
-            this%Fst_z_3D(i,j,k) = (this%sigma_3D(i,j,k,3,1)-this%sigma_3D(i-1,j,k,3,1)) + &
+            this%Fst_z_3D(i,j,k) = 0.0_WP 
+            if(.not. this%TwoD) then 
+                this%Fst_z_3D(i,j,k) = (this%sigma_3D(i,j,k,3,1)-this%sigma_3D(i-1,j,k,3,1)) + &
                                 (this%sigma_3D(i,j,k,3,2)-this%sigma_3D(i,j-1,k,3,2)) + &
                                 (this%sigma_3D(i,j,k,3,3)-this%sigma_3D(i,j,k-1,3,3))
+            endif
             this%Fst_z_3D(i,j,k) = this%Fst_z_3D(i,j,k) * this%fs%cfg%dxi(i) * this%fs%cfg%dyi(j)
         end do
         end do
     end do
+    
     ! Here, we would need to do assignment to Fst_xyz to actually use in the operators.  
     call this%vf%cfg%sync(this%Fst_z_3D(:,:,:))
     call this%vf%cfg%sync(this%Fst_y_3D(:,:,:))

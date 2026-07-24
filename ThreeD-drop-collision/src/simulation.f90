@@ -13,6 +13,7 @@ module simulation
    use vtk_class,         only: vtk
    use event_class,          only: event
    use monitor_class,        only: monitor
+   use config_class, only: config
    use temp_transport
    use irl_fortran_interface
    use conservative_st
@@ -24,14 +25,14 @@ module simulation
    type(hypre_str),      public :: ps
    type(ddadi),          public :: vs
    type(tpns),           public :: fs
-   type(vfs),            public :: vf
+   type(vfs),            public :: vf,vf_PU
    type(tads),           public :: ts
    type(timetracker),    public :: time
    type(conservative_st_type), public :: cst
 
    !> Ensight postprocessing
-   type(surfmesh) :: smesh
-   type(vtk)  :: ens_out
+   type(surfmesh) :: smesh,smesh_PU
+   type(vtk)  :: ens_out,PU_ens_out
    type(event)    :: ens_evt
    
    !> Simulation monitor file
@@ -50,6 +51,10 @@ module simulation
    real(WP) :: volume,radius,radius2,Ycent,Vrise
    real(WP) :: Vin,Vin_old,Vrise_ref,Ycent_ref,G,ti
    real(WP) :: Tbot,Ttop,Ly,Lx,dtps
+
+   ! For Visualization 
+   type(config), public :: cfg_PU
+
 contains
 
 
@@ -63,7 +68,18 @@ contains
       G=radius-sqrt(sum((xyz-center)**2))
       G=max(G,radius2-sqrt(sum((xyz-center2)**2)))
    end function levelset_rising_bubble
-   
+
+   function levelset_PU(xyz,t) result(G)
+      implicit none
+      real(WP), dimension(3),intent(in) :: xyz
+      real(WP), dimension(3) :: dr
+      real(WP), intent(in) :: t
+      real(WP) :: G
+
+      call cst%getValuePU(xyz,G)
+      G = -G
+   end function levelset_PU
+
    function levelset_RT(xyz,t) result(G)
       use param, only: param_read
       implicit none
@@ -326,47 +342,118 @@ contains
          call param_read('Surface Tension Option',cst%SurfaceTensionOption)
          call param_read('Curvature Option',cst%CurvatureOption)
          call param_read('PU Spread',cst%PU_spread)
+         call param_read('Two Dimensional',cst%TwoD)
          call cst%temp()
       end block create_surface_tension_solver
       
-      ! ! Temperature Solver
-      ! create_and_initialize_temperature_solver : block 
-      !    integer :: i,j,k
-      !    call ts%init(fs,vf,time)
-      !    call ts%temp()
-      !    ts%rhoL = fs%rho_l
-      !    ts%rhoG = fs%rho_g 
-      !    ts%cpL = 1.0_WP
-      !    ts%cpG = 1.0_WP 
-      !    ts%kL = 0.1_WP
-      !    ts%kG = 0.1_WP
-      !    ! Parameters
-      !    call param_read('Lx',Lx)
-      !    call param_read('Ly',Ly)
+      ! Visual Output
+      print *,"Making vfPU"
+      create_and_initialize_vof_for_PU: block
+         use mms_geom,  only: cube_refine_vol 
+         use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage,lvira,jibben
+         use mathtools, only: Pi
+         use parallel, only: group
+         use sgrid_class, only: sgrid
+         use sgrid_class, only: cartesian
+         integer, dimension(3) :: partition
+         type(sgrid) :: grid
+         integer :: i,j,k,n,si,sj,sk,nx,ny,nz 
+         logical :: twoD
+         real(WP), dimension(3,8) :: cube_vertex
+         real(WP), dimension(3) :: v_cent,a_cent
+         real(WP) :: vol,area,Lx,Ly,Lz,diameter,Lx_D,Ly_D,Lz_D
+         real(WP), dimension(:), allocatable :: x,y,z
+         integer, parameter :: amr_ref_lvl=0
+         integer, parameter :: vf_ref_lvl=1
+         ! Create Refined Config
+         ! Read in grid definition
+         call param_read('Lx_D',Lx_D); call param_read('nx',nx); 
+         call param_read('Ly_D',Ly_D); call param_read('ny',ny); 
+         call param_read('Lz_D',Lz_D); call param_read('nz',nz); 
+         nx = nx * vf_ref_lvl 
+         ny = ny * vf_ref_lvl
+         nz = nz * vf_ref_lvl
+
+         call param_read('Two Dimensional',twoD)
+         call param_read('Droplet Radius', diameter)
+         diameter = 2*diameter 
+         Lx = diameter*Lx_D 
+         Ly = diameter*Ly_D
+         Lz = diameter*Lz_D 
          
-      !    call param_read('k1',ts%kL)
-      !    call param_read('k2',ts%kG)
+         if(twoD) then 
+            Lz = Lx/nx 
+            nz = 1
+         endif
+         allocate(x(nx+1))
+         allocate(y(ny+1))
+         allocate(z(nz+1))
+         ! Create simple rectilinear grid
+         do i=1,nx+1
+            x(i)=real(i-1,WP)/real(nx,WP)*Lx-0.5_WP*Lx
+         end do
+         do j=1,ny+1
+            y(j)=real(j-1,WP)/real(ny,WP)*Ly-0.5_WP*Ly
+         end do
+         do k=1,nz+1
+            z(k)=real(k-1,WP)/real(nz,WP)*Lz-0.5_WP*Lz
+         end do
+         grid=sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.true.,yper=.true.,zper=.true.,name='PUVOF')
+         call param_read('Partition',partition,short='p')
+         cfg_PU=config(grp=group,decomp=partition,grid=grid)
+         ! Create a VOF solver
+         call vf_PU%initialize(cfg=cfg_PU,reconstruction_method=lvira,transport_method=flux_storage,name='PUVOF')
+         ! Generate interface  
+         do k=vf_PU%cfg%kmino_,vf_PU%cfg%kmaxo_
+            do j=vf_PU%cfg%jmino_,vf_PU%cfg%jmaxo_
+               do i=vf_PU%cfg%imino_,vf_PU%cfg%imaxo_
+                  ! Set cube vertices
+                  n=0
+                  do sk=0,1
+                     do sj=0,1
+                        do si=0,1
+                           n=n+1; cube_vertex(:,n)=[vf_PU%cfg%x(i+si),vf_PU%cfg%y(j+sj),vf_PU%cfg%z(k+sk)]
+                        end do
+                     end do
+                  end do
+                  ! Call adaptive refinement code to get volume and barycenters recursively
+                  vol=0.0_WP; area=0.0_WP; v_cent=0.0_WP; a_cent=0.0_WP
+                  ! print *, "AMRing",i,j,k-
+                  call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_PU,0.0_WP,amr_ref_lvl)
+                  ! print *, "Done"
+                  vf_PU%VF(i,j,k)=vol/vf_PU%cfg%vol(i,j,k)
+                  if (vf_PU%VF(i,j,k).ge.VFlo.and.vf_PU%VF(i,j,k).le.VFhi) then
+                     vf_PU%Lbary(:,i,j,k)=v_cent
+                     vf_PU%Gbary(:,i,j,k)=([vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]-vf_PU%VF(i,j,k)*vf_PU%Lbary(:,i,j,k))/(1.0_WP-vf_PU%VF(i,j,k))
+                  else
+                     vf_PU%Lbary(:,i,j,k)=[vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
+                     vf_PU%Gbary(:,i,j,k)=[vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
+                  end if
+               end do
+            end do
+         end do
+         ! Update the band
+         call vf_PU%update_band()
+         ! Perform interface reconstruction from VOF field 
+         call vf_PU%build_interface()
+         ! Set interface planes at the boundaries
+         call vf_PU%set_full_bcond()
+         ! Create discontinuous polygon mesh from IRL interface
+         call vf_PU%polygonalize_interface()
+         ! Calculate distance from polygons
+         call vf_PU%distance_from_polygon()
+         ! Calculate subcell phasic volumes
+         call vf_PU%subcell_vol()
+         ! Calculate curvature
+         call vf_PU%get_curvature()
+         ! Perform PPIC reconstruction
+         if (vf_PU%ppic) call vf_PU%build_quadratic_interface()
+         ! Reset moments to guarantee compatibility with interface reconstruction  
+         call vf_PU%reset_volume_moments()
 
-      !    call param_read('cp1',ts%cpL)
-      !    call param_read('cp2',ts%cpG)
-
-      !    call param_read('Top Temperature',Ttop)
-      !    call param_read('Bottom Temperature',Tbot)
-      !    ! Initial Condition
-      !    do k=vf%cfg%kmino_,vf%cfg%kmaxo_
-      !       do j=vf%cfg%jmino_,vf%cfg%jmaxo_
-      !          do i=vf%cfg%imino_,vf%cfg%imaxo_
-      !             ! Note that the exact linear profile is:
-      !             ! (Ttop-Tbot)*y/Ly + Tbot.
-      !             ! Since it is linear, the value in a cell is equal to that at the center
-      !             ts%T(i,j,k) = (Ttop - Tbot) * (fs%cfg%ym(j)+Ly/2.0_WP)/Ly + Tbot
-      !          enddo
-      !       enddo
-      !    enddo
-      !    call ts%populate_enthalpy()
-      !    ts%TG = ts%T
-      !    ts%TL = ts%T
-      ! end block create_and_initialize_temperature_solver
+      end block create_and_initialize_vof_for_PU
+         print *,"Made vfPU"
+      
      
 
 
@@ -376,11 +463,15 @@ contains
          call vf%update_surfmesh(smesh)
       end block create_smesh
       
-      
+      create_smesh_PU: block
+         smesh_PU=surfmesh(nvar=0,name='PU')
+         call vf_PU%update_surfmesh(smesh_PU)
+      end block create_smesh_PU
       ! Add Ensight output
       create_ensight: block
          ! Create Ensight output from cfg
-         ens_out=vtk(cfg=cfg,name='Marangoni-rise')
+         ens_out=vtk(cfg=cfg,name='DropCollision')
+         PU_ens_out=vtk(cfg=cfg_PU,name='PUDropCollision')
          ! Create event for Ensight output
          ens_evt=event(time=time,name='Ensight output')
          call param_read('Ensight output period',ens_evt%tper)
@@ -393,15 +484,19 @@ contains
          call ens_out%add_vector('sigma_3d_x',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
          call ens_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
          call ens_out%add_vector('sigma_3d_z',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
-
          call ens_out%add_scalar('sigma_xx_NoP',cst%sigma_xx_NoP)
          call ens_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
          call ens_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
          call ens_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
+         call ens_out%add_vector('ST Force',fs%Pjx,fs%Pjy,fs%Pjz)
+         call ens_out%add_vector('CSF Force',cst%PjxD,cst%PjyD,cst%PjzD)
 
-         
+
+         call PU_ens_out%add_scalar('PU VOF',vf_PU%VF)
+         call PU_ens_out%add_surface('PU',smesh_PU)
          ! Output to ensight
          if (ens_evt%occurs()) call ens_out%write_data(time%t)
+         if (ens_evt%occurs()) call PU_ens_out%write_data(time%t)
       end block create_ensight
       
       
@@ -493,65 +588,10 @@ contains
          
          ! Perform sub-iterations
          do while (time%it.le.time%itmax)
-            ! mid-time Scalar
-            ! ts%H = 0.5_WP*(ts%H+ts%Hold)
-            ! ts%TG = 0.5_WP*(ts%TG+ts%TGold)
-            ! ts%TL = 0.5_WP*(ts%TL+ts%TLold)
             ! Build mid-time velocity
             fs%U=0.5_WP*(fs%U+fs%Uold)
             fs%V=0.5_WP*(fs%V+fs%Vold)
             fs%W=0.5_WP*(fs%W+fs%Wold)
-            
-            ! ! ============= SCALAR SOLVER =======================
-            ! ! rho = vf%VF*fs%rho_l + (1.0_WP-vf%VF)*fs%rho_g
-            ! resU = fs%U; resV = fs%V; resW = fs%W;
-            ! ! Explicit Calculation of dHdt
-            ! ! call ts%get_dHdt_SL(resH,resU,resV,resW,vf%detailed_face_flux, time%dt)
-            ! call ts%get_dHdt(resH,resU,resV,resW)
-            ! ! Explicit Update
-            ! ts%H = ts%Hold + resH * time%dt 
-            ! call ts%populate_temperature()
-            ! ! ! Explicit Resdiual
-            ! ! resH = -2.0_WP *(ts%H - ts%Hold)+time%dt*resH
-            ! ! ! Form implicit residual
-            ! ! call ts%solve_implicit(time%dt,resH,resU,resV,resW)
-            ! ! ! Apply residual
-            ! ! ts%H = 2*ts%H - ts%Hold + resH
-            ! ! ! Apply other boundary conditions
-            ! call ts%apply_bcond(time%t,time%dt)
-            ! ! Extrapolate Values
-            ! dtps = 1e-2
-            ! ! call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrapPalmore,dtps)
-            ! ! call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrapPalmore,dtps)
-
-            ! ! Step
-            ! call ts%step_temperature_palmore(resHG,resHL,resU,resV,resW,time%dt)
-            ! call ts%mix_temperature_palmore()
-
-            ! call ts%extrapolate_fields_normal(ts%TL,vf%VF,ts%TLExtrap)
-            ! call ts%extrapolate_fields_normal(ts%TG,1.0_WP - vf%VF,ts%TGExtrap)
-            ! ts%TL = ts%TLExtrap
-            ! ts%TG = ts%TGExtrap
-
-            ! ! Dirichlet Boundary Condition
-            ! do k=vf%cfg%kmino_,vf%cfg%kmaxo_
-            !    do j=vf%cfg%jmino_,vf%cfg%jmaxo_
-            !       do i=vf%cfg%imino_,vf%cfg%imaxo_
-            !          ! Note that the exact linear profile is:
-            !          ! (Ttop-Tbot)*y/Ly + Tbot.
-            !          ! Since it is linear, the value in a cell is equal to that at the center
-            !          if(fs%cfg%ym(j) .lt. -Ly/2.0 + fs%cfg%dy(j)) then 
-            !             ts%T(:,j,:) = Tbot 
-            !          endif
-
-            !          if(fs%cfg%ym(j) .gt. Ly/2.0 - fs%cfg%dy(j)) then 
-            !             ts%T(:,j,:) = Ttop 
-            !          endif
-            !       enddo
-            !    enddo
-            ! enddo
-            ! call ts%populate_enthalpy()
-            ! ! ===================================================
 
             ! Preliminary mass and momentum transport step at the interface
             call fs%prepare_advection_upwind(dt=time%dt)
@@ -605,10 +645,72 @@ contains
          call fs%interp_vel(Ui,Vi,Wi)
          call fs%get_div()
          
+         ! Update VF_PU
+         print *,"Update vfPU"
+         Update_PU_VOF: block
+            use mms_geom,  only: cube_refine_vol 
+            use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage,lvira,jibben
+            use mathtools, only: Pi
+            integer :: i,j,k,n,si,sj,sk
+            real(WP), dimension(3,8) :: cube_vertex
+            real(WP), dimension(3) :: v_cent,a_cent
+            real(WP) :: vol,area
+            integer, parameter :: amr_ref_lvl=0
+            do k=vf_PU%cfg%kmino_,vf_PU%cfg%kmaxo_
+               do j=vf_PU%cfg%jmino_,vf_PU%cfg%jmaxo_
+                  do i=vf_PU%cfg%imino_,vf_PU%cfg%imaxo_
+                     ! Set cube vertices
+                     n=0
+                     do sk=0,1
+                        do sj=0,1
+                           do si=0,1
+                              n=n+1; cube_vertex(:,n)=[vf_PU%cfg%x(i+si),vf_PU%cfg%y(j+sj),vf_PU%cfg%z(k+sk)]
+                           end do
+                        end do
+                     end do
+                     ! Call adaptive refinement code to get volume and barycenters recursively
+                     vol=0.0_WP; area=0.0_WP; v_cent=0.0_WP; a_cent=0.0_WP
+                     ! print *, "AMRing",i,j,k-
+                     call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_PU,0.0_WP,amr_ref_lvl)
+                     ! print *, "Done"
+                     vf_PU%VF(i,j,k)=vol/vf_PU%cfg%vol(i,j,k)
+                     if (vf_PU%VF(i,j,k).ge.VFlo.and.vf_PU%VF(i,j,k).le.VFhi) then
+                        vf_PU%Lbary(:,i,j,k)=v_cent
+                        vf_PU%Gbary(:,i,j,k)=([vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]-vf_PU%VF(i,j,k)*vf_PU%Lbary(:,i,j,k))/(1.0_WP-vf_PU%VF(i,j,k))
+                     else
+                        vf_PU%Lbary(:,i,j,k)=[vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
+                        vf_PU%Gbary(:,i,j,k)=[vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
+                     end if
+                  end do
+               end do
+            end do
+            ! Update the band
+            call vf_PU%update_band()
+            ! Perform interface reconstruction from VOF field 
+            call vf_PU%build_interface()
+            ! Set interface planes at the boundaries
+            call vf_PU%set_full_bcond()
+            ! Create discontinuous polygon mesh from IRL interface
+            call vf_PU%polygonalize_interface()
+            ! Calculate distance from polygons
+            call vf_PU%distance_from_polygon()
+            ! Calculate subcell phasic volumes
+            call vf_PU%subcell_vol()
+            ! Calculate curvature
+            call vf_PU%get_curvature()
+            ! Perform PPIC reconstruction
+            if (vf_PU%ppic) call vf_PU%build_quadratic_interface()
+            ! Reset moments to guarantee compatibility with interface reconstruction  
+            call vf_PU%reset_volume_moments()
+
+         end block Update_PU_VOF
+         print *,"Updated vfPU"
          ! Output to ensight
          if (ens_evt%occurs()) then
             call vf%update_surfmesh(smesh)
+            call vf_PU%update_surfmesh(smesh_PU)
             call ens_out%write_data(time%t)
+            call PU_ens_out%write_data(time%t)
          end if
          
          ! Perform and output monitoring

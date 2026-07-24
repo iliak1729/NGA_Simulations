@@ -1,5 +1,5 @@
 # Parallelization
-Partition : 2 2 1
+Partition : 2 2 2
 
 # Mesh Definition as Multiples of Diameter
 Lx_D = 10
@@ -10,7 +10,7 @@ ny : 64    !128
 nz : 64    !128
 
 # Are we using a moving domain?
-Two Dimensional : .true. 
+Two Dimensional : .false. 
 # Fluid properties
 Gravity :                     0 0 0
 Liquid dynamic viscosity :    2.2e-3 # Liquid Tetradecane is 2.2e-3 Pas
@@ -22,7 +22,7 @@ Gas density :                 1.225
 Marangoni :  0 0 0
 Pressure : 1
 Smoothing Option : 1
-Surface Tension Option : 1
+Surface Tension Option : 8
 Curvature Option : 1
 PU Spread : 2.0
 
