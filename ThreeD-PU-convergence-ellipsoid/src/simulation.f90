@@ -81,7 +81,7 @@ contains
       real(WP), dimension(3) :: dr
       real(WP), intent(in) :: t
       real(WP), PARAMETER :: PI = 3.141592653589793
-      real(WP) :: G
+      real(WP) :: G 
       
       ! write(*,'(A,3F35.10)') '   center: ', center
       G=0.05*COS(2*PI*xyz(1))+xyz(2)
@@ -96,7 +96,7 @@ contains
       real(WP) :: G
 
       G=radius-sqrt(sum((xyz-center)**2))
-   end function levelset_sphere
+   end function levelset_sphere   
 
    !> Function that defines a level set function for a cylinder
    function levelset_cylinder(xyz,t) result(G)
@@ -561,7 +561,7 @@ contains
          errorMatrix_force_y = 0.0_WP
          errorMatrix_force_z = 0.0_WP
          if(cfg%amRoot .and. debug) then
-            print *, "Updating Errors"
+            print *, "Updating Errors" 
          endif
          update_distance_fields : block
             
@@ -595,10 +595,19 @@ contains
                         count = count +1
 
                         initialIndex = (/i,j,k/)
-                        ! Get Projected Values    
+                        if(cfg%amRoot .and. debug) then
+                           print *, "Start" 
+                        endif
+                        ! Get Projected Values     
                         call cst%getProjectedGeometry(initialIndex,pos,normal,curv)
+                        if(cfg%amRoot .and. debug) then
+                           print *, "Geometry"
+                        endif
                         ! Get Exact Values
                         call cst%getProjectedGeometryEllipsoid(initialIndex,A,center,posExact,normal_exact,curv_exact,pos)
+                        if(cfg%amRoot .and. debug) then
+                           print *, "Ellipsoid"
+                        endif
                         ! Radius Error
                         dPos = pos - posExact
                         dist = sqrt(sum(dPos**2))
@@ -614,6 +623,9 @@ contains
 
                         ! Curvature Error
                         errorMatrix_curvature(i,j,k) = (abs(curv)-abs(curv_exact))/abs(curv_exact)
+                        if(cfg%amRoot .and. debug) then
+                           print *, "Errors"
+                        endif
                      endif
 
                      ! Stress Error

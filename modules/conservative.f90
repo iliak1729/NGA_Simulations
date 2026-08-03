@@ -1433,7 +1433,7 @@ subroutine updateSurfaceTensionStresses(this)
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in ! Current Cell Location
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
     
     ! Temp Items
     type(SeparatorVariant_type) :: plane
@@ -1481,7 +1481,6 @@ subroutine updateSurfaceTensionStresses(this)
                 end do
                 ! Set Neighborhood in solver
                 call setNeighborhood(solver,neighborhood)
-                call setThreshold(solver,1e-6_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
                 ! ====== Get Stresses
 
                 ! sigma_xx, we go on right of u cell
@@ -1591,7 +1590,7 @@ subroutine updateSurfaceTensionStresses3D(this)
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in,k_in,shift_first_index,shift_second_index ! Current Cell Location
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
     
     ! Temp Items
     type(SeparatorVariant_type) :: plane
@@ -1634,7 +1633,6 @@ subroutine updateSurfaceTensionStresses3D(this)
                 end do
                 ! Set Neighborhood in solver
                 call setNeighborhood(solver,neighborhood)
-                call setThreshold(solver,1e-6_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
                 ! ====== Get Stresses
                 ! call printSolver(solver)
                 ! We are going to loop over the stress components and calculate them
@@ -1754,7 +1752,7 @@ subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in,k_in,shift_first_index,shift_second_index ! Current Cell Location
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
     real(WP),dimension(3,3) :: A
     real(WP),dimension(3) :: v
     ! Temp Items
@@ -1796,7 +1794,6 @@ subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
                 end do
 
                 call setNeighborhood(solver,neighborhood)
-                call setThreshold(solver,1e-6_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
                 ! ====== Get Stresses
                 ! call printSolver(solver)
                 ! We are going to loop over the stress components and calculate them
@@ -2860,9 +2857,9 @@ subroutine populate_levelset_with_pu(this)
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
-    integer :: i,j,k,j_in,i_in ! Current Cell Location
+    integer :: i,j,k,j_in,i_in ! Current Cell Location 
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
 
     ! Temp Items
     type(SeparatorVariant_type) :: plane
@@ -2898,7 +2895,6 @@ subroutine populate_levelset_with_pu(this)
             end do
             ! Set Neighborhood in solver
             call setNeighborhood(solver,neighborhood)
-            call setThreshold(solver,0.1875_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
             ! Get values and populate phi
             xEval = this%fs%cfg%xm(i)
             yEval = this%fs%cfg%ym(j)
@@ -2921,7 +2917,7 @@ subroutine update_levelset_derivatives(this)
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in ! Current Cell Location
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
 
     ! Temp Items
     type(SeparatorVariant_type) :: plane
@@ -2971,7 +2967,7 @@ subroutine populate_diagonal(this)
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in ! Current Cell Location
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
 
     ! Temp Items
     type(SeparatorVariant_type) :: plane
@@ -3027,7 +3023,7 @@ subroutine populate_off_diagonal(this)
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in ! Current Cell Location
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
 
     ! Temp Items
     type(SeparatorVariant_type) :: plane
@@ -3210,7 +3206,7 @@ subroutine updatePartitionOfUnity(this)
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in,k_in,count ! Current Cell Location 
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
     
     ! Temp Items
     type(SeparatorVariant_type) :: plane
@@ -3262,24 +3258,27 @@ subroutine updatePartitionOfUnity(this)
                 end do
                 ! Set Neighborhood in solver 
                 call setNeighborhood(solver,neighborhood)
-                call setThreshold(solver,1e-6_WP) ! This is the of the wendland function at 0.5 (is radius is 1).  
                 ! if(ind(1) .eq. 11 .and. ind(2) .eq. 22 .and. count .lt. 1) then 
                 !    write(*,'(A,F10.8)') '> Time  =  ', time%t
                 !    ! call printSolver(solver)
                 !    count = count + 1
                 ! endif
                 ! ====== Get Value
+                ! print *, "Get Value"
                 call getValue(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),this%PartitionOfUnityValue(i,j,k))   
                 ! write(*,'(A,F10.8)') '> Radius  =  ', radius
                 ! call getValue(solver,xEval,yEval,zEval,0.25_WP,(/0.0_WP,0.0_WP,0.0_WP/),PartitionOfUnityValue(i,j,k))
-                call getTangent(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),tangentHolder) 
+                ! print *, "Get Normal"
+                call getNormalPU(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),tangentHolder) 
                 ! call getTangent(solver,xEval,yEval,zEval,radius,center,tangentHolder)
                 this%PUTangent_x(i,j,k) = tangentHolder(1)
                 this%PUTangent_y(i,j,k) = tangentHolder(2)
                 this%PUTangent_z(i,j,k) = tangentHolder(3)
                 this%PUTangent_mag(i,j,k) = sqrt(sum(tangentHolder**2))
+                ! print *, "Get Weight"
                 call getWeight(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),this%PartitionOfUnityWeight(i,j,k)) 
                 this%distanceField(i,j,k) = this%PartitionOfUnityValue(i,j,k)/(this%PUTangent_mag(i,j,k)+1e-12)
+                ! print *, "Get End"
                 ! call getWeight(solver,xEval,yEval,zEval,radius,center,PartitionOfUnityWeight(i,j,k))
                 ! write(*,'(A,F35.10)') ' ================= Partition of unity value: ', PartitionOfUnityValue(i,j,k)   
             ! endif 
@@ -3298,7 +3297,7 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,normal,curvatur
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in,k_in,count ! Current Cell Location 
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
     real(WP), dimension(1:3) :: initialPoint,projectedPoint,normal
     integer, dimension(1:3) :: initialIndex
     real(WP) :: curvature
@@ -3320,7 +3319,7 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,normal,curvatur
     i = initialIndex(1)
     j = initialIndex(2)
     k = initialIndex(3) 
-    
+    ! print *, " Making Neighborhood"
     do j_in = -3,3
         do i_in = -3,3
             do k_in = -3,3
@@ -3334,34 +3333,41 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,normal,curvatur
         end do
     end do
     ! Set Neighborhood in solver  
+    ! print *,"Setting Neigh"
     call setNeighborhood(solver,neighborhood)
-    call setThreshold(solver,1e-6_WP) 
-
+    call setKernelSize(solver,this%PU_spread*this%vf%cfg%dx(1))
+    ! print *," Set Neighborhood" 
     ! Project to PU
+    ! print *, "Centroid Getting"
     cenInitial = calculateCentroid(this%vf%interface_polygon(1,i,j,k))
-    call projectToPU(solver,cenInitial,this%PU_spread*this%vf%cfg%dx(1),projectedPoint)
+    ! print *, "Centroid Got" 
+    call projectToPU(solver,cenInitial,projectedPoint)
+    ! print *,"Projected" 
     xEval = projectedPoint(1)
     yEval = projectedPoint(2)
     zEval = projectedPoint(3)
 
-    if(abs(sqrt(sum((projectedPoint)**2))-0.5)/0.5 .gt. 1) then 
-        print *, "Initial Point:", cenInitial
-        print *, "Final Point: ", projectedPoint
-        print *, "Distance: ", sqrt(sum((cenInitial-projectedPoint)**2))
-    endif 
+    ! if(abs(sqrt(sum((projectedPoint)**2))-0.5)/0.5 .gt. 1) then 
+    !     print *, "Initial Point:", cenInitial
+    !     print *, "Final Point: ", projectedPoint
+    !     print *, "Distance: ", sqrt(sum((cenInitial-projectedPoint)**2))
+    ! endif 
     ! ===== Get Value
+    ! print *,"Value"
     if(present(value)) then 
         call getValue(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),value)   
     endif
-    ! ===== Tangent Value
+    ! ===== Tangent Value 
+    ! print *,"Normal"
     call getNormalPU(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),normal) 
     ! ===== Curvature
-    call getCurvature(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),curvature)
+    ! print *,"Curvature"
+    call getMeanCurvaturePU(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),curvature)
     ! ===== Optional Weight
     if(present(weight)) then 
         call getWeight(solver,xEval,yEval,zEval,this%PU_spread*this%vf%cfg%dx(1),weight) 
     endif
-
+    
 end subroutine getProjectedGeometry
 
 subroutine getProjectedGeometryEllipsoid(this,initialIndex,A,v,projectedPoint,normal,curvature,evaluationPoint)
@@ -3374,7 +3380,7 @@ subroutine getProjectedGeometryEllipsoid(this,initialIndex,A,v,projectedPoint,no
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in,k_in,count ! Current Cell Location 
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
     real(WP), dimension(1:3) :: initialPoint,projectedPoint,tangent
     real(WP), dimension(1:3), optional :: evaluationPoint,normal
     real(WP), optional :: curvature
@@ -3401,7 +3407,6 @@ subroutine getProjectedGeometryEllipsoid(this,initialIndex,A,v,projectedPoint,no
     
     ! Set Neighborhood in solver 
     call setNeighborhood(solver,neighborhood)
-    call setThreshold(solver,1e-6_WP) 
 
     ! Project to PU
     cenInitial = calculateCentroid(this%vf%interface_polygon(1,i,j,k))
@@ -3441,7 +3446,7 @@ subroutine getValuePU(this,pt,value)
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in,k_in ! Current Cell Location 
     type(PUNeigh_RectCub_type) :: neighborhood
-    type(PU_RectCub_type) :: solver
+    type(PUST_RectCub_type) :: solver
     integer, dimension(1:3) :: initialIndex,indGuess
     real(WP) :: value
     ! Temp Items
@@ -3482,7 +3487,6 @@ subroutine getValuePU(this,pt,value)
     ! print *,"Set Neighborhood"  
     ! Set Neighborhood in solver  
     call setNeighborhood(solver,neighborhood)
-    call setThreshold(solver,1e-6_WP) 
     ! print *,"Done Solver"
 
 
@@ -3501,6 +3505,7 @@ subroutine updateStresses(this, A,v)
     real(WP), dimension(3) :: v
     real(WP), dimension(3,3) :: A
 
+    print *, "3D Stresses"
     call this%updateSurfaceTensionStresses3D()
     
     call this%updateSurfaceTensionStresses3DEllipsoid(A,v)

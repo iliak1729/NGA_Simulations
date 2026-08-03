@@ -9,7 +9,7 @@
 NGA_HOME   ?= /home/iliak2/Repositories/Backup/NGA2
 FFTW_DIR   = /usr
 HYPRE_DIR  = /home/iliak2/Builds/hypre
-IRL_DIR    = /home/iliak2/Builds/irl/
+IRL_DIR    = /home/iliak2/PU_Merge/Builds/irl/
 LAPACK_DIR = /usr
 # Compilation parameters
 PRECISION = DOUBLE
