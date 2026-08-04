@@ -433,9 +433,16 @@ contains
             real(WP), dimension(3) :: v_cent,a_cent
             real(WP) :: vol,area
             integer, parameter :: amr_ref_lvl=4
-            
+            integer :: reconstructionMethod
+            call param_read('Reconstruction Method',reconstructionMethod);
             ! Create a VOF solver
-            call vf%initialize(cfg=cfg,reconstruction_method=lvira,transport_method=flux_storage,name='VOF')
+            SELECT CASE (reconstructionMethod)
+               CASE (2)
+                  call vf%initialize(cfg=cfg,reconstruction_method=jibben,transport_method=flux_storage,name='VOF')
+               CASE DEFAULT
+                  call vf%initialize(cfg=cfg,reconstruction_method=lvira,transport_method=flux_storage,name='VOF')
+            END SELECT
+            
             !vf%cons_correct=.false.
             !vf%thin_thld_max=1.5_WP
             !vf%twoplane_thld2=0.8_WP 

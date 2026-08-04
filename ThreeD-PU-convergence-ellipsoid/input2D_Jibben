@@ -12,7 +12,7 @@ nz : 64    !128
 # Are we using a moving domain?
 Two Dimensional : .true. 
 # Reconstruction Method - 1 = LVIRA, 2 = Jibben
-Reconstruction Method : 1
+Reconstruction Method : 2
 # Fluid properties
 Gravity :                     0 0 0
 Liquid dynamic viscosity :    0.1

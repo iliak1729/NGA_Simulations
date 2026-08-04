@@ -1,5 +1,5 @@
 # Parallelization
-Partition : 2 2 1
+Partition : 2 2 2
 
 # Mesh definition
 Lx : 1 !0.02 !0.2
@@ -10,9 +10,9 @@ ny : 64    !128
 nz : 64    !128
 
 # Are we using a moving domain?
-Two Dimensional : .true. 
+Two Dimensional : .false. 
 # Reconstruction Method - 1 = LVIRA, 2 = Jibben
-Reconstruction Method : 1
+Reconstruction Method : 2
 # Fluid properties
 Gravity :                     0 0 0
 Liquid dynamic viscosity :    0.1
@@ -35,7 +35,7 @@ cp1 : 0.1 #Liquid
 cp2 : 0.1 #Gas 
 
 # Options
-Marangoni :  0 0.133 -0.1
+Marangoni :  0 0 0
 Pressure : 1
 Smoothing Option : 1
 Surface Tension Option : 9
@@ -59,13 +59,13 @@ Pressure iteration : 100
 # Ensight output
 Ensight output period : 12e-3
 
-# Trial Inputs - In Delta X
+# Trial Inputs - Delta Range
 Param Min : 0.5
 Param Max : 5.0
 Param Steps : 45
 
-Nmin : 16
-Nmult : 5 !5
+Nmin : 16 !16
+Nmult : 3 !3
 Ratio : 2.0
 
 # Geometry

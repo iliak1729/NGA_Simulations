@@ -104,6 +104,8 @@ module conservative_st
         procedure, private :: applyPoissonSmoothing
         procedure, private :: applyPeskinSmoothing
 
+        procedure, private :: addCellToNeighborhood
+
         procedure, private :: get_surface_tension_coefficient
         procedure, private :: update_surface_tension_coefficients
         procedure, private :: update_columns
@@ -1620,19 +1622,13 @@ subroutine updateSurfaceTensionStresses3D(this)
                 do j_in = -3,3
                     do i_in = -3,3
                         do k_in = -3,3
-                            if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. 1e-12 .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. 1.0_WP - 1e-12) then
-
-                                cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k+k_in))
-                                ! Get Plane
-                                plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k+k_in)
-                                
-                                call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
-                            endif
+                            call this%addCellToNeighborhood(neighborhood,i+i_in,j+j_in,k+k_in)
                         enddo
                     end do
                 end do
                 ! Set Neighborhood in solver
                 call setNeighborhood(solver,neighborhood)
+                call setKernelSize(solver,this%PU_spread*this%vf%cfg%dx(1))
                 ! ====== Get Stresses
                 ! call printSolver(solver)
                 ! We are going to loop over the stress components and calculate them
@@ -1778,21 +1774,6 @@ subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
                 ! Empty Neighborhood
                 call emptyNeighborhood(neighborhood) 
                 ! Set Neighborhood in solver
-                do j_in = -3,3
-                    do i_in = -3,3
-                        do k_in = -3,3
-                            if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. 1e-12 .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. 1.0_WP - 1e-12) then
-
-                                cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k+k_in))
-                                ! Get Plane
-                                plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k+k_in)
-                                
-                                call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
-                            endif
-                        enddo
-                    end do
-                end do
-
                 call setNeighborhood(solver,neighborhood)
                 ! ====== Get Stresses
                 ! call printSolver(solver)
@@ -1855,15 +1836,7 @@ subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
                         ! if(this%vf%VF(i,j,k) .gt. 1e-12 .and. this%vf%VF(i,j,k) .lt. 1.0_WP - 1e-12) then 
                         
                         call solveFaceEllipsoid(solver,this%fs%sigma,P0,P1,P2,P3,A(:,1),A(:,2),A(:,3),v,this%PressureOption,this%MarangoniOption,force)
-                        call solveFace(solver,this%fs%sigma,P0,P1,P2,P3,this%PU_spread*dx,this%PressureOption,this%MarangoniOption,forceB)
-                        if(this%vf%cfg%amRoot .and. i_in .eq. 2 .and. sqrt(sum(force ** 2)) .gt. 1e-6 .and. j_in .eq. 2) then
-                            if(abs(force(3)-forceB(3)) .gt. 1) then 
-                                print *,"Component: ",i_in,j_in," at ",i,j,k
-                                print *,"Force: ",force 
-                                print *,"Force B : ",forceB
-                            endif
-                            ! STOP
-                        endif
+                       
                         ! endif
                         ! print *, force  
                         this%sigma_3D_Exact(i,j,k,i_in,j_in) = force(i_in)
@@ -3246,13 +3219,7 @@ subroutine updatePartitionOfUnity(this)
                 do j_in = -3,3
                     do i_in = -3,3
                         do k_in = -3,3
-                            if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. 1e-12 .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. 1.0_WP - 1e-12) then
-
-                                cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k+k_in))
-                                ! Get Plane
-                                plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k+k_in)
-                                call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
-                            endif
+                            call this%addCellToNeighborhood(neighborhood,i+i_in,j+j_in,k+k_in)
                         enddo
                     end do
                 end do
@@ -3323,12 +3290,7 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,normal,curvatur
     do j_in = -3,3
         do i_in = -3,3
             do k_in = -3,3
-                if(this%vf%VF(i+i_in,j+j_in,k+k_in) .gt. 1e-12 .and. this%vf%VF(i+i_in,j+j_in,k+k_in) .lt. 1.0_WP - 1e-12) then
-                    cen = calculateCentroid(this%vf%interface_polygon(1,i+i_in,j+j_in,k+k_in))
-                    ! Get Plane
-                    plane = this%vf%liquid_gas_interface(i+i_in,j+j_in,k+k_in)
-                    call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
-                endif
+                call this%addCellToNeighborhood(neighborhood,i+i_in,j+j_in,k+k_in)
             enddo
         end do
     end do
@@ -3505,7 +3467,6 @@ subroutine updateStresses(this, A,v)
     real(WP), dimension(3) :: v
     real(WP), dimension(3,3) :: A
 
-    print *, "3D Stresses"
     call this%updateSurfaceTensionStresses3D()
     
     call this%updateSurfaceTensionStresses3DEllipsoid(A,v)
@@ -3527,5 +3488,112 @@ subroutine updateForces(this, A,v)
     call this%updateSurfaceTensionForces3DEllipsoid()
 
 end subroutine updateForces
+
+subroutine addCellToNeighborhood(this,neighborhood,i,j,k)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUSolve_RectCub_class, only: solveFace
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    integer :: i,j,k,j_in,i_in,k_in,shift_first_index,shift_second_index ! Current Cell Location
+    type(PUNeigh_RectCub_type) :: neighborhood
+    
+    ! Temp Items
+    integer :: jmax
+    type(SeparatorVariant_type) :: plane,facePlane
+    real(WP), dimension(1:4) :: planeVector
+    real(WP) :: signedDistance0,signedDistance1,signedDistance2,signedDistance3
+    logical :: hasPositive, hasNegative
+    real(WP), dimension(1:3) :: cen,corner,dvec,shift
+    real(WP), dimension(1:3) :: P0,P1,P2,P3,pressure_cell_center,velocity_cell_center,face_center
+    real(WP) :: dx,dy,dz
+    real(WP) :: x_i,y_j,z_k
+    if(this%TwoD) then 
+        jmax = 2 
+    else 
+        jmax = 3
+    endif
+
+    if(this%vf%VF(i,j,k) .gt. 1e-12 .and. this%vf%VF(i,j,k) .lt. 1.0_WP - 1e-12) then ! Mixed Cell
+        ! First add the plane itself
+        cen = calculateCentroid(this%vf%interface_polygon(1,i,j,k))
+        plane = this%vf%liquid_gas_interface(i,j,k)
+        call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
+
+        ! Now, find the faces that are hit by the plane.
+        pressure_cell_center = (/this%fs%cfg%xm(i),this%fs%cfg%ym(j),this%fs%cfg%zm(k)/)
+        dx = this%vf%cfg%dx(1)
+        dy = this%vf%cfg%dy(1)
+        dz = this%vf%cfg%dz(1)
+        dvec = (/dx,dy,dz/)
+        shift = dvec
+        do i_in = -1,1,2 ! Cell Loop, This tells us the force direction
+            do j_in = 1,jmax ! Face Loop, This tells us the normal direction
+                ! Shift from Pressure cell center ot the face center we are looking at:
+                shift = (/0.0_WP,0.0_WP,0.0_WP/)  
+                shift(j_in) = dvec(j_in)/2
+                face_center = pressure_cell_center + real(i_in, WP)*shift
+                ! Now that we have the face center and normal direction (all positive normals)
+                ! we can use the pattern below to get a CCW orientation:
+                shift_first_index = mod(j_in,3)+1
+                shift_second_index = mod(j_in+1,3)+1
+                ! Apply to get first corner
+                shift = dvec/2     
+                shift(j_in) = 0.0_WP
+                shift(shift_first_index) = -shift(shift_first_index)
+                shift(shift_second_index) = -shift(shift_second_index)
+                P0 = face_center + shift
+
+                ! Apply to get second corner
+                shift = dvec/2     
+                shift(j_in) = 0.0_WP
+                shift(shift_first_index) = shift(shift_first_index)
+                shift(shift_second_index) = -shift(shift_second_index)
+                P1 = face_center + shift
+
+                ! Apply to get third corner
+                shift = dvec/2     
+                shift(j_in) = 0.0_WP
+                shift(shift_first_index) = shift(shift_first_index)
+                shift(shift_second_index) = shift(shift_second_index)
+                P2 = face_center + shift
+
+                ! Apply to get fourth corner
+                shift = dvec/2     
+                shift(j_in) = 0.0_WP
+                shift(shift_first_index) = -shift(shift_first_index)
+                shift(shift_second_index) = shift(shift_second_index)
+                P3 = face_center + shift
+
+                ! Now that we have the face corners, evaluate to see if the plane is hit (different signs in at least one corner) 
+                planeVector = getPlane(plane,0)
+                ! Evaluate Signed Distance at each point
+                signedDistance0 = sum(planeVector(1:3)*P0) - planeVector(4)
+                signedDistance1 = sum(planeVector(1:3)*P1) - planeVector(4)
+                signedDistance2 = sum(planeVector(1:3)*P2) - planeVector(4)
+                signedDistance3 = sum(planeVector(1:3)*P3) - planeVector(4)
+                ! Check if there is one positive and one negative signed distance
+                hasPositive = (signedDistance0 .ge. 0.0_WP) .or. (signedDistance1 .ge. 0.0_WP) .or. &
+                              (signedDistance2 .ge. 0.0_WP) .or. (signedDistance3 .ge. 0.0_WP)
+                hasNegative = (signedDistance0 .lt. 0.0_WP) .or. (signedDistance1 .lt. 0.0_WP) .or. &
+                              (signedDistance2 .lt. 0.0_WP) .or. (signedDistance3 .lt. 0.0_WP)
+                ! If there is at least one positive and one negative, add that face
+                if(hasPositive .and. hasNegative) then 
+                    cen = 0.25_WP*(P0+P1+P2+P3) ! Centroid at face center 
+                    call new(facePlane)
+                    planeVector(1:3) = 0.0_WP
+                    planeVector(j_in) = real(i_in, WP)
+                    planeVector(4) = dot_product(planeVector(1:3),cen) 
+
+                    call setNumberOfPlanes(facePlane,1)
+                    call setPlane(facePlane,0,planeVector(1:3),planeVector(4))
+                    call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
+                endif
+            enddo
+        enddo
+    endif
+end subroutine addCellToNeighborhood
 
 end module conservative_st
