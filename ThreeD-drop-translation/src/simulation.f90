@@ -253,6 +253,7 @@ contains
             CASE DEFAULT
                call vf%initialize(cfg=cfg,reconstruction_method=lvira,transport_method=flux_storage,name='VOF')
          END SELECT
+      
          
          !vf%cons_correct=.false.
          !vf%thin_thld_max=1.5_WP
