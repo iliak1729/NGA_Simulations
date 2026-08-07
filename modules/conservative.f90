@@ -884,7 +884,7 @@ subroutine add_3D_surface_tension_jump(this,dt,div,contact_model)
     this%fs%Pjx = this%Fst_x_3D 
     this%fs%Pjy = this%Fst_y_3D
     this%fs%Pjz = this%Fst_z_3D
-    print *,sqrt(sum(this%Fst_z_3D**2))
+    ! print *,sqrt(sum(this%Fst_z_3D**2))
     SELECT CASE (this%SmoothingOption)
         CASE(1)
         
@@ -3522,77 +3522,77 @@ subroutine addCellToNeighborhood(this,neighborhood,i,j,k)
         plane = this%vf%liquid_gas_interface(i,j,k)
         call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
 
-        ! Now, find the faces that are hit by the plane.
-        pressure_cell_center = (/this%fs%cfg%xm(i),this%fs%cfg%ym(j),this%fs%cfg%zm(k)/)
-        dx = this%vf%cfg%dx(1)
-        dy = this%vf%cfg%dy(1)
-        dz = this%vf%cfg%dz(1)
-        dvec = (/dx,dy,dz/)
-        shift = dvec
-        do i_in = -1,1,2 ! Cell Loop, This tells us the force direction
-            do j_in = 1,jmax ! Face Loop, This tells us the normal direction
-                ! Shift from Pressure cell center ot the face center we are looking at:
-                shift = (/0.0_WP,0.0_WP,0.0_WP/)  
-                shift(j_in) = dvec(j_in)/2
-                face_center = pressure_cell_center + real(i_in, WP)*shift
-                ! Now that we have the face center and normal direction (all positive normals)
-                ! we can use the pattern below to get a CCW orientation:
-                shift_first_index = mod(j_in,3)+1
-                shift_second_index = mod(j_in+1,3)+1
-                ! Apply to get first corner
-                shift = dvec/2     
-                shift(j_in) = 0.0_WP
-                shift(shift_first_index) = -shift(shift_first_index)
-                shift(shift_second_index) = -shift(shift_second_index)
-                P0 = face_center + shift
+        ! ! Now, find the faces that are hit by the plane.
+        ! pressure_cell_center = (/this%fs%cfg%xm(i),this%fs%cfg%ym(j),this%fs%cfg%zm(k)/)
+        ! dx = this%vf%cfg%dx(1)
+        ! dy = this%vf%cfg%dy(1)
+        ! dz = this%vf%cfg%dz(1)
+        ! dvec = (/dx,dy,dz/)
+        ! shift = dvec
+        ! do i_in = -1,1,2 ! Cell Loop, This tells us the force direction
+        !     do j_in = 1,jmax ! Face Loop, This tells us the normal direction
+        !         ! Shift from Pressure cell center ot the face center we are looking at:
+        !         shift = (/0.0_WP,0.0_WP,0.0_WP/)  
+        !         shift(j_in) = dvec(j_in)/2
+        !         face_center = pressure_cell_center + real(i_in, WP)*shift
+        !         ! Now that we have the face center and normal direction (all positive normals)
+        !         ! we can use the pattern below to get a CCW orientation:
+        !         shift_first_index = mod(j_in,3)+1
+        !         shift_second_index = mod(j_in+1,3)+1
+        !         ! Apply to get first corner
+        !         shift = dvec/2     
+        !         shift(j_in) = 0.0_WP
+        !         shift(shift_first_index) = -shift(shift_first_index)
+        !         shift(shift_second_index) = -shift(shift_second_index)
+        !         P0 = face_center + shift
 
-                ! Apply to get second corner
-                shift = dvec/2     
-                shift(j_in) = 0.0_WP
-                shift(shift_first_index) = shift(shift_first_index)
-                shift(shift_second_index) = -shift(shift_second_index)
-                P1 = face_center + shift
+        !         ! Apply to get second corner
+        !         shift = dvec/2     
+        !         shift(j_in) = 0.0_WP
+        !         shift(shift_first_index) = shift(shift_first_index)
+        !         shift(shift_second_index) = -shift(shift_second_index)
+        !         P1 = face_center + shift
 
-                ! Apply to get third corner
-                shift = dvec/2     
-                shift(j_in) = 0.0_WP
-                shift(shift_first_index) = shift(shift_first_index)
-                shift(shift_second_index) = shift(shift_second_index)
-                P2 = face_center + shift
+        !         ! Apply to get third corner
+        !         shift = dvec/2     
+        !         shift(j_in) = 0.0_WP
+        !         shift(shift_first_index) = shift(shift_first_index)
+        !         shift(shift_second_index) = shift(shift_second_index)
+        !         P2 = face_center + shift
 
-                ! Apply to get fourth corner
-                shift = dvec/2     
-                shift(j_in) = 0.0_WP
-                shift(shift_first_index) = -shift(shift_first_index)
-                shift(shift_second_index) = shift(shift_second_index)
-                P3 = face_center + shift
+        !         ! Apply to get fourth corner
+        !         shift = dvec/2     
+        !         shift(j_in) = 0.0_WP
+        !         shift(shift_first_index) = -shift(shift_first_index)
+        !         shift(shift_second_index) = shift(shift_second_index)
+        !         P3 = face_center + shift
 
-                ! Now that we have the face corners, evaluate to see if the plane is hit (different signs in at least one corner) 
-                planeVector = getPlane(plane,0)
-                ! Evaluate Signed Distance at each point
-                signedDistance0 = sum(planeVector(1:3)*P0) - planeVector(4)
-                signedDistance1 = sum(planeVector(1:3)*P1) - planeVector(4)
-                signedDistance2 = sum(planeVector(1:3)*P2) - planeVector(4)
-                signedDistance3 = sum(planeVector(1:3)*P3) - planeVector(4)
-                ! Check if there is one positive and one negative signed distance
-                hasPositive = (signedDistance0 .ge. 0.0_WP) .or. (signedDistance1 .ge. 0.0_WP) .or. &
-                              (signedDistance2 .ge. 0.0_WP) .or. (signedDistance3 .ge. 0.0_WP)
-                hasNegative = (signedDistance0 .lt. 0.0_WP) .or. (signedDistance1 .lt. 0.0_WP) .or. &
-                              (signedDistance2 .lt. 0.0_WP) .or. (signedDistance3 .lt. 0.0_WP)
-                ! If there is at least one positive and one negative, add that face
-                if(hasPositive .and. hasNegative) then 
-                    cen = 0.25_WP*(P0+P1+P2+P3) ! Centroid at face center 
-                    call new(facePlane)
-                    planeVector(1:3) = 0.0_WP
-                    planeVector(j_in) = real(i_in, WP)
-                    planeVector(4) = dot_product(planeVector(1:3),cen) 
+        !         ! Now that we have the face corners, evaluate to see if the plane is hit (different signs in at least one corner) 
+        !         planeVector = getPlane(plane,0)
+        !         ! Evaluate Signed Distance at each point
+        !         signedDistance0 = sum(planeVector(1:3)*P0) - planeVector(4)
+        !         signedDistance1 = sum(planeVector(1:3)*P1) - planeVector(4)
+        !         signedDistance2 = sum(planeVector(1:3)*P2) - planeVector(4)
+        !         signedDistance3 = sum(planeVector(1:3)*P3) - planeVector(4)
+        !         ! Check if there is one positive and one negative signed distance
+        !         hasPositive = (signedDistance0 .ge. 0.0_WP) .or. (signedDistance1 .ge. 0.0_WP) .or. &
+        !                       (signedDistance2 .ge. 0.0_WP) .or. (signedDistance3 .ge. 0.0_WP)
+        !         hasNegative = (signedDistance0 .lt. 0.0_WP) .or. (signedDistance1 .lt. 0.0_WP) .or. &
+        !                       (signedDistance2 .lt. 0.0_WP) .or. (signedDistance3 .lt. 0.0_WP)
+        !         ! If there is at least one positive and one negative, add that face
+        !         if(hasPositive .and. hasNegative) then 
+        !             cen = 0.25_WP*(P0+P1+P2+P3) ! Centroid at face center 
+        !             call new(facePlane)
+        !             planeVector(1:3) = 0.0_WP
+        !             planeVector(j_in) = real(i_in, WP)
+        !             planeVector(4) = dot_product(planeVector(1:3),cen) 
 
-                    call setNumberOfPlanes(facePlane,1)
-                    call setPlane(facePlane,0,planeVector(1:3),planeVector(4))
-                    call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
-                endif
-            enddo
-        enddo
+        !             call setNumberOfPlanes(facePlane,1)
+        !             call setPlane(facePlane,0,planeVector(1:3),planeVector(4))
+        !             call addMember(neighborhood,cen,1.0_WP,facePlane,0.0_WP)
+        !         endif
+        !     enddo
+        ! enddo
     endif
 end subroutine addCellToNeighborhood
 

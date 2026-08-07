@@ -376,22 +376,15 @@ contains
          call ens_out%add_scalar('pressure',fs%P)
          call ens_out%add_scalar('curvature',vf%curv)
          call ens_out%add_surface('plic',smesh)
-         call ens_out%add_scalar('Enthalpy',ts%H)
          call ens_out%add_vector('sigma_3d_x',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
          call ens_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
          call ens_out%add_vector('sigma_3d_z',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
-
          call ens_out%add_scalar('sigma_xx_NoP',cst%sigma_xx_NoP)
          call ens_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
          call ens_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
          call ens_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
-
-         call ens_out%add_scalar('cp',ts%cp)
-         call ens_out%add_scalar('One Fluid Temp',ts%T)
-         call ens_out%add_scalar('Interface Temperature',ts%Tinterface)
-         call ens_out%add_vector('Temperatures',ts%TPmix,ts%TG,ts%TL)
-         call ens_out%add_vector('Extrapolated Temperatures',ts%TPmix,ts%TGExtrap,ts%TLExtrap)
-         call ens_out%add_vector('Palmore Temperatures',ts%TPmix,ts%TGExtrapPalmore,ts%TLExtrapPalmore)
+         call ens_out%add_vector('ST Force',fs%Pjx,fs%Pjy,fs%Pjz)
+         call ens_out%add_vector('CSF Force',cst%PjxD,cst%PjyD,cst%PjzD)
 
          
          ! Output to ensight
@@ -486,65 +479,10 @@ contains
          
          ! Perform sub-iterations
          do while (time%it.le.time%itmax)
-            ! mid-time Scalar
-            ts%H = 0.5_WP*(ts%H+ts%Hold)
-            ts%TG = 0.5_WP*(ts%TG+ts%TGold)
-            ts%TL = 0.5_WP*(ts%TL+ts%TLold)
             ! Build mid-time velocity
             fs%U=0.5_WP*(fs%U+fs%Uold)
             fs%V=0.5_WP*(fs%V+fs%Vold)
             fs%W=0.5_WP*(fs%W+fs%Wold)
-            
-            ! ============= SCALAR SOLVER =======================
-            rho = vf%VF*fs%rho_l + (1.0_WP-vf%VF)*fs%rho_g
-            resU = fs%U; resV = fs%V; resW = fs%W;
-            ! Explicit Calculation of dHdt
-            ! call ts%get_dHdt_SL(resH,resU,resV,resW,vf%detailed_face_flux, time%dt)
-            call ts%get_dHdt(resH,resU,resV,resW)
-            ! Explicit Update
-            ts%H = ts%Hold + resH * time%dt 
-            call ts%populate_temperature()
-            ! ! Explicit Resdiual
-            ! resH = -2.0_WP *(ts%H - ts%Hold)+time%dt*resH
-            ! ! Form implicit residual
-            ! call ts%solve_implicit(time%dt,resH,resU,resV,resW)
-            ! ! Apply residual
-            ! ts%H = 2*ts%H - ts%Hold + resH
-            ! ! Apply other boundary conditions
-            call ts%apply_bcond(time%t,time%dt)
-            ! Extrapolate Values
-            dtps = 1e-2
-            ! call ts%extrapolate_fields_palmore(ts%TL,vf%VF,ts%TLExtrapPalmore,dtps)
-            ! call ts%extrapolate_fields_palmore(ts%TG,1.0_WP - vf%VF,ts%TGExtrapPalmore,dtps)
-
-            ! Step
-            call ts%step_temperature_palmore(resHG,resHL,resU,resV,resW,time%dt)
-            call ts%mix_temperature_palmore()
-
-            call ts%extrapolate_fields_normal(ts%TL,vf%VF,ts%TLExtrap)
-            call ts%extrapolate_fields_normal(ts%TG,1.0_WP - vf%VF,ts%TGExtrap)
-            ts%TL = ts%TLExtrap
-            ts%TG = ts%TGExtrap
-
-            ! Dirichlet Boundary Condition
-            do k=vf%cfg%kmino_,vf%cfg%kmaxo_
-               do j=vf%cfg%jmino_,vf%cfg%jmaxo_
-                  do i=vf%cfg%imino_,vf%cfg%imaxo_
-                     ! Note that the exact linear profile is:
-                     ! (Ttop-Tbot)*y/Ly + Tbot.
-                     ! Since it is linear, the value in a cell is equal to that at the center
-                     if(fs%cfg%ym(j) .lt. -Ly/2.0 + fs%cfg%dy(j)) then 
-                        ts%T(:,j,:) = Tbot 
-                     endif
-
-                     if(fs%cfg%ym(j) .gt. Ly/2.0 - fs%cfg%dy(j)) then 
-                        ts%T(:,j,:) = Ttop 
-                     endif
-                  enddo
-               enddo
-            enddo
-            call ts%populate_enthalpy()
-            ! ===================================================
 
             ! Preliminary mass and momentum transport step at the interface
             call fs%prepare_advection_upwind(dt=time%dt)
