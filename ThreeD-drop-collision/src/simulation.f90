@@ -44,7 +44,7 @@ module simulation
    real(WP), dimension(:,:,:), allocatable :: resU,resV,resW,resH
    real(WP), dimension(:,:,:), allocatable :: resHG,resHL
    real(WP), dimension(:,:,:), allocatable :: Ui,Vi,Wi,rho
-   
+   real(WP), dimension(:,:,:), allocatable :: PU_Levelset
    !> Problem definition
    logical :: second_bubble
    real(WP), dimension(3) :: center,center2,gravity,U1,U2
@@ -141,7 +141,7 @@ contains
    end function ym_locator
    
    
-   !> Routine that computes rise velocity
+   !> Routine that computes rise velocity 
    subroutine rise_vel()
       use mpi_f08,  only: MPI_ALLREDUCE,MPI_SUM
       use parallel, only: MPI_REAL_WP
@@ -213,13 +213,13 @@ contains
          ! Create a VOF solver
          call vf%initialize(cfg=cfg,reconstruction_method=lvira,transport_method=flux_storage,name='VOF')
          !vf%cons_correct=.false.
-         !vf%thin_thld_max=1.5_WP
-         !vf%twoplane_thld2=0.8_WP
+         !vf%thin_thld_max=1.5_WP 
+         !vf%twoplane_thld2=0.8_WP     
          ! Initialize a bubble
          call param_read('Droplet Radius',radius)
          call param_read('Impact Parameter', B)
          ! Now that we have radius and Impact Parameter
-         ! Assume the droplets move in the X directio only, and are separated in the Y direction. 
+         ! Assume the droplets move in the X directio only, and are separated in th e Y direction.  
          center = (/-1.5*radius,-radius*B,0.0_WP/)
          center2 = (/1.5*radius,radius*B,0.0_WP/)
          radius2 = radius
@@ -346,8 +346,8 @@ contains
          call cst%temp()
       end block create_surface_tension_solver
       
-      ! Visual Output
-      print *,"Making vfPU"
+      ! Visual Output  
+      print *,"Making vfPU"     
       create_and_initialize_vof_for_PU: block
          use mms_geom,  only: cube_refine_vol 
          use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage,lvira,jibben
@@ -360,13 +360,13 @@ contains
          integer :: i,j,k,n,si,sj,sk,nx,ny,nz 
          logical :: twoD
          real(WP), dimension(3,8) :: cube_vertex
-         real(WP), dimension(3) :: v_cent,a_cent
+         real(WP), dimension(3) :: v_cent,a_cent,xyz
          real(WP) :: vol,area,Lx,Ly,Lz,diameter,Lx_D,Ly_D,Lz_D
          real(WP), dimension(:), allocatable :: x,y,z
          integer, parameter :: amr_ref_lvl=0
-         integer, parameter :: vf_ref_lvl=1
-         ! Create Refined Config
-         ! Read in grid definition
+         integer, parameter :: vf_ref_lvl=5
+         ! Create Refined Config  
+         ! Read in grid definition   
          call param_read('Lx_D',Lx_D); call param_read('nx',nx); 
          call param_read('Ly_D',Ly_D); call param_read('ny',ny); 
          call param_read('Lz_D',Lz_D); call param_read('nz',nz); 
@@ -374,7 +374,7 @@ contains
          ny = ny * vf_ref_lvl
          nz = nz * vf_ref_lvl
 
-         call param_read('Two Dimensional',twoD)
+         call param_read('Two Dimensional',twoD)  
          call param_read('Droplet Radius', diameter)
          diameter = 2*diameter 
          Lx = diameter*Lx_D 
@@ -388,7 +388,7 @@ contains
          allocate(x(nx+1))
          allocate(y(ny+1))
          allocate(z(nz+1))
-         ! Create simple rectilinear grid
+         ! Create simple rectilinear grid    
          do i=1,nx+1
             x(i)=real(i-1,WP)/real(nx,WP)*Lx-0.5_WP*Lx
          end do
@@ -398,21 +398,26 @@ contains
          do k=1,nz+1
             z(k)=real(k-1,WP)/real(nz,WP)*Lz-0.5_WP*Lz
          end do
+         
          grid=sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.true.,yper=.true.,zper=.true.,name='PUVOF')
          call param_read('Partition',partition,short='p')
          cfg_PU=config(grp=group,decomp=partition,grid=grid)
          ! Create a VOF solver
          call vf_PU%initialize(cfg=cfg_PU,reconstruction_method=lvira,transport_method=flux_storage,name='PUVOF')
+         allocate(PU_levelset(vf_PU%cfg%imino_:vf_PU%cfg%imaxo_,vf_PU%cfg%jmino_:vf_PU%cfg%jmaxo_,vf_PU%cfg%kmino_:vf_PU%cfg%kmaxo_))
          ! Generate interface  
          do k=vf_PU%cfg%kmino_,vf_PU%cfg%kmaxo_
             do j=vf_PU%cfg%jmino_,vf_PU%cfg%jmaxo_
                do i=vf_PU%cfg%imino_,vf_PU%cfg%imaxo_
+                  ! PU_Levelset_Value
+                  xyz = [vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
+                  PU_levelset(i,j,k) = levelset_PU(xyz,0.0_WP)
                   ! Set cube vertices
                   n=0
                   do sk=0,1
                      do sj=0,1
                         do si=0,1
-                           n=n+1; cube_vertex(:,n)=[vf_PU%cfg%x(i+si),vf_PU%cfg%y(j+sj),vf_PU%cfg%z(k+sk)]
+                           n=n+1; cube_vertex(:,n)=(/vf_PU%cfg%x(i+si),vf_PU%cfg%y(j+sj),vf_PU%cfg%z(k+sk)/)
                         end do
                      end do
                   end do
@@ -493,6 +498,7 @@ contains
 
 
          call PU_ens_out%add_scalar('PU VOF',vf_PU%VF)
+         call PU_ens_out%add_scalar('PU Levelset',PU_levelset)
          call PU_ens_out%add_surface('PU',smesh_PU)
          ! Output to ensight
          if (ens_evt%occurs()) call ens_out%write_data(time%t)
@@ -548,8 +554,8 @@ contains
       
    end subroutine simulation_init
    
-   
-   !> Perform an NGA2 simulation
+    
+   !> Perform an NGA2 simulation      
    subroutine simulation_run
       use tpns_class, only: harmonic_visc
       implicit none
@@ -646,65 +652,70 @@ contains
          call fs%get_div()
          
          ! Update VF_PU
-         print *,"Update vfPU"
-         Update_PU_VOF: block
-            use mms_geom,  only: cube_refine_vol 
-            use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage,lvira,jibben
-            use mathtools, only: Pi
-            integer :: i,j,k,n,si,sj,sk
-            real(WP), dimension(3,8) :: cube_vertex
-            real(WP), dimension(3) :: v_cent,a_cent
-            real(WP) :: vol,area
-            integer, parameter :: amr_ref_lvl=0
-            do k=vf_PU%cfg%kmino_,vf_PU%cfg%kmaxo_
-               do j=vf_PU%cfg%jmino_,vf_PU%cfg%jmaxo_
-                  do i=vf_PU%cfg%imino_,vf_PU%cfg%imaxo_
-                     ! Set cube vertices
-                     n=0
-                     do sk=0,1
-                        do sj=0,1
-                           do si=0,1
-                              n=n+1; cube_vertex(:,n)=[vf_PU%cfg%x(i+si),vf_PU%cfg%y(j+sj),vf_PU%cfg%z(k+sk)]
+         if(time%n .ge. 161 .and. time%n .le. 180) then 
+            print *,"Update vfPU"
+            Update_PU_VOF: block
+               use mms_geom,  only: cube_refine_vol 
+               use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage,lvira,jibben
+               use mathtools, only: Pi
+               integer :: i,j,k,n,si,sj,sk
+               real(WP), dimension(3,8) :: cube_vertex
+               real(WP), dimension(3) :: v_cent,a_cent,xyz
+               real(WP) :: vol,area
+               integer, parameter :: amr_ref_lvl=0
+               do k=vf_PU%cfg%kmino_,vf_PU%cfg%kmaxo_
+                  do j=vf_PU%cfg%jmino_,vf_PU%cfg%jmaxo_
+                     do i=vf_PU%cfg%imino_,vf_PU%cfg%imaxo_
+                        ! Update LEvelset
+                        xyz = [vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
+                        PU_levelset(i,j,k) = levelset_PU(xyz,0.0_WP)
+                        ! Set cube vertices
+                        n=0
+                        do sk=0,1
+                           do sj=0,1
+                              do si=0,1
+                                 n=n+1; cube_vertex(:,n)=[vf_PU%cfg%x(i+si),vf_PU%cfg%y(j+sj),vf_PU%cfg%z(k+sk)]
+                              end do
                            end do
                         end do
+                        ! Call adaptive refinement code to get volume and barycenters recursively
+                        vol=0.0_WP; area=0.0_WP; v_cent=0.0_WP; a_cent=0.0_WP
+                        ! print *, "AMRing",i,j,k-
+                        call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_PU,0.0_WP,amr_ref_lvl)
+                        ! print *, "Done"
+                        vf_PU%VF(i,j,k)=vol/vf_PU%cfg%vol(i,j,k)
+                        if (vf_PU%VF(i,j,k).ge.VFlo.and.vf_PU%VF(i,j,k).le.VFhi) then
+                           vf_PU%Lbary(:,i,j,k)=v_cent
+                           vf_PU%Gbary(:,i,j,k)=([vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]-vf_PU%VF(i,j,k)*vf_PU%Lbary(:,i,j,k))/(1.0_WP-vf_PU%VF(i,j,k))
+                        else
+                           vf_PU%Lbary(:,i,j,k)=[vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
+                           vf_PU%Gbary(:,i,j,k)=[vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
+                        end if
                      end do
-                     ! Call adaptive refinement code to get volume and barycenters recursively
-                     vol=0.0_WP; area=0.0_WP; v_cent=0.0_WP; a_cent=0.0_WP
-                     ! print *, "AMRing",i,j,k-
-                     call cube_refine_vol(cube_vertex,vol,area,v_cent,a_cent,levelset_PU,0.0_WP,amr_ref_lvl)
-                     ! print *, "Done"
-                     vf_PU%VF(i,j,k)=vol/vf_PU%cfg%vol(i,j,k)
-                     if (vf_PU%VF(i,j,k).ge.VFlo.and.vf_PU%VF(i,j,k).le.VFhi) then
-                        vf_PU%Lbary(:,i,j,k)=v_cent
-                        vf_PU%Gbary(:,i,j,k)=([vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]-vf_PU%VF(i,j,k)*vf_PU%Lbary(:,i,j,k))/(1.0_WP-vf_PU%VF(i,j,k))
-                     else
-                        vf_PU%Lbary(:,i,j,k)=[vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
-                        vf_PU%Gbary(:,i,j,k)=[vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
-                     end if
                   end do
                end do
-            end do
-            ! Update the band
-            call vf_PU%update_band()
-            ! Perform interface reconstruction from VOF field 
-            call vf_PU%build_interface()
-            ! Set interface planes at the boundaries
-            call vf_PU%set_full_bcond()
-            ! Create discontinuous polygon mesh from IRL interface
-            call vf_PU%polygonalize_interface()
-            ! Calculate distance from polygons
-            call vf_PU%distance_from_polygon()
-            ! Calculate subcell phasic volumes
-            call vf_PU%subcell_vol()
-            ! Calculate curvature
-            call vf_PU%get_curvature()
-            ! Perform PPIC reconstruction
-            if (vf_PU%ppic) call vf_PU%build_quadratic_interface()
-            ! Reset moments to guarantee compatibility with interface reconstruction  
-            call vf_PU%reset_volume_moments()
+               ! Update the band
+               call vf_PU%update_band()
+               ! Perform interface reconstruction from VOF field 
+               call vf_PU%build_interface()
+               ! Set interface planes at the boundaries
+               call vf_PU%set_full_bcond()
+               ! Create discontinuous polygon mesh from IRL interface
+               call vf_PU%polygonalize_interface()
+               ! Calculate distance from polygons
+               call vf_PU%distance_from_polygon()
+               ! Calculate subcell phasic volumes
+               call vf_PU%subcell_vol()
+               ! Calculate curvature
+               call vf_PU%get_curvature()
+               ! Perform PPIC reconstruction
+               if (vf_PU%ppic) call vf_PU%build_quadratic_interface()
+               ! Reset moments to guarantee compatibility with interface reconstruction  
+               call vf_PU%reset_volume_moments()
 
-         end block Update_PU_VOF
-         print *,"Updated vfPU"
+            end block Update_PU_VOF
+            print *,"Updated vfPU"
+         endif
          ! Output to ensight
          if (ens_evt%occurs()) then
             call vf%update_surfmesh(smesh)
