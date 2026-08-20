@@ -14,7 +14,7 @@ module simulation
    use event_class,          only: event
    use monitor_class,        only: monitor
    use config_class, only: config
-   use temp_transport
+   ! use temp_transport
    use irl_fortran_interface
    use conservative_st
    
@@ -26,7 +26,7 @@ module simulation
    type(ddadi),          public :: vs
    type(tpns),           public :: fs
    type(vfs),            public :: vf,vf_PU
-   type(tads),           public :: ts
+   ! type(tads),           public :: ts
    type(timetracker),    public :: time
    type(conservative_st_type), public :: cst
 
@@ -129,7 +129,7 @@ contains
    end function yp_locator
    
    
-   !> Function that localizes the y- side of the domain
+   !> Function that localizes the y- side of the domain 
    function ym_locator(pg,i,j,k) result(isIn)
       use pgrid_class, only: pgrid
       implicit none
@@ -363,8 +363,8 @@ contains
          real(WP), dimension(3) :: v_cent,a_cent,xyz
          real(WP) :: vol,area,Lx,Ly,Lz,diameter,Lx_D,Ly_D,Lz_D
          real(WP), dimension(:), allocatable :: x,y,z
-         integer, parameter :: amr_ref_lvl=0
-         integer, parameter :: vf_ref_lvl=5
+         integer, parameter :: amr_ref_lvl=4
+         integer, parameter :: vf_ref_lvl=1
          ! Create Refined Config  
          ! Read in grid definition   
          call param_read('Lx_D',Lx_D); call param_read('nx',nx); 
@@ -382,8 +382,8 @@ contains
          Lz = diameter*Lz_D 
          
          if(twoD) then 
-            Lz = Lx/nx 
             nz = 1
+            Lz = nz*Lx/nx 
          endif
          allocate(x(nx+1))
          allocate(y(ny+1))
@@ -403,7 +403,7 @@ contains
          call param_read('Partition',partition,short='p')
          cfg_PU=config(grp=group,decomp=partition,grid=grid)
          ! Create a VOF solver
-         call vf_PU%initialize(cfg=cfg_PU,reconstruction_method=lvira,transport_method=flux_storage,name='PUVOF')
+         call vf_PU%initialize(cfg=cfg_PU,reconstruction_method=jibben,transport_method=flux_storage,name='PUVOF')
          allocate(PU_levelset(vf_PU%cfg%imino_:vf_PU%cfg%imaxo_,vf_PU%cfg%jmino_:vf_PU%cfg%jmaxo_,vf_PU%cfg%kmino_:vf_PU%cfg%kmaxo_))
          ! Generate interface  
          do k=vf_PU%cfg%kmino_,vf_PU%cfg%kmaxo_
@@ -652,7 +652,7 @@ contains
          call fs%get_div()
          
          ! Update VF_PU
-         if(time%n .ge. 161 .and. time%n .le. 180) then 
+         if(time%n .ge. 120 .and. time%n .le. 114) then 
             print *,"Update vfPU"
             Update_PU_VOF: block
                use mms_geom,  only: cube_refine_vol 
@@ -662,13 +662,13 @@ contains
                real(WP), dimension(3,8) :: cube_vertex
                real(WP), dimension(3) :: v_cent,a_cent,xyz
                real(WP) :: vol,area
-               integer, parameter :: amr_ref_lvl=0
+               integer, parameter :: amr_ref_lvl=3
                do k=vf_PU%cfg%kmino_,vf_PU%cfg%kmaxo_
                   do j=vf_PU%cfg%jmino_,vf_PU%cfg%jmaxo_
                      do i=vf_PU%cfg%imino_,vf_PU%cfg%imaxo_
                         ! Update LEvelset
                         xyz = [vf_PU%cfg%xm(i),vf_PU%cfg%ym(j),vf_PU%cfg%zm(k)]
-                        PU_levelset(i,j,k) = levelset_PU(xyz,0.0_WP)
+                        PU_levelset(i,j,k) = -levelset_PU(xyz,0.0_WP)
                         ! Set cube vertices
                         n=0
                         do sk=0,1

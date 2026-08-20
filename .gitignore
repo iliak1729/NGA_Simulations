@@ -82,4 +82,5 @@ AE598MultiphaseFlow
 **/DataVisualization*
 **/Other 
 **/OLD
-./amrviz*
+**/amrviz*
+**/restart*

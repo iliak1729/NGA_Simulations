@@ -42,8 +42,9 @@ contains
          Lz = diameter*Lz_D 
          
          if(twoD) then 
-            Lz = Lx/nx 
             nz = 1
+            Lz = nz*Lx/nx 
+            
          endif
          allocate(z(nz+1))
          ! Create simple rectilinear grid

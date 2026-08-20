@@ -21,7 +21,7 @@ Gas density :                 1.225
 
 # Options
 Marangoni :  0 0 0
-Pressure : 1
+Pressure : 0
 Smoothing Option : 1
 Surface Tension Option : 8
 Curvature Option : 1

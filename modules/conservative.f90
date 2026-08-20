@@ -1591,7 +1591,7 @@ subroutine updateSurfaceTensionStresses3D(this)
     implicit none
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in,k_in,shift_first_index,shift_second_index ! Current Cell Location
-    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PUNeigh_RectCub_type) :: neighborhood,neighborhood_trimmed
     type(PUST_RectCub_type) :: solver
     
     ! Temp Items
@@ -1608,6 +1608,7 @@ subroutine updateSurfaceTensionStresses3D(this)
     shift = dvec
     ! Create Neighborhood and solver  
     call new(neighborhood) 
+    call new(neighborhood_trimmed) 
     call new(solver)
     ! Loop over real domain 
     do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
@@ -1621,13 +1622,28 @@ subroutine updateSurfaceTensionStresses3D(this)
                 ! write(*,'(A)') '=============== New: ' 
                 do j_in = -3,3
                     do i_in = -3,3
-                        do k_in = -3,3
+                        do k_in = -3,3 
                             call this%addCellToNeighborhood(neighborhood,i+i_in,j+j_in,k+k_in)
                         enddo
                     end do
                 end do
                 ! Set Neighborhood in solver
                 call setNeighborhood(solver,neighborhood)
+                call setKernelSize(solver,this%PU_spread*this%vf%cfg%dx(1))
+
+                ! Empty Neighborhood
+                call emptyNeighborhood(neighborhood_trimmed) 
+                ! Add 7x7x7 (3 on each side) stencil, in plane  
+                ! write(*,'(A)') '=============== New: ' 
+                do j_in = -3,3
+                    do i_in = -3,3
+                        do k_in = -3,3 
+                            call this%addCellToNeighborhood(neighborhood_trimmed,i+i_in,j+j_in,k+k_in,solver)
+                        enddo
+                    end do
+                end do
+                ! Set Neighborhood in solver
+                call setNeighborhood(solver,neighborhood_trimmed)
                 call setKernelSize(solver,this%PU_spread*this%vf%cfg%dx(1))
                 ! ====== Get Stresses
                 ! call printSolver(solver)
@@ -3489,7 +3505,7 @@ subroutine updateForces(this, A,v)
 
 end subroutine updateForces
 
-subroutine addCellToNeighborhood(this,neighborhood,i,j,k)
+subroutine addCellToNeighborhood(this,neighborhood,i,j,k,solver)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
@@ -3499,28 +3515,62 @@ subroutine addCellToNeighborhood(this,neighborhood,i,j,k)
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k,j_in,i_in,k_in,shift_first_index,shift_second_index ! Current Cell Location
     type(PUNeigh_RectCub_type) :: neighborhood
-    
+    type(PUST_RectCub_type), optional :: solver
     ! Temp Items
     integer :: jmax
     type(SeparatorVariant_type) :: plane,facePlane
     real(WP), dimension(1:4) :: planeVector
     real(WP) :: signedDistance0,signedDistance1,signedDistance2,signedDistance3
     logical :: hasPositive, hasNegative
-    real(WP), dimension(1:3) :: cen,corner,dvec,shift
+    real(WP), dimension(1:3) :: cen,corner,dvec,shift, cenInitial,projectedPoint,projectedNormal,planeNormal
     real(WP), dimension(1:3) :: P0,P1,P2,P3,pressure_cell_center,velocity_cell_center,face_center
     real(WP) :: dx,dy,dz
     real(WP) :: x_i,y_j,z_k
-    if(this%TwoD) then 
-        jmax = 2 
-    else 
-        jmax = 3
+    real(WP) :: weight,weight_normal
+    real(WP) :: alignment
+    ! if(this%TwoD) then 
+    !     jmax = 2 
+    ! else 
+    !     jmax = 3
+    ! endif
+    if(present(solver)) then 
+        cenInitial = (/this%vf%cfg%xm(i),this%vf%cfg%ym(j),this%vf%cfg%zm(k)/)
+        ! print *, "Centroid Got" 
+        ! call projectToPU(solver,cenInitial,projectedPoint)
+        call getNormalPU(solver,cenInitial(1),cenInitial(2),cenInitial(3),this%PU_spread*this%vf%cfg%dx(1),projectedNormal)
+        ! if(sqrt(sum(projectedNormal**2)) .gt. 1e-12) then 
+        !     call projectToPU(solver,cenInitial,projectedPoint)
+        !     call getNormalPU(solver,projectedPoint(1),projectedPoint(2),projectedPoint(3),this%PU_spread*this%vf%cfg%dx(1),projectedNormal)
+        ! else  
+        !     projectedNormal = (/0.0_WP,0.0_WP,0.0_WP/) 
+        ! endif
     endif
+
+
 
     if(this%vf%VF(i,j,k) .gt. 1e-12 .and. this%vf%VF(i,j,k) .lt. 1.0_WP - 1e-12) then ! Mixed Cell
         ! First add the plane itself
         cen = calculateCentroid(this%vf%interface_polygon(1,i,j,k))
         plane = this%vf%liquid_gas_interface(i,j,k)
-        call addMember(neighborhood,cen,1.0_WP,plane,0.0_WP)
+        ! Compute the weight associated with this
+        weight = 1.0_WP 
+        if(this%vf%VF(i,j,k) .lt. 0.1) then 
+            weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*this%vf%VF(i,j,k))
+        endif 
+
+        if(this%vf%VF(i,j,k) .gt. 0.9) then 
+            weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*(1.0_WP-this%vf%VF(i,j,k)))
+        endif 
+
+        ! Compute Weight Associated with Normal, if solver is present
+        weight_normal = 1.0_WP
+        if(present(solver)) then 
+            planeNormal = calculateNormal(this%vf%interface_polygon(1,i,j,k))
+            alignment = sum(projectedNormal*planeNormal)
+            weight_normal = max(alignment,0.0_WP)
+        endif
+
+        call addMember(neighborhood,cen,weight*weight_normal,plane,0.0_WP)
 
         ! ! Now, find the faces that are hit by the plane.
         ! pressure_cell_center = (/this%fs%cfg%xm(i),this%fs%cfg%ym(j),this%fs%cfg%zm(k)/)
