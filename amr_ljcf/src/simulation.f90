@@ -376,6 +376,7 @@ contains
          use amrmpinc_class,   only: BC_GAS,BC_USER
          use amrmg_class,      only: amrmg_outer_pcg_mlmg
          ! Create flow solver
+         fs%nover = 3 
          call fs%initialize(amr,name='jet')
          ! Set initial conditions
          fs%user_init=>jet_init
