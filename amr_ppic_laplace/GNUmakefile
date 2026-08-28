@@ -2,7 +2,7 @@
 NGA_HOME   ?= /home/iliak2/Repositories/Backup/NGA2
 FFTW_DIR   = /usr
 HYPRE_DIR  = /home/iliak2/Builds/hypre
-IRL_DIR    = /home/iliak2/Builds/irl
+IRL_DIR    = /home/iliak2/Builds/irl/
 LAPACK_DIR = /usr
 AMREX_DIR  = /home/iliak2/Builds/amrex
 HDF5_DIR = /usr/lib/x86_64-linux-gnu/hdf5/openmpi

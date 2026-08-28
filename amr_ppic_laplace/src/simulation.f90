@@ -27,7 +27,7 @@ module simulation
    ! Solver data
    type(amrmpinc), target :: fs
    type(amrdata) :: dQdt,Umag
-
+   type(amrist) :: cst   
    ! Visualization
    type(amrviz) :: viz
    type(event) :: viz_evt
@@ -320,7 +320,20 @@ contains
          fs%psolver%outer_solver=amrmg_outer_pcg_mlmg
          fs%psolver%tol_rel=1.0e-5_WP
       end block create_flow_solver
-
+      
+      ! Create Surface Tension Solver
+      create_surface_tension_solver : block 
+         print *,"Making CST"
+         call cst%initialize(fs,"laplace_cst")
+         call param_read('Marangoni',cst%MarangoniOption,default=[0.0_WP,0.0_WP,0.0_WP])
+         call param_read('Pressure',cst%PressureOption,default=0.0_WP)
+         call param_read('Smoothing Option',cst%SmoothingOption,default=1)
+         call param_read('Surface Tension Option',cst%SurfaceTensionOption,default=1)
+         call param_read('Curvature Option',cst%CurvatureOption,default=1)
+         call param_read('PU Spread',cst%PU_spread,default=2.0_WP)
+         call param_read('Two Dimensional',cst%TwoD,default=.false.)
+         call cst%temp()
+      end block create_surface_tension_solver
       ! Create workspace array
       create_workspace: block
          use amrdata_class, only: interp_none
@@ -347,7 +360,7 @@ contains
             call amr%init_from_scratch(time=time%t)
             ! Build PLIC
 #ifdef USE_IRL
-            call fs%build_ppic(time%t)
+            call fs%build_plic(time%t)
 #else
             call fs%build_plic(time%t)
 #endif
@@ -382,6 +395,28 @@ contains
          call viz%add_scalar(fs%Q,1,'U')
          call viz%add_scalar(fs%Q,2,'V')
          call viz%add_scalar(fs%Q,3,'W')
+
+         call viz%add_scalar(cst%ST_x_stresses,1,'Sigma_xx')
+         call viz%add_scalar(cst%ST_x_stresses,2,'Sigma_xy')
+         call viz%add_scalar(cst%ST_x_stresses,3,'Sigma_xz')
+
+         call viz%add_scalar(cst%ST_y_stresses,1,'Sigma_yx')
+         call viz%add_scalar(cst%ST_y_stresses,2,'Sigma_yy')
+         call viz%add_scalar(cst%ST_y_stresses,3,'Sigma_yz') 
+
+         call viz%add_scalar(cst%ST_z_stresses,1,'Sigma_zx')
+         call viz%add_scalar(cst%ST_z_stresses,2,'Sigma_zy')
+         call viz%add_scalar(cst%ST_z_stresses,3,'Sigma_zz')
+
+         call viz%add_scalar(cst%ST_x_force,1,'STFx')
+         call viz%add_scalar(cst%ST_y_force,1,'STFy')
+         call viz%add_scalar(cst%ST_z_force,1,'STFz')
+
+         call viz%add_scalar(cst%CSF_x_force,1,'CSF_STFx')
+         call viz%add_scalar(cst%CSF_y_force,1,'CSF_STFy')
+         call viz%add_scalar(cst%CSF_z_force,1,'CSF_STFz')
+
+
          call viz%add_scalar(fs%P,1,'pressure')
          call viz%add_scalar(fs%VF,1,'VF')
          call fs%smesh%write_as_vtu()
@@ -483,13 +518,13 @@ contains
             call fs%W%lincomb(a=0.5_WP,src1=fs%Wold,b=0.5_WP,src2=fs%W)
 
             ! Increment velocity with advection+viscous terms
-            call fs%get_dQdt(dQdt=dQdt,dt=time%dt,time=time%t)
+            call cst%get_dQdt(dQdt=dQdt,dt=time%dt,time=time%t)
             call fs%Q%lincomb(a=1.0_WP,src1=fs%Qold,b=time%dt,src2=dQdt)
             call fs%Q%average_down(); call fs%Q%fill(time%t)
 
             ! Rebuild PLIC and sub-cell VF
 #ifdef USE_IRL
-            call fs%build_ppic(time%t)
+            call fs%build_plic(time%t)
 #else
             call fs%build_plic(time%t)
 #endif
@@ -503,7 +538,7 @@ contains
             call fs%add_pressure(scale=time%dt,phi=fs%P)
 
             ! Add surface tension to both velocities
-            call fs%add_surface_tension(scale=time%dt)
+            call cst%add_surface_tension(scale=time%dt)
 
             ! Average down and fill ghosts
             call fs%Q%average_down(); call fs%Q%fill(time=time%t)

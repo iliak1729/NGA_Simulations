@@ -712,7 +712,7 @@ subroutine add_conservative_surface_tension_jump(this,dt,div,contact_model)
     use vfs_class, only: vfs
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
-    use f_SeparatorVariant_class 
+    use f_SeparatorVariant_class
     use f_PUSolve_RectCub_class
 
     implicit none
@@ -3538,7 +3538,7 @@ subroutine addCellToNeighborhood(this,neighborhood,i,j,k,solver)
         ! print *, "Centroid Got" 
         ! call projectToPU(solver,cenInitial,projectedPoint)
         call getNormalPU(solver,cenInitial(1),cenInitial(2),cenInitial(3),this%PU_spread*this%vf%cfg%dx(1),projectedNormal)
-        ! if(sqrt(sum(projectedNormal**2)) .gt. 1e-12) then 
+        ! if(sqrt(sum(projectedNormal**2)) .gt. 1e-12) then  
         !     call projectToPU(solver,cenInitial,projectedPoint)
         !     call getNormalPU(solver,projectedPoint(1),projectedPoint(2),projectedPoint(3),this%PU_spread*this%vf%cfg%dx(1),projectedNormal)
         ! else  

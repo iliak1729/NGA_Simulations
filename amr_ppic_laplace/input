@@ -9,6 +9,20 @@ Regrid nsteps:          10
 Blocking factor:        8
 Max grid size:          32
 
+# Options
+# Marangoni Values
+Marangoni :  0 0 0
+# Include PRessure Term? 
+Pressure : 1
+# Smoothing Method : 1 for None 
+Smoothing Option : 1
+# 1 For CSF, 2 for integral, 3 for CSF shift 
+Surface Tension Option : 2
+# Curvautre computation
+Curvature Option : 1
+# PU radius in dx.
+PU Spread : 2.0
+
 # Flow parameters
 Laplace number:         120
 Droplet stretching:     1 1 1
@@ -20,7 +34,7 @@ Max dt:                 2.5e-4
 Max CFL:                0.7
 
 # Output
-Output period:          5e-3
+Output period:          5e-12 ! 5e-3
 Checkpoint period:      5e-2
 
 # Restart
