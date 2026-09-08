@@ -28,6 +28,7 @@ module simulation
    type(amrmpinc), target :: fs
    type(amrdata) :: dQdt,Umag
    type(amrist) :: cst   
+   integer :: InterfaceTypes
    ! Visualization
    type(amrviz) :: viz
    type(event) :: viz_evt
@@ -37,7 +38,7 @@ module simulation
 
    ! Monitoring
    type(monitor) :: mfile,cflfile,gridfile,currentsfile
-   real(WP) :: vel_rms,curv_std
+   real(WP) :: vel_rms,curv_std,vel_com
 
    ! Restart data
    type(amrio) :: io
@@ -45,11 +46,13 @@ module simulation
    character(len=str_medium) :: restart_dir
    logical :: restarted
    real(WP) :: restart_time
-
+ 
    ! Physical parameters
    real(WP) :: radius = 0.4_WP
+   real(WP), dimension(3) :: center = (/0.0_WP,0.0_WP,0.0_WP/)
+   real(WP) :: Lx,Ly,Lz
    real(WP), dimension(3) :: drop_stretch,drop_vel
-   real(WP) :: viscL_mol,viscG_mol,We,La
+   real(WP) :: viscL_mol,viscG_mol
    real(WP) :: Tnu,Tsigma,TU,tdTnu,tdTsigma,tdTU,Usigma
 
    real(WP), parameter, public :: VFlo=1.0e-12_WP    ! Minimum VF value considered
@@ -60,12 +63,15 @@ contains
    !> Levelset function for sphere
    function sphere_levelset(xyz,t) result(G)
       real(WP), dimension(3), intent(in) :: xyz
+      real(WP), dimension(3) :: shift_xyz 
       real(WP), intent(in) :: t
       real(WP) :: G
-      ! G=radius-sqrt(xyz(1)**2+xyz(2)**2+xyz(3)**2)
-      G=1.0_WP-sqrt(xyz(1)**2/(drop_stretch(1)*radius)**2+xyz(2)**2/(drop_stretch(2)*radius)**2+xyz(3)**2/(drop_stretch(2)*radius)**2)
-      ! if (amr%nz.eq.1) G=radius-sqrt(xyz(1)**2+xyz(2)**2) ! Enable 2D case
-      if (amr%nz.eq.1) G=1.0_WP-sqrt(xyz(1)**2/(drop_stretch(1)*radius)**2+xyz(2)**2/(drop_stretch(2)*radius)**2) ! Enable 2D case
+
+      shift_xyz = xyz - center
+
+      G=1.0_WP-sqrt(shift_xyz(1)**2/(drop_stretch(1)*radius)**2+shift_xyz(2)**2/(drop_stretch(2)*radius)**2+shift_xyz(3)**2/(drop_stretch(2)*radius)**2)
+
+      if (amr%nz.eq.1) G=1.0_WP-sqrt(shift_xyz(1)**2/(drop_stretch(1)*radius)**2+shift_xyz(2)**2/(drop_stretch(2)*radius)**2) ! Enable 2D case
    end function sphere_levelset
 
    !> Compute viscosity
@@ -95,7 +101,7 @@ contains
       end do
    end subroutine get_viscosity
 
-   !> User-provided initialization for jet
+   !> User-provided initialization for drop 
    subroutine drop_init(solver,lvl,time,ba,dm)
       use amrex_amr_module, only: amrex_boxarray,amrex_distromap,amrex_mfiter,amrex_box,amrex_mfiter_build,amrex_mfiter_destroy
       use mms_geom, only: initialize_volume_moments
@@ -162,15 +168,17 @@ contains
       type(amrex_imultifab) :: mask
       real(WP), dimension(:,:,:,:), contiguous, pointer :: pU,pV,pW,pVF,pCurv
       integer, dimension(:,:,:,:), contiguous, pointer :: pMask
-      real(WP) :: curv_mean, curv_mean_weight, vol_total
+      real(WP) :: curv_mean, curv_mean_weight, vol_total, VF_total
       ! Update nondimensional times
       tdTnu=time%t/Tnu
       tdTsigma=time%t/Tsigma
       tdTU=time%t/TU
       ! Uses composite integration with fine masking to avoid double-counting
       vel_rms  =0.0_WP
+      vel_com  =0.0_WP 
       curv_std =0.0_WP
       vol_total=0.0_WP
+      VF_total =0.0_WP
       curv_mean=0.0_WP
       curv_mean_weight=0.0_WP
       do lvl=0,amr%clvl()
@@ -186,10 +194,10 @@ contains
             pU =>fs%U%mf(lvl)%dataptr(mfi)
             pV =>fs%V%mf(lvl)%dataptr(mfi)
             pW =>fs%W%mf(lvl)%dataptr(mfi)
+            pVF=>fs%VF%mf(lvl)%dataptr(mfi)
             if (lvl.lt.amr%clvl()) pMask=>mask%dataptr(mfi)
             if (lvl.eq.amr%maxlvl) then
                pCurv=>fs%curv%dataptr(mfi)
-               pVF  =>fs%VF%mf(lvl)%dataptr(mfi)
             end if
             ! Loop over tile
             bx=mfi%tilebox()
@@ -200,7 +208,9 @@ contains
                end if
                ! Accumulate vel rms and curv mean
                vel_rms=vel_rms+((pU(i,j,k,1)-drop_vel(1))**2+(pV(i,j,k,1)-drop_vel(2))**2+(pW(i,j,k,1)-drop_vel(3))**2)*amr%cell_vol(lvl)
+               vel_com=vel_com+pV(i,j,k,1)*pVF(i,j,k,1)*amr%cell_vol(lvl)
                vol_total=vol_total+amr%cell_vol(lvl)
+               VF_total=VF_total+pVF(i,j,k,1)*amr%cell_vol(lvl)
                if (lvl.eq.amr%maxlvl) then
                   if (pVF(i,j,k,1).lt.VFlo.or.pVF(i,j,k,1).gt.VFhi) cycle 
                   curv_mean=curv_mean+pCurv(i,j,k,1)
@@ -215,7 +225,10 @@ contains
       call MPI_ALLREDUCE(MPI_IN_PLACE,vol_total,1,MPI_REAL_WP,MPI_SUM,amr%comm,ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,curv_mean,1,MPI_REAL_WP,MPI_SUM,amr%comm,ierr)
       call MPI_ALLREDUCE(MPI_IN_PLACE,curv_mean_weight,1,MPI_REAL_WP,MPI_SUM,amr%comm,ierr)
+      call MPI_ALLREDUCE(MPI_IN_PLACE,vel_com,1,MPI_REAL_WP,MPI_SUM,amr%comm,ierr)
+      call MPI_ALLREDUCE(MPI_IN_PLACE,VF_total,1,MPI_REAL_WP,MPI_SUM,amr%comm,ierr)
       vel_rms=sqrt(vel_rms/vol_total)/Usigma
+      vel_com=vel_com/VF_total
       curv_mean=curv_mean/curv_mean_weight
       ! Loop over all cells
       lvl=amr%maxlvl
@@ -244,13 +257,18 @@ contains
 
       ! Create amrgrid
       create_amrgrid: block
-         amr%name='laplace'
+         ! print *,"AMR START"
+         amr%name='Marangoni'
          call param_read('Base nx',amr%nx)
          call param_read('Base ny',amr%ny)
          call param_read('Base nz',amr%nz)
-         amr%xlo=-5.0_WP; amr%xhi=+5.0_WP
-         amr%ylo=-5.0_WP; amr%yhi=+5.0_WP
-         amr%zlo=-5.0_WP; amr%zhi=+5.0_WP
+         call param_read('Lx',Lx)
+         call param_read('Ly',Ly)
+         call param_read('Lz',Lz)
+         amr%xlo=-Lx/2.0_WP; amr%xhi=+Lx/2.0_WP
+         amr%ylo=-Ly/2.0_WP; amr%yhi=+Ly/2.0_WP
+         amr%zlo=-Lz/2.0_WP; amr%zhi=+Lz/2.0_WP
+         ! MAYBE REPLACE hERE - PERIODIC FOR MARANGONI RISE IS POTENTIALLY NOT GOOD.
          amr%xper=.true.; amr%yper=.true.; amr%zper=.true.
          call param_read('Max level',amr%maxlvl)
          call param_read('Blocking factor',amr%nbloc)
@@ -261,6 +279,7 @@ contains
             amr%zhi=+0.5_WP*(amr%yhi-amr%ylo)/real(amr%ny*2**amr%maxlvl,WP)
          end if
          call amr%initialize()
+         ! print *,"AMR MADE"
       end block create_amrgrid
 
       ! Handle restart/saves here
@@ -278,7 +297,7 @@ contains
       ! Initialize time integration
       initialize_time: block
          ! Create time tracker and initialize
-         time=timetracker(amRoot=amr%amRoot,name="Laplace Eq.")
+         time=timetracker(amRoot=amr%amRoot,name="Thermocapillary_Rise")
          call param_read('Max time',time%tmax)
          call param_read('Max dt',time%dtmax)
          call param_read('Max CFL',time%cflmax)
@@ -296,59 +315,34 @@ contains
          use amrdata_class,    only: interp_face_lin
          use amrmpinc_class,   only: BC_GAS,BC_USER
          use amrmg_class,      only: amrmg_outer_pcg_mlmg
-         real(WP) :: Vmag,Diameter
-         real(WP) :: MinTnu,MinTcap
          ! Create flow solver
          fs%nover = 3 
          call fs%initialize(amr,name='laplace')
          ! Set initial conditions
-         ! Read Droplet 
-         call param_read('Droplet Radius',radius,default=0.2_WP);
-         call param_read('Droplet stretching',drop_stretch,default=[1.0_WP,1.0_WP,1.0_WP])
-         call param_read('Droplet velocity',drop_vel,default=[0.0_WP,0.0_WP,0.0_WP])
-         ! Set densities
-         fs%rhoG = 1.0_WP; fs%rhoL = 1.0_WP 
-         ! Read Weber and Laplace Numbers
-         call param_read('Laplace number',La,default = 120.0_WP)
-         call param_read('Weber number',We,default = 0.4_WP)
-         ! Set Surface Tension By Weber Number
-         Vmag = sqrt(sum(drop_vel**2))
-         Diameter = 2.0_WP*radius 
-         fs%sigma = fs%rhoL*Vmag*Vmag*Diameter/We
-         ! Set Viscosity by Laplace Number
-         viscL_mol = sqrt(fs%rhoL*fs%sigma*Diameter/La)
-         viscG_mol = viscL_mol
-         ! Shape 
+         call param_read('Bubble Radius',radius,default=0.5_WP)
+         call param_read('Bubble position',center,default=[0.0_WP,0.0_WP,0.0_WP])
          fs%user_init=>drop_init
          ! Use face-linear interp if 2D (divfree requires ratio=2 in all dirs)
          if (amr%nz.eq.1) fs%interp_vel=interp_face_lin
+         ! Set densities
+         call param_read('Liquid density',fs%rhoL,default=1.0_WP)
+         call param_read('Gas Density',fs%rhoG,default=1.0_WP)
+         ! Set molecular viscosities (Maybe this is dynamic viscosity)
+         call param_read('Liquid dynamic viscosity',viscL_mol,default=1.0_WP)
+         call param_read('Gas dynamic viscosity',viscG_mol,default=1.0_WP)
+         ! Set surface tension coefficient
+         call param_read('Surface tension coefficient',fs%sigma);
          Tnu=(2.0_WP*radius)**2.0_WP*fs%rhoL/viscL_mol
          Tsigma=sqrt(fs%rhoL*(2.0_WP*radius)**3/fs%sigma)
          Usigma=sqrt(fs%sigma/(fs%rhoL*(2.0_WP*radius)))
-         TU=2.0_WP*radius/sqrt(dot_product(drop_vel,drop_vel))
+         ! Initial sphere stretching
+         call param_read('Droplet stretching',drop_stretch,default=[1.0_WP,1.0_WP,1.0_WP])
+         call param_read('Droplet velocity',drop_vel,default=[0.0_WP,0.0_WP,0.0_WP])
+         ! print *,drop_vel
+         TU=2.0_WP*radius/max(sqrt(dot_product(drop_vel,drop_vel)),1e-12_WP)
          ! Set pressure convergence
          fs%psolver%outer_solver=amrmg_outer_pcg_mlmg
          fs%psolver%tol_rel=1.0e-5_WP
-         We = fs%rhoL*sqrt(sum(drop_vel**2.0_WP))*2.0_WP*radius/fs%sigma
-         La = fs%rhoL*fs%sigma*Diameter/(viscG_mol**2.0_WP)
-         ! Update Time
-         call param_read("Min Viscous Timescales",MinTnu,default=1.0_WP)
-         call param_read("Min Capillary Timescales",MinTcap,default=1.0_WP)
-         time%tmax = max(MinTnu*Tnu,MinTcap*Tsigma)
-         if(amr%amRoot) then 
-            print *,"=================================="
-            print *,"Weber Number = ",We
-            print *,"Laplace Number = ",La
-            print *,"Surface Tension Coefficient = ",fs%sigma
-            print *,"Viscosity = ",viscL_mol
-            print *,"Viscous Time Scale = ",Tnu
-            print *,"Capillary Time Scale = ",Tsigma
-            print *,"Max Time = ",time%tmax
-            print *,"Max CFL = ",time%cflmax
-            print *,"=================================="
-         endif
-         
-         
       end block create_flow_solver
       
       ! Create Surface Tension Solver
@@ -362,9 +356,10 @@ contains
          call param_read('Curvature Option',cst%CurvatureOption,default=1)
          call param_read('PU Spread',cst%PU_spread,default=2.0_WP)
          call param_read('Two Dimensional',cst%TwoD,default=.false.)
-         ! call cst%temp()
       end block create_surface_tension_solver
+
       ! Create workspace array
+      ! print *,"Workspace"
       create_workspace: block
          use amrdata_class, only: interp_none
          call dQdt%initialize(amr,name='dQdt',ncomp=3,ng=0,interp=interp_none); call dQdt%register()
@@ -372,14 +367,18 @@ contains
       end block create_workspace
 
       ! Initialize regridding
+      ! print *,"Regrid"
       init_regridding: block
          ! Create regridding event
          regrid_evt=event(time=time,name='Regrid')
          call param_read('Regrid nsteps',regrid_evt%nper)
-         ! Set case-specific tagging 
+         call param_read('Interface Type',InterfaceTypes)
+         ! print *,"PARAM READ"
+         ! Set case-specific tagging
          ! fs%user_tagging=>my_tagger
-         ! call param_read('Tagging Reynolds',Re_tag) 
+         ! call param_read('Tagging Reynolds',Re_tag)
          ! Create initial grid from scratch or restore from checkpoint
+         ! print *, "Restarted : ",restarted
          if (restarted) then
             ! Restore grid hierarchy from checkpoint
             call amr%init_from_checkpoint(dirname=trim(restart_dir),time=time%t)
@@ -387,26 +386,39 @@ contains
             call fs%restore_checkpoint(io=io,dirname=trim(restart_dir),time=time%t)
          else
             ! Create initial grid
+            ! print *,"init from scratch",time%t
             call amr%init_from_scratch(time=time%t)
             ! Build PLIC
-#ifdef USE_IRL
-            call fs%build_ppic(time%t)
-#else
-            call fs%build_ppic(time%t)
-#endif
-            ! call fs%build_plic(time%t)
+            ! print *,"PLIC"
+            SELECT CASE (InterfaceTypes)
+               case (1)
+                  call fs%build_plic(time%t)
+               case (2) 
+                  call fs%build_ppic(time%t)
+               case default 
+                  call fs%build_plic(time%t)
+            END SELECT
+            ! print *,"subVF"
             call fs%build_subVF()
             ! Initialize face velocities
+            ! print *,"FaceVEl"
             call fs%get_face_velocity()
+            ! print *,"Averagedown"
             call fs%average_down_velocity(); call fs%fill_velocity(time=time%t)
+            ! print *,"EndIFIn"
          end if
+         ! print *,"endif"
          ! Set viscosity: molecular + SGS
          call get_viscosity()
+         ! print *,"Visc"
          ! Compute Umag
+         ! print *,"Umag"
          call Umag%get_magnitude(srcX=fs%Q,srcY=fs%Q,srcZ=fs%Q,compX=1,compY=2,compZ=3)
+         ! print *,"End"
       end block init_regridding
 
       ! Initialize checkpoint save event
+      ! print *,"Checkpoint"
       init_checkpoint: block
          ! Create checkpoint save event
          save_evt=event(time=time,name='Checkpoint')
@@ -418,6 +430,7 @@ contains
       end block init_checkpoint
 
       ! Initialize visualization
+      ! print *,"Viz"
       create_visualization: block
          ! Create visualization object
          call viz%initialize(amr,'laplace',use_hdf5=.false.)
@@ -445,7 +458,6 @@ contains
          call viz%add_scalar(cst%CSF_x_force,1,'CSF_STFx')
          call viz%add_scalar(cst%CSF_y_force,1,'CSF_STFy')
          call viz%add_scalar(cst%CSF_z_force,1,'CSF_STFz')
-
 
          call viz%add_scalar(fs%P,1,'pressure')
          call viz%add_scalar(fs%VF,1,'VF')
@@ -514,8 +526,7 @@ contains
          call currentsfile%add_column(tdTU,'Time/T_U')
          call currentsfile%add_column(curv_std,'NonDim Curv STD')
          call currentsfile%add_column(vel_rms, 'NonDim Vel RMS')
-         call currentsfile%add_column(La, 'Laplace Number')
-         call currentsfile%add_column(We, 'Weber Number')
+         call currentsfile%add_column(vel_com, 'Vel COM')
          call compute_stats()
          call currentsfile%write()
       end block create_monitor
@@ -555,11 +566,17 @@ contains
             call fs%Q%average_down(); call fs%Q%fill(time%t)
 
             ! Rebuild PLIC and sub-cell VF
-#ifdef USE_IRL
-            call fs%build_ppic(time%t)
-#else
-            call fs%build_ppic(time%t)
-#endif
+            SELECT CASE (InterfaceTypes)
+               case (1)
+                  call fs%build_plic(time%t)
+                  ! print *,"BUILDING PLIC"
+               case (2) 
+                  call fs%build_ppic(time%t)
+                  ! print *,"BUILDING PPIC"
+               case default 
+                  call fs%build_plic(time%t)
+                  ! print *,"BUILDING DEFAULT"
+            END SELECT
             ! call fs%build_plic(time%t)
             call fs%build_subVF()
 
@@ -628,7 +645,7 @@ contains
          if (save_evt%occurs()) then
             save_checkpoint: block
                use string, only: rtoa
-               call io%write(dirname='restart/laplace_'//trim(adjustl(rtoa(time%t))),time=time%t,step=time%n)
+               call io%write(dirname='restart/marangoni_'//trim(adjustl(rtoa(time%t))),time=time%t,step=time%n)
             end block save_checkpoint
          end if
          

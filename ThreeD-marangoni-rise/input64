@@ -19,11 +19,6 @@ Liquid density :              0.2
 Gas density :                 0.2
 Surface tension coefficient : 0.1
 
-# Definition of two bubblesxxxx
-# Bubble volume :   1.75e-8                    !9.3e-6    # in m^3
-# Bubble position :  -2.1e-3 0 0               !0 0 0
-#Bubble 2 position : 1.9e-3 0 0
-
 # Temperatures
 Top Temperature : 1
 Bottom Temperature : 0

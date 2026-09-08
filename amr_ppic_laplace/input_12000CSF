@@ -17,16 +17,16 @@ Pressure : 0
 # Smoothing Method : 1 for None 
 Smoothing Option : 1
 # 1 For CSF, 2 for integral, 3 for CSF shift 
-Surface Tension Option : 2
+Surface Tension Option : 1
 # Curvautre computation
 Curvature Option : 1
 # PU radius in dx.
 PU Spread : 2.0
 
-# Problem parameters
-Laplace number:         120
+# Flow parameters
+Laplace number:         12000
 Droplet stretching:     1 1 1
-Droplet velocity:       0 0 0
+Droplet velocity:       1 0 0
 Droplet Radius :        0.2
 Weber number:           0.4
 Min Viscous Timescales : 1.0

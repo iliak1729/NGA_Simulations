@@ -13,7 +13,7 @@ Max grid size:          32
 # Marangoni Values
 Marangoni :  0 0 0
 # Include PRessure Term? 
-Pressure : 0
+Pressure : 1
 # Smoothing Method : 1 for None 
 Smoothing Option : 1
 # 1 For CSF, 2 for integral, 3 for CSF shift 
@@ -23,10 +23,10 @@ Curvature Option : 1
 # PU radius in dx.
 PU Spread : 2.0
 
-# Problem parameters
+# Flow parameters
 Laplace number:         120
 Droplet stretching:     1 1 1
-Droplet velocity:       0 0 0
+Droplet velocity:       1 0 0
 Droplet Radius :        0.2
 Weber number:           0.4
 Min Viscous Timescales : 1.0
