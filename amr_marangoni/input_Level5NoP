@@ -40,9 +40,9 @@ Bubble Radius : 0.5
 Bubble position :  0 -2.25 0
 
 # Time integration
-Max time:               2.4
+Max time:               1.875
 Max dt:                 3.81470e-04
-Max CFL:                0.5
+Max CFL:                0.25
 
 # Output
 Output period:          5e-3
