@@ -69,10 +69,10 @@ data_120_NoP_PPIC_5Point = np.loadtxt(
 )
 
 
-# data_120_P_PPIC_5Point = np.loadtxt(
-#     f"{base3}/amr_LA120P/monitor/statistics",
-#     skiprows=2
-# )
+data_120_P_PPIC_5Point = np.loadtxt(
+    f"{base3}/amr_LA120P/monitor/statistics",
+    skiprows=2
+)
 
 data_120_P_PPIC = np.loadtxt(
     f"{base2}/amr_LA120P/monitor/statistics",
@@ -238,8 +238,8 @@ plt.semilogy(
 )
 
 plt.semilogy(
-    dataLIVE[:, 2],
-    dataLIVE[:, 6],
+    data_120_P_PPIC_5Point[:, 2],
+    data_120_P_PPIC_5Point[:, 6],
     label="PPIC_P,La120, 5 Point",
     linewidth=2,
     linestyle="-",
@@ -255,7 +255,7 @@ plt.semilogy(
     color=color_blue
 )
 plt.ylim([1e-4,2.5e-4])
-plt.xlim([0, 0.2])
+plt.xlim([0, 0.05])
 plt.title("Translating Drop")
 plt.xlabel("t/Tv")
 plt.ylabel("Vrms")
@@ -263,16 +263,5 @@ plt.ylabel("Vrms")
 plt.legend()
 plt.tight_layout()
 
-plt.figure()
-
-
-plt.ylim([1e-4,2.5e-4])
-plt.xlim([0, 0.2])
-plt.title("Translating Drop")
-plt.xlabel("t/Tv")
-plt.ylabel("Vrms")
-
-plt.legend()
-plt.tight_layout()
 
 plt.show()

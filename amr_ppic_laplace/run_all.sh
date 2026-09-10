@@ -1,14 +1,15 @@
 
 CASES=(
-    "input_120NoP"
-    "input_120P"
+    "input_12000CSF"
+    "input_12000NoP"
+    "input_12000P"
 )
 
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./OLD_IntegrationTests/amr_LA${CASE}"
+    DIR="./OLD_LapSweep_PPIC/amr_LA${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"

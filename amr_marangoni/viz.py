@@ -28,8 +28,14 @@ data1b = np.loadtxt(datafile, skiprows=2)
 datafile = "amr_marangoni/OLD/amr_3level_P/monitor/statistics"
 data1c = np.loadtxt(datafile, skiprows=2)
 
-datafile = "ThreeD-marangoni-rise/OLD/N64-64-96-3D-NOSHIFT/monitor/bubble"
-data2 = np.loadtxt(datafile, skiprows=2)
+datafile = "amr_marangoni/OLD_LargeDomain/amr_Level5NoP/monitor/statistics"
+data_NoP = np.loadtxt(datafile, skiprows=2)
+datafile = "amr_marangoni/OLD_LargeDomain/amr_Level5NoP_PPIC/monitor/statistics"
+data_NoP_PPIC = np.loadtxt(datafile, skiprows=2)
+datafile = "amr_marangoni/OLD_LargeDomain/amr_Level5P/monitor/statistics"
+data2_P = np.loadtxt(datafile, skiprows=2)
+datafile = "amr_marangoni/OLD_LargeDomain/amr_Level5P_PPIC/monitor/statistics"
+data2_P_PPIC = np.loadtxt(datafile, skiprows=2)
 
 datafile = "amr_marangoni/monitor/statistics"
 dataLIVE = np.loadtxt(datafile, skiprows=2)
@@ -74,28 +80,35 @@ print("Vygb =",Vygb)
 
 plt.figure()
 
-
+width = 3
 x = data1[:,1]/tNorm
 y = data1[:,7]/Vygb
-plt.plot(x,y,label = "AMR3,14 Cells/D",linewidth=5,color = color_red)
-
-# x = data1b[:,1]/tNorm
-# y = data1b[:,7]/Vygb
-# plt.plot(x,y,label = "AMR4,26 Cells/D",linewidth=5,color = color_blue)
+plt.plot(x,y,label = "AMR3,14 Cells/D",linewidth=width,color = color_red)
 
 x = data1c[:,1]/tNorm
 y = data1c[:,7]/Vygb
-plt.plot(x,y,label = "AMR3P,14 Cells/D",linewidth=5,color = color_pink)
+plt.plot(x,y,label = "AMR3P,14 Cells/D",linewidth=width,color = color_pink)
+    
 
-x = data2[:,1]/tNorm
-y = data2[:,3]/Vygb
-plt.plot(x,y,label = "Non-AMR,14 Cells/D",linewidth=5,color = color_teal)
+x = data_NoP[:,1]/tNorm
+y = data_NoP[:,7]/Vygb
+plt.plot(x,y,label = "Large Domain,14 Cells/D,NoP",linewidth=width,color = color_yellow)
 
-x = dataLIVE[:,1]/tNorm
-y = dataLIVE[:,7]/Vygb
-plt.plot(x,y,label = "AMR3P_PPIC",linewidth=5,color = color_yellow)
+x = data2_P[:,1]/tNorm
+y = data2_P[:,7]/Vygb
+plt.plot(x,y,label = "Large Domain,14 Cells/D,P",linewidth=width,color = color_blue)
+
+x = data_NoP_PPIC[:,1]/tNorm
+y = data_NoP_PPIC[:,7]/Vygb
+plt.plot(x,y,label = "Large Domain,14 Cells/D,NoP,PPIC",linewidth=width,color = color_skyblue)
+
+x = data2_P_PPIC[:,1]/tNorm
+y = data2_P_PPIC[:,7]/Vygb
+plt.plot(x,y,label = "Large Domain,14 Cells/D,P,PPIC",linewidth=width,color = color_orange)
+
 plt.legend()
 
+plt.xlim([0,0.25])
 plt.title("Marangoni Rise Case")
 plt.xlabel("t/tnorm")
 plt.ylabel("V/Vygb")
