@@ -182,6 +182,80 @@ datasets3DJ = [data3D16J, data3D32J, data3D64J, data3D128J]
 cols = [6, 7, 8,9]
 names = ["Radius Error", "Tangent Error", "Curvature Error","Sigma_xx Error"]
 
+# Directory where TikZ data files will be written
+tikz_output_dir = output_dir / "tikz_data"
+tikz_output_dir.mkdir(parents=True, exist_ok=True)
+
+
+def write_xy(filename, x, y):
+    """
+    Write x-y data in a pgfplots-friendly format.
+    NaN values are skipped.
+    """
+    with open(filename, "w") as f:
+        f.write("x, y\n")
+
+        for x_val, y_val in zip(x, y):
+            if np.isfinite(x_val) and np.isfinite(y_val):
+                f.write(f"{x_val:.8g}, {y_val:.8g}\n")
+
+
+for col, name in zip(cols, names):
+
+    def extract_values(dataset_list):
+        values = []
+
+        for data in dataset_list:
+            row = data[np.isclose(data[:, 2], 2.0)]
+
+            if len(row) == 0:
+                values.append(np.nan)
+            else:
+                values.append(row[0, col])
+
+        return np.array(values)
+
+
+    # =========================
+    # Extract simulation data
+    # =========================
+
+    y2D  = extract_values(datasets2D)
+    y2DJ = extract_values(datasets2DJ)
+    y3D  = extract_values(datasets3D)
+    y3DJ = extract_values(datasets3DJ)
+
+
+    # =========================
+    # Export simulation curves
+    # =========================
+
+    file_prefix = name.replace(" ", "_")
+
+    write_xy(
+        tikz_output_dir / f"{file_prefix}_2D.txt",
+        N2D,
+        y2D
+    )
+
+    write_xy(
+        tikz_output_dir / f"{file_prefix}_2D_Jibben.txt",
+        N2D,
+        y2DJ
+    )
+
+    write_xy(
+        tikz_output_dir / f"{file_prefix}_3D.txt",
+        N3D,
+        y3D
+    )
+
+    write_xy(
+        tikz_output_dir / f"{file_prefix}_3D_Jibben.txt",
+        N3D,
+        y3DJ
+    )
+
 for col, name in zip(cols, names):
 
     def extract_values(dataset_list):
