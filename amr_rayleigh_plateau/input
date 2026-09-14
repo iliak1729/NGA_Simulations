@@ -26,7 +26,7 @@ Gas density:                 1
 Surface tension coefficient: 0.072
 
 # Time integration
-Max time:               60
+Max time:               40
 Max dt:                 0.05
 Max CFL:                0.25
 

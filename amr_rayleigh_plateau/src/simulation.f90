@@ -13,7 +13,7 @@ module simulation
    use monitor_class,     only: monitor
    use amrio_class,       only: amrio
    use string,            only: str_medium
-
+   use irl_fortran_interface
    implicit none
    private
 
@@ -380,10 +380,15 @@ contains
       integer :: lvl,i,j,k,ierr
       type(amrex_mfiter) :: mfi
       type(amrex_box) :: bx
-      real(WP), dimension(:,:,:,:), contiguous, pointer :: pVF
+      real(WP), dimension(:,:,:,:), contiguous, pointer :: pVF,pPLIC
       real(WP) :: dx,dy,dz,x,y,r
       logical :: found_interface
-
+      real(WP), dimension(3) :: lo,hi
+      type(RectCub_type) :: cell
+      type(PlanarSep_type) :: planar_sep
+      type(Poly_type) :: polygon
+      real(WP), dimension(1:3) :: cen
+      
       lvl=amr%maxlvl
       dx=amr%dx(lvl)
       dy=amr%dy(lvl)
@@ -398,6 +403,7 @@ contains
       do while (mfi%next())
 
          pVF=>fs%VF%mf(lvl)%dataptr(mfi)
+         pPLIC=>fs%PLIC%dataptr(mfi)
          bx=mfi%tilebox()
 
          do k=bx%lo(3),bx%hi(3)
@@ -405,6 +411,14 @@ contains
                do i=bx%lo(1),bx%hi(1)
 
                   if (pVF(i,j,k,1).le.VFlo .or. pVF(i,j,k,1).ge.VFhi) cycle
+
+                  call setNumberOfPlanes(planar_sep,1)
+                  call setPlane(planar_sep,0,pPLIC(i,j,k,1:3),pPLIC(i,j,k,4))
+                  lo=[amr%xlo+real(i  ,WP)*dx,amr%ylo+real(j  ,WP)*dy,amr%zlo+real(k  ,WP)*dz]
+                  hi=[amr%xlo+real(i+1,WP)*dx,amr%ylo+real(j+1,WP)*dy,amr%zlo+real(k+1,WP)*dz]
+                  call construct_2pt(cell,lo,hi)
+                  call getPoly(cell,planar_sep,0,polygon)
+                  cen = calculateCentroid(polygon)
 
                   x=amr%xlo+(real(i,WP)+0.5_WP)*dx-center(1)
                   y=amr%ylo+(real(j,WP)+0.5_WP)*dy-center(2)
