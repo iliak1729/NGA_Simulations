@@ -4,13 +4,14 @@ CASES=(
     "input_Level5P"
     "input_Level5NoP_PPIC"
     "input_Level5P_PPIC"
+    
 )
 
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./OLD_LargeDomain/amr_${CASE}"
+    DIR="./Domain_160_240_160_Level9/amr_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"

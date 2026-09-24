@@ -60,7 +60,7 @@ module simulation
 
 contains
 
-   !> Levelset function for sphere
+   !> Levelset function for sphere 
    function sphere_levelset(xyz,t) result(G)
       real(WP), dimension(3), intent(in) :: xyz
       real(WP), dimension(3) :: shift_xyz 
@@ -155,6 +155,49 @@ contains
       end do
       call amrex_mfiter_destroy(mfi)
    end subroutine drop_init
+
+   !> Tagger for this case based on location
+   subroutine my_tagger(solver,lvl,time,tags_ptr)
+      use iso_c_binding,    only: c_ptr,c_char
+      use amrex_amr_module, only: amrex_mfiter,amrex_box,amrex_tagboxarray
+      use amrgrid_class,    only: SETtag
+      class(amrmpinc), intent(inout) :: solver
+      integer, intent(in) :: lvl
+      real(WP), intent(in) :: time
+      type(c_ptr), intent(in) :: tags_ptr
+      type(amrex_tagboxarray) :: tags
+      type(amrex_mfiter) :: mfi
+      type(amrex_box) :: bx
+      character(kind=c_char), dimension(:,:,:,:), contiguous, pointer :: tagarr
+      real(WP) :: dx,dy,dz,halfdiag
+      real(WP), dimension(3) :: xyz
+      real(WP) :: lapU,lapV,lapW,u_sgs,Re
+      integer :: i,j,k
+      logical :: near_drop
+      tags=tags_ptr
+      ! Get mesh spacing
+      dx=solver%amr%dx(lvl)
+      dy=solver%amr%dy(lvl)
+      dz=solver%amr%dz(lvl)
+      call solver%amr%mfiter_build(lvl,mfi)
+      do while (mfi%next())
+         tagarr=>tags%dataPtr(mfi)
+         bx=mfi%tilebox()
+         do k=bx%lo(3),bx%hi(3); do j=bx%lo(2),bx%hi(2); do i=bx%lo(1),bx%hi(1)
+            xyz = (/solver%amr%xlo+(real(i,WP)+0.5_WP)*dx,solver%amr%ylo+(real(j,WP)+0.5_WP)*dy,solver%amr%zlo+(real(k,WP)+0.5_WP)*dz/)
+            halfdiag = 0.5_WP*sqrt(dx**2 + dy**2 + dz**2)
+            near_drop = (abs(xyz(1)-center(1)) < 1.0_WP + halfdiag) .and. &
+                        (abs(xyz(2)-center(2)) < 1.0_WP + halfdiag) .and. &
+                        (abs(xyz(3)-center(3)) < 1.0_WP + halfdiag)
+            if (near_drop .and. lvl .lt. solver%amr%maxlvl) then 
+               tagarr(i,j,k,1)=SETtag
+            else
+               cycle
+            endif
+         end do; end do; end do
+      end do
+      call solver%amr%mfiter_destroy(mfi)
+   end subroutine my_tagger
 
    !> Compute turbulence stats
    subroutine compute_stats()
@@ -375,7 +418,7 @@ contains
          call param_read('Interface Type',InterfaceTypes)
          ! print *,"PARAM READ"
          ! Set case-specific tagging
-         ! fs%user_tagging=>my_tagger
+         fs%user_tagging=>my_tagger
          ! call param_read('Tagging Reynolds',Re_tag)
          ! Create initial grid from scratch or restore from checkpoint
          ! print *, "Restarted : ",restarted
@@ -530,7 +573,11 @@ contains
          call compute_stats()
          call currentsfile%write()
       end block create_monitor
-
+      if(amr%amRoot) then 
+         print *, "========================="
+         print *, "Ncells = ", amr%ncells
+         print *, "========================="
+      endif
    end subroutine simulation_init
 
    !> Run the simulation

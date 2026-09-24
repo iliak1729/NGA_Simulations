@@ -14,6 +14,7 @@ module simulation
    use amrio_class,       only: amrio
    use string,            only: str_medium
    use irl_fortran_interface
+   use amrist_class
    implicit none
    private
 
@@ -28,7 +29,8 @@ module simulation
    ! Solver data
    type(amrmpinc), target :: fs
    type(amrdata) :: dQdt,Umag
-
+   type(amrist) :: cst   
+   integer :: InterfaceTypes
    ! Visualization
    type(amrviz) :: viz
    type(event) :: viz_evt
@@ -388,7 +390,7 @@ contains
       type(PlanarSep_type) :: planar_sep
       type(Poly_type) :: polygon
       real(WP), dimension(1:3) :: cen
-      
+      ! print *, " STart Stats"
       lvl=amr%maxlvl
       dx=amr%dx(lvl)
       dy=amr%dy(lvl)
@@ -398,30 +400,38 @@ contains
       r_min= huge(1.0_WP)
       found_interface=.false.
 
+      call new(cell)
+      call new(polygon)
+      call new(planar_sep)
+
       call amr%mfiter_build(lvl,mfi)
 
       do while (mfi%next())
-
+         ! print *,"Getting Pointers"
          pVF=>fs%VF%mf(lvl)%dataptr(mfi)
          pPLIC=>fs%PLIC%dataptr(mfi)
          bx=mfi%tilebox()
-
+         ! print *,"Loop Start"
          do k=bx%lo(3),bx%hi(3)
             do j=bx%lo(2),bx%hi(2)
                do i=bx%lo(1),bx%hi(1)
 
                   if (pVF(i,j,k,1).le.VFlo .or. pVF(i,j,k,1).ge.VFhi) cycle
 
+                  ! print *,"Start  New"
                   call setNumberOfPlanes(planar_sep,1)
+                  ! print *, "Setting Plane"
                   call setPlane(planar_sep,0,pPLIC(i,j,k,1:3),pPLIC(i,j,k,4))
+                  ! print *,"Set Plane"
                   lo=[amr%xlo+real(i  ,WP)*dx,amr%ylo+real(j  ,WP)*dy,amr%zlo+real(k  ,WP)*dz]
                   hi=[amr%xlo+real(i+1,WP)*dx,amr%ylo+real(j+1,WP)*dy,amr%zlo+real(k+1,WP)*dz]
                   call construct_2pt(cell,lo,hi)
                   call getPoly(cell,planar_sep,0,polygon)
+                  ! print *,"Poly"
                   cen = calculateCentroid(polygon)
-
-                  x=amr%xlo+(real(i,WP)+0.5_WP)*dx-center(1)
-                  y=amr%ylo+(real(j,WP)+0.5_WP)*dy-center(2)
+                  ! print *,"Cen"
+                  x=cen(1)-center(1)
+                  y=cen(2)-center(2)
                   r=sqrt(x*x+y*y)
 
                   r_max=max(r_max,r)
@@ -445,7 +455,7 @@ contains
       end if
 
       time_nd=time%t/time_cap
-
+      ! print *, " Completed Stats"
    end subroutine compute_rp_stats
 
 
@@ -537,6 +547,8 @@ contains
       !---------------------------------------------------------------
       create_flow_solver: block
 
+         ! Create flow solver
+         fs%nover = 3 
          call fs%initialize(amr,name='rayleigh_plateau')
 
          ! Rayleigh-Plateau geometry
@@ -566,6 +578,18 @@ contains
 
       end block create_flow_solver
 
+      ! Create Surface Tension Solver
+      create_surface_tension_solver : block 
+         ! print *,"Making CST"
+         call cst%initialize(fs,"laplace_cst")
+         call param_read('Marangoni',cst%MarangoniOption,default=[0.0_WP,0.0_WP,0.0_WP])
+         call param_read('Pressure',cst%PressureOption,default=0.0_WP)
+         call param_read('Smoothing Option',cst%SmoothingOption,default=1)
+         call param_read('Surface Tension Option',cst%SurfaceTensionOption,default=1)
+         call param_read('Curvature Option',cst%CurvatureOption,default=1)
+         call param_read('PU Spread',cst%PU_spread,default=2.0_WP)
+         call param_read('Two Dimensional',cst%TwoD,default=.false.)
+      end block create_surface_tension_solver
 
       !---------------------------------------------------------------
       ! Workspace
@@ -589,7 +613,7 @@ contains
 
          regrid_evt=event(time=time,name='Regrid')
          call param_read('Regrid nsteps',regrid_evt%nper)
-
+         call param_read('Interface Type',InterfaceTypes,default=1)
          if (restarted) then
 
             call amr%init_from_checkpoint(dirname=trim(restart_dir),time=time%t)
@@ -599,11 +623,14 @@ contains
 
             call amr%init_from_scratch(time=time%t)
 
-#ifdef USE_IRL
-            call fs%build_ppic(time%t)
-#else
-            call fs%build_plic(time%t)
-#endif
+            SELECT CASE (InterfaceTypes)
+               case (1)
+                  call fs%build_plic(time%t)
+               case (2) 
+                  call fs%build_ppic(time%t)
+               case default 
+                  call fs%build_plic(time%t)
+            END SELECT
 
             call fs%build_subVF()
 
@@ -625,7 +652,7 @@ contains
 
       !---------------------------------------------------------------
       ! Checkpointing
-      !---------------------------------------------------------------
+      !--------------------------------------------------------------- 
       init_checkpoint: block
 
          save_evt=event(time=time,name='Checkpoint')
@@ -650,6 +677,14 @@ contains
          call viz%add_scalar(fs%Q,3,'W')
          call viz%add_scalar(fs%P,1,'pressure')
          call viz%add_scalar(fs%VF,1,'VF')
+
+         call viz%add_scalar(cst%ST_x_force,1,'STFx')
+         call viz%add_scalar(cst%ST_y_force,1,'STFy')
+         call viz%add_scalar(cst%ST_z_force,1,'STFz')
+
+         call viz%add_scalar(cst%CSF_x_force,1,'CSF_STFx')
+         call viz%add_scalar(cst%CSF_y_force,1,'CSF_STFy')
+         call viz%add_scalar(cst%CSF_z_force,1,'CSF_STFz')
 
          call fs%smesh%write_as_vtu()
          call viz%add_surfmesh(fs%smesh,'interface')
@@ -760,18 +795,24 @@ contains
             call fs%W%lincomb(a=0.5_WP,src1=fs%Wold,b=0.5_WP,src2=fs%W)
 
             ! Advection + viscous terms
-            call fs%get_dQdt(dQdt=dQdt,dt=time%dt,time=time%t)
+            call cst%get_dQdt(dQdt=dQdt,dt=time%dt,time=time%t)
             call fs%Q%lincomb(a=1.0_WP,src1=fs%Qold,b=time%dt,src2=dQdt)
 
             call fs%Q%average_down()
             call fs%Q%fill(time%t)
 
             ! Rebuild interface
-#ifdef USE_IRL
-            call fs%build_ppic(time%t)
-#else
-            call fs%build_plic(time%t)
-#endif
+            SELECT CASE (InterfaceTypes)
+               case (1)
+                  call fs%build_plic(time%t)
+                  ! print *,"BUILDING PLIC"
+               case (2) 
+                  call fs%build_ppic(time%t)
+                  ! print *,"BUILDING PPIC"
+               case default 
+                  call fs%build_plic(time%t)
+                  ! print *,"BUILDING DEFAULT"
+            END SELECT
 
             call fs%build_subVF()
 
@@ -782,7 +823,7 @@ contains
             call fs%add_pressure(scale=time%dt,phi=fs%P)
 
             ! Surface tension
-            call fs%add_surface_tension(scale=time%dt)
+            call cst%add_surface_tension(scale=time%dt)
 
             ! Fill hierarchy
             call fs%Q%average_down()
