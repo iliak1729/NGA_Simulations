@@ -9,7 +9,7 @@ from scipy.special import iv
 # ligament parameters
 r0 = 0.1        # initial radius of the jet
 #eps = 0.1       # perturbation amplitude
-eps = 0.02
+eps = 0.01
 
 # other parameters
 Lz = 1.0        # axial domain length
@@ -18,14 +18,14 @@ mode = 1        # perturbation mode
 # liquid parameters
 rho = 1000.0    # density, kg/m^3
 # sigma = 2e-7   # surface tension, N/m
-sigma = 0.072
+sigma = 0.072   # surface tension, N/m
 mu = 0.001      # dynamic viscosity, Pa.s
 
 nu = mu / rho
 
 # Capillary time scale
 t_cap = np.sqrt(rho * r0**3 / sigma)
-
+print(f"Capillary time scale: {t_cap:.6e} s")
 # Laplace and Ohnesorge numbers
 La = sigma * rho * r0 / mu**2
 Oh = 1.0 / np.sqrt(La)
@@ -88,46 +88,42 @@ rmin_weber_norm = (r0 - rmin_weber) / (r0 * eps)
 
 # List of simulation files and labels
 sim_cases = [
+    # (
+    #     "amr_rayleigh_plateau/Baseline_Runs_Level4_PCellForm_SameFluid/amr_PCST_NoP/monitor/rayleigh_plateau",
+    #     "AMR,PCentered,NoP,PLIC"
+    # ),
+    # (
+    #     "amr_rayleigh_plateau/Baseline_Runs_Level4_PCellForm_SameFluid/amr_PCST_NoP_PPIC/monitor/rayleigh_plateau",
+    #     "AMR,PCentered,NoP,PPIC"
+    # ),
     (
-        "amr_rayleigh_plateau/Baseline_Runs/amr_CSF/monitor/rayleigh_plateau",
-        "CSF,PLIC"
+        "amr_rayleigh_plateau/Baseline_Runs_Level4_PCellForm_SameFluid/amr_PCST_NoP_Laplacian/monitor/rayleigh_plateau",
+        "PCentered,NoP,PLIC,Laplacian"
     ),
     (
-        "amr_rayleigh_plateau/Baseline_Runs/amr_CSF_PPIC/monitor/rayleigh_plateau",
-        "CSF,PPIC"
+        "amr_rayleigh_plateau/Baseline_Runs_Level4_PCellForm_SameFluid/amr_PCST_NoP_PPIC_Laplacian/monitor/rayleigh_plateau",
+        "PCentered,NoP,PPIC,Laplacian"
     ),
+    # (
+    #     "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Cell14D_NoP/monitor/rayleigh_plateau",
+    #     "Non-AMR,NoP,PLIC"
+    # ),
     (
-        "amr_rayleigh_plateau/Baseline_Runs/amr_PCST_NoP/monitor/rayleigh_plateau",
-        "PCST_NoP"
+        "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Cell14D_NoP_Laplacian/monitor/rayleigh_plateau",
+        "Non-AMR,NoP,PLIC,Laplacian"
     ),
+    # (
+    #     "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Cell14D_NoP_PPIC/monitor/rayleigh_plateau",
+    #     "Non-AMR,NoP,PPIC"
+    # ),
     (
-        "amr_rayleigh_plateau/Baseline_Runs/amr_PCST_NoP_PPIC/monitor/rayleigh_plateau",
-        "PCST_NoP,PPIC"
+        "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Cell14D_NoP_PPIC_Laplacian/monitor/rayleigh_plateau",
+        "Non-AMR,NoP,PPIC,Laplacian"
     ),
-    (
-        "amr_rayleigh_plateau/Baseline_Runs/amr_PCST_P/monitor/rayleigh_plateau",
-        "PCST_P"
-    ),
-    (
-        "amr_rayleigh_plateau/Baseline_Runs/amr_PCST_P_PPIC/monitor/rayleigh_plateau",
-        "PCST_P,PPIC"
-    ),
-    (
-        "amr_rayleigh_plateau/Baseline_Runs_Level5/amr_PCST_NoP/monitor/rayleigh_plateau",
-        "PCST_NoP,Refined"
-    ),
-    (
-        "amr_rayleigh_plateau/Baseline_Runs_Level5/amr_PCST_P/monitor/rayleigh_plateau",
-        "PCST_P,Refined"
-    ),
-    (
-        "amr_rayleigh_plateau/Baseline_Runs_Level5/amr_PCST_NoP_PPIC/monitor/rayleigh_plateau",
-        "PCST_NoP,PPIC,Refined"
-    ),
-    (
-        "amr_rayleigh_plateau/monitor/rayleigh_plateau",
-        "PCST_P,PPIC,Refined"
-    ),
+
+
+
+
 ]
 
 # Store simulation data here
@@ -188,7 +184,7 @@ for case in sim_data:
     plt.plot(
         case["tstar"],
         case["rmax"],
-        "o",
+        "o-",
         markersize=4,
         label=case["label"]
     )
@@ -200,8 +196,8 @@ plt.yscale("log")
 plt.grid(True, which="both")
 plt.legend()
 
-plt.ylim(1, 100)
-plt.xlim(0, 18)
+# plt.ylim(1, 100)
+plt.xlim(0, 22)
 plt.title('Maximum radius growth comparison')
 plt.show()
 

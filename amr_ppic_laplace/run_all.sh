@@ -1,34 +1,48 @@
+#!/bin/bash
 
 CASES=(
-    "input_12000CSF"
-    "input_12000NoP"
-    "input_12000P"
+    "input_120CSF"
+)
+
+# Core counts to test
+CORES=(
+    8
+    12
+    16
 )
 
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./OLD_LapSweep_PPIC/amr_LA${CASE}"
 
-    echo "========================================"
-    echo "Running case: $CASE"
-    echo "Input file:   $INPUT"
-    echo "Output dir:   $DIR"
-    echo "========================================"
+    for NCORES in "${CORES[@]}"; do
 
-    echo "Removing old Viz Data"
-    rm -rf ./amrviz/
+        DIR="./OLD_LapSweep_PPIC_ChanginCores/amr_LA${CASE}/${NCORES}Cores"
 
-    echo "Running with $INPUT ..."
-    time mpiexec -n 16 ./nga2.dp.gnu.opt.mpi.exe -i "$INPUT" -v 0
+        echo "========================================"
+        echo "Running case: $CASE"
+        echo "Input file:   $INPUT"
+        echo "Cores:        $NCORES"
+        echo "Output dir:   $DIR"
+        echo "========================================"
 
-    echo "Saving monitor data"
-    mkdir -p "$DIR"
-    cp -r ./monitor "$DIR/"
+        echo "Removing old Viz Data"
+        rm -rf ./amrviz/
 
-    echo "Case $CASE complete"
-    echo
+        echo "Running $INPUT on $NCORES cores ..."
+        time mpiexec -n "$NCORES" ./nga2.dp.gnu.opt.mpi.exe -i "$INPUT" -v 0
+
+        echo "Saving monitor data"
+        mkdir -p "$DIR"
+        cp -r ./monitor "$DIR/"
+        echo "Saving amrviz data"
+        cp -r ./amrviz "$DIR/"
+
+        echo "Case $CASE on $NCORES cores complete"
+        echo
+
+    done
 
 done
 

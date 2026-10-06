@@ -51,7 +51,7 @@ module simulation
    real(WP) :: volume,radius,radius2,Ycent,Vrise
    real(WP) :: Vin,Vin_old,Vrise_ref,Ycent_ref,G,ti
    real(WP) :: Tbot,Ttop,Ly,Lx,dtps
-
+   
    ! For Visualization 
    type(config), public :: cfg_PU
 

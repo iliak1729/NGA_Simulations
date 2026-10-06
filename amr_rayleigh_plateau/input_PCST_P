@@ -2,7 +2,7 @@
 Base nx:                4
 Base ny:                4
 Base nz:                4
-Max level:              5
+Max level:              4
 
 # Regridding parameters
 Regrid nsteps:          10
@@ -20,7 +20,7 @@ Marangoni :  0 0 0
 Pressure : 1
 Smoothing Option : 1
 # 1 For CSF, 2 for integral, 3 for CSF shift 
-Surface Tension Option : 2
+Surface Tension Option : 4
 Curvature Option : 1
 PU Spread : 2.0
 Interface Type : 1
@@ -41,4 +41,4 @@ Max dt:                 0.05
 Max CFL:                0.25
 
 # Output
-Output period:          0.24
+Output period:          0.01

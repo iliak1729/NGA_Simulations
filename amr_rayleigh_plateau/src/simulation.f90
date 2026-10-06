@@ -242,7 +242,7 @@ contains
 
    !====================================================================
    ! AMR initialization callback
-   !====================================================================
+   !==================================================================== 
 
    subroutine ligament_init(solver,lvl,time,ba,dm)
       use amrex_amr_module, only: amrex_boxarray,amrex_distromap, &
@@ -681,6 +681,17 @@ contains
          call viz%add_scalar(cst%ST_x_force,1,'STFx')
          call viz%add_scalar(cst%ST_y_force,1,'STFy')
          call viz%add_scalar(cst%ST_z_force,1,'STFz')
+
+         call viz%add_scalar(cst%ST_x_stresses,1,'Sigma_xx')
+         call viz%add_scalar(cst%ST_x_stresses,2,'Sigma_xy')
+         call viz%add_scalar(cst%ST_x_stresses,3,'Sigma_xz')
+         call viz%add_scalar(cst%ST_y_stresses,1,'Sigma_yx')
+         call viz%add_scalar(cst%ST_y_stresses,2,'Sigma_yy')
+         call viz%add_scalar(cst%ST_y_stresses,3,'Sigma_yz')
+         call viz%add_scalar(cst%ST_z_stresses,1,'Sigma_zx')
+         call viz%add_scalar(cst%ST_z_stresses,2,'Sigma_zy')
+         call viz%add_scalar(cst%ST_z_stresses,3,'Sigma_zz')
+
 
          call viz%add_scalar(cst%CSF_x_force,1,'CSF_STFx')
          call viz%add_scalar(cst%CSF_y_force,1,'CSF_STFy')

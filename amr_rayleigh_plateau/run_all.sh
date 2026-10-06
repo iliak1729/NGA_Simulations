@@ -1,16 +1,16 @@
 
 CASES=(
     "input_PCST_NoP"
-    "input_PCST_P"
     "input_PCST_NoP_PPIC"
-    "input_PCST_P_PPIC"
+    "input_PCST_NoP_Laplacian"
+    "input_PCST_NoP_PPIC_Laplacian"
 )
-
+make -j 10
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./Baseline_Runs_Level5/amr_${CASE}"
+    DIR="./Baseline_Runs_Level4_PCellForm_SameFluid_FaceInterp/amr_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"
@@ -27,6 +27,7 @@ for INPUT in "${CASES[@]}"; do
     echo "Saving monitor data"
     mkdir -p "$DIR"
     cp -r ./monitor "$DIR/"
+    cp -r ./amrviz "$DIR/"
 
     echo "Case $CASE complete"
     echo
