@@ -738,7 +738,7 @@ subroutine add_conservative_surface_tension_jump(this,dt,div,contact_model)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -850,7 +850,7 @@ subroutine add_3D_surface_tension_jump(this,dt,div,contact_model)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -964,7 +964,7 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -1107,7 +1107,7 @@ subroutine add_3D_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -1248,7 +1248,7 @@ subroutine add_Seric_surface_tension_jump(this,dt,div,contact_model)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -1456,7 +1456,7 @@ subroutine updateSurfaceTensionStresses(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -1613,7 +1613,7 @@ subroutine updateSurfaceTensionStresses3D(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class, only: solveFace
+    use f_PUST_RectCub_class, only: solveFace
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -1971,7 +1971,7 @@ subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class, only: solveFace,solveFaceEllipsoid
+    use f_PUST_RectCub_class, only: solveFace,solveFaceEllipsoid
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -2121,7 +2121,7 @@ subroutine updateSurfaceTensionForces3D(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -2211,7 +2211,7 @@ subroutine updateSurfaceTensionForces3DEllipsoid(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -2249,7 +2249,7 @@ subroutine updateSurfaceTensionForces(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -2279,7 +2279,7 @@ subroutine applyLaplacianSmoothing(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -2308,7 +2308,7 @@ subroutine applyGradientSmoothing(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -2418,7 +2418,7 @@ subroutine applyPoissonSmoothing(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
     use hypre_str_class, only: pcg_smg,gmres
 
     implicit none
@@ -2508,7 +2508,7 @@ subroutine applyPeskinSmoothing(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -2555,7 +2555,7 @@ subroutine PeskinDeltaBase(this,radius,val)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
     use hypre_str_class, only: pcg_smg,gmres
 
     implicit none
@@ -2576,7 +2576,7 @@ subroutine PeskinDelta(this,i,j,k,x,y,z,val)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
     use hypre_str_class, only: pcg_smg,gmres
 
     implicit none
@@ -2601,7 +2601,7 @@ subroutine get_surface_tension_coefficient(this,x,y,stc)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -2615,7 +2615,7 @@ subroutine update_surface_tension_coefficients(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -2762,7 +2762,7 @@ subroutine update_columns(this) ! A visualization tool
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -2812,7 +2812,7 @@ subroutine height_function_curvature(this,i,j,k,dir,curv,dSTds,curv_type)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -3096,7 +3096,7 @@ subroutine populate_levelset_with_pu(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -3154,7 +3154,7 @@ subroutine update_levelset_derivatives(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -3204,7 +3204,7 @@ subroutine populate_diagonal(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -3260,7 +3260,7 @@ subroutine populate_off_diagonal(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -3329,7 +3329,7 @@ subroutine add_Saud_surface_tension_jump(this,dt,div,contact_model) ! Need to Up
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class 
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -3443,7 +3443,7 @@ subroutine updatePartitionOfUnity(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -3528,7 +3528,7 @@ subroutine getProjectedGeometry(this,initialIndex,projectedPoint,normal,curvatur
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -3606,7 +3606,7 @@ subroutine getProjectedGeometryEllipsoid(this,initialIndex,A,v,projectedPoint,no
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -3672,7 +3672,7 @@ subroutine getValuePU(this,pt,value)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -3731,7 +3731,7 @@ subroutine updateStresses(this, A,v)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
     implicit none
     class(conservative_st_type), intent(inout) :: this
     real(WP), dimension(3) :: v
@@ -3747,7 +3747,7 @@ subroutine updateForces(this, A,v)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class
+    use f_PUST_RectCub_class
     implicit none
     class(conservative_st_type), intent(inout) :: this
     real(WP), dimension(3) :: v
@@ -3763,7 +3763,7 @@ subroutine addCellToNeighborhood(this,neighborhood,i,j,k,solver)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUSolve_RectCub_class, only: solveFace
+    use f_PUST_RectCub_class, only: solveFace
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
