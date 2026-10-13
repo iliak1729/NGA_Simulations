@@ -6,7 +6,7 @@ module geometry
    private
    
    !> Single config
-   type(config), public :: cfg
+   type(config), public :: cfg,cfg_x,cfg_y,cfg_z
    
    public :: geometry_init
    
@@ -18,7 +18,7 @@ contains
       use sgrid_class, only: sgrid
       use param,       only: param_read
       implicit none
-      type(sgrid) :: grid
+      type(sgrid) :: grid,x_grid,y_grid,z_grid
       
       
       ! Create a grid from input params
@@ -46,7 +46,19 @@ contains
          
          ! General serial grid object
          grid=sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.true.,yper=.true.,zper=.true.,name='RayleighPlateau')
-         
+         ! X-Momentum Grid
+         x = x - 0.5_WP*grid%dx(1)
+         x_grid = sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.true.,yper=.true.,zper=.true.,name='RayleighPlateau_X')
+
+         ! Y-Momentum Grid
+         x = x + 0.5_WP*grid%dx(1)
+         y = y - 0.5_WP*grid%dy(1)
+         y_grid = sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.true.,yper=.true.,zper=.true.,name='RayleighPlateau_Y')
+
+         ! X-Momentum Grid
+         y = y + 0.5_WP*grid%dy(1)
+         z = z - 0.5_WP*grid%dy(1)
+         z_grid = sgrid(coord=cartesian,no=3,x=x,y=y,z=z,xper=.true.,yper=.true.,zper=.true.,name='RayleighPlateau_Z')
       end block create_grid
       
       
@@ -61,6 +73,9 @@ contains
          ! Create partitioned grid
          cfg=config(grp=group,decomp=partition,grid=grid)
          
+         cfg_x=config(grp=group,decomp=partition,grid=x_grid)
+         cfg_y=config(grp=group,decomp=partition,grid=y_grid)
+         cfg_z=config(grp=group,decomp=partition,grid=z_grid)
       end block create_cfg
       
       

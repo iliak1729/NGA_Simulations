@@ -27,7 +27,7 @@ module simulation
    type(conservative_st_type), public :: cst
 
    !> Ensight postprocessing
-   type(surfmesh) :: smesh
+   type(surfmesh) :: smesh,smesh_x,smesh_y,smesh_z
    type(vtk)      :: vtk_out
    type(event)    :: vtk_evt
 
@@ -315,6 +315,8 @@ contains
                   call vf%initialize(cfg=cfg,reconstruction_method=jibbenPU,name='VOF')
                case (5) 
                   call vf%initialize(cfg=cfg,reconstruction_method=jibbenSq,name='VOF')
+               case (6) 
+                  call vf%initialize(cfg=cfg,reconstruction_method=jibbenPU,name='VOF')
                case default 
                   call vf%initialize(cfg=cfg,reconstruction_method=lvira,name='VOF')
             END SELECT
@@ -500,6 +502,7 @@ contains
          call param_read('Pressure',cst%PressureOption,default = 0.0_WP)
          call param_read('Smoothing Option',cst%SmoothingOption,default = 1)
          call param_read('Surface Tension Option',cst%SurfaceTensionOption,default = 8)
+         call param_read('Levelset Option',cst%LevelsetOption,default = 2)
          call param_read('Curvature Option',cst%CurvatureOption,default = 1)
          call param_read('PU Spread',cst%PU_spread,default = 2.0_WP)
          call param_read('Two Dimensional',cst%TwoD,default = .false.)
@@ -516,9 +519,51 @@ contains
          ! Transfer polygons to smesh
          call vf%update_surfmesh(smesh)
          ! Also populate nplane variable
-         call add_surfgrid_variable(smesh,1,vf%curv)  
-         call add_surfgrid_variable(smesh,1,vf%interface_type)    
+         call add_surfgrid_variable(smesh,1,vf%curv,vf)  
+         call add_surfgrid_variable(smesh,1,vf%interface_type,vf)    
       end block create_smesh
+
+      create_smesh_x: block
+         use irl_fortran_interface
+         integer :: i,j,k,nplane,np
+         ! Include an extra variable for number of planes
+         smesh_x=surfmesh(nvar=0,name='X_PLIC')
+         ! smesh_x%varname(1)='curv'
+         ! smesh_x%varname(1)='interface_type'
+         ! Transfer polygons to smesh
+         call cst%vf_x%update_surfmesh(smesh_x)
+         ! Also populate nplane variable
+         ! call add_surfgrid_variable(smesh_x,1,cst%vf_x%curv)  
+         ! call add_surfgrid_variable(smesh_x,1,cst%vf_x%interface_type,cst%vf_x)    
+      end block create_smesh_x
+      print *,"smesh_x end"
+      ! create_smesh_y: block
+      !    use irl_fortran_interface
+      !    integer :: i,j,k,nplane,np
+      !    ! Include an extra variable for number of planes
+      !    smesh_y=surfmesh(nvar=2,name='X_PLIC')
+      !    smesh_y%varname(1)='curv'
+      !    smesh_y%varname(2)='interface_type'
+      !    ! Transfer polygons to smesh
+      !    call cst%vf_y%update_surfmesh(smesh_y)
+      !    ! Also populate nplane variable
+      !    ! call add_surfgrid_variable(smesh_y,1,cst%vf_x%curv)  
+      !    ! call add_surfgrid_variable(smesh_y,1,cst%vf_x%interface_type)    
+      ! end block create_smesh_y
+
+      ! create_smesh_z: block
+      !    use irl_fortran_interface
+      !    integer :: i,j,k,nplane,np
+      !    ! Include an extra variable for number of planes
+      !    smesh_z=surfmesh(nvar=2,name='X_PLIC')
+      !    smesh_z%varname(1)='curv'
+      !    smesh_z%varname(2)='interface_type'
+      !    ! Transfer polygons to smesh
+      !    call cst%vf_z%update_surfmesh(smesh_z)
+      !    ! Also populate nplane variable
+      !    ! call add_surfgrid_variable(smesh_z,1,cst%vf_x%curv)  
+      !    ! call add_surfgrid_variable(smesh_z,1,cst%vf_x%interface_type)    
+      ! end block create_smesh_z
 
       ! Add Ensight output
       create_vtk: block
@@ -529,9 +574,32 @@ contains
          call param_read('Ensight output period',vtk_evt%tper)
          ! Add variables to output
          call vtk_out%add_vector('velocity',Ui,Vi,Wi)
+         call vtk_out%add_vector('sigma_3d_x',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
+         call vtk_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
+         call vtk_out%add_vector('sigma_3d_z',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
+
+         call vtk_out%add_vector('OLD sigma_3d_x',cst%sigma_3D_OLD(:,:,:,1,1),cst%sigma_3D_OLD(:,:,:,1,2),cst%sigma_3D_OLD(:,:,:,1,3))
+         call vtk_out%add_vector('OLD sigma_3d_y',cst%sigma_3D_OLD(:,:,:,2,1),cst%sigma_3D_OLD(:,:,:,2,2),cst%sigma_3D_OLD(:,:,:,2,3))
+         call vtk_out%add_vector('OLD sigma_3d_z',cst%sigma_3D_OLD(:,:,:,3,1),cst%sigma_3D_OLD(:,:,:,3,2),cst%sigma_3D_OLD(:,:,:,3,3))
+
+         call vtk_out%add_vector('d sigma_3d_x',cst%dSigma(:,:,:,1,1),cst%dSigma(:,:,:,1,2),cst%dSigma(:,:,:,1,3))
+         call vtk_out%add_vector('d sigma_3d_y',cst%dSigma(:,:,:,2,1),cst%dSigma(:,:,:,2,2),cst%dSigma(:,:,:,2,3))
+         call vtk_out%add_vector('d sigma_3d_z',cst%dSigma(:,:,:,3,1),cst%dSigma(:,:,:,3,2),cst%dSigma(:,:,:,3,3))
+         
+         call vtk_out%add_vector('diff ST Force',cst%Fst_x_3D_diff,cst%Fst_y_3D_diff,cst%Fst_z_3D_diff)
+
+         call vtk_out%add_vector('OLD ST Force',cst%Fst_x_3D_OLD,cst%Fst_y_3D_OLD,cst%Fst_z_3D_OLD)
+         call vtk_out%add_vector('ST Force',fs%Pjx,fs%Pjy,fs%Pjz)
+         call vtk_out%add_vector('CSF Force',cst%PjxD,cst%PjyD,cst%PjzD)
          call vtk_out%add_scalar('VOF',vf%VF)
+         call vtk_out%add_scalar('VOFX',cst%vf_x%VF)
+         call vtk_out%add_scalar('VOFY',cst%vf_y%VF)
+         call vtk_out%add_scalar('VOFZ',cst%vf_z%VF)
          call vtk_out%add_scalar('curvature',vf%curv)
          call vtk_out%add_surface('plic',smesh) 
+         call vtk_out%add_surface('plic_x',smesh_x) 
+         ! call vtk_out%add_surface('plic_y',smesh_y) 
+         ! call vtk_out%add_surface('plic_z',smesh_z) 
          ! Output to vtk
          if (vtk_evt%occurs()) call vtk_out%write_data(time%t)
       end block create_vtk
@@ -660,8 +728,20 @@ contains
                integer :: i,j,k,nplane,np
                ! Transfer polygons to smesh
                call vf%update_surfmesh(smesh)
-               call add_surfgrid_variable(smesh,1,vf%curv)   
-               call add_surfgrid_variable(smesh,2,vf%interface_type)   
+               call add_surfgrid_variable(smesh,1,vf%curv,vf)   
+               call add_surfgrid_variable(smesh,2,vf%interface_type,vf)   
+               ! Transfer polygons to smesh
+               call cst%vf_x%update_surfmesh(smesh_x)
+               ! ! call add_surfgrid_variable(smesh_x,1,cst%vf_x%curv)   
+               ! call add_surfgrid_variable(smesh_x,1,cst%vf_x%interface_type,cst%vf_x)   
+               ! ! Transfer polygons to smesh
+               ! call cst%vf_y%update_surfmesh(smesh_y)
+               ! ! call add_surfgrid_variable(smesh_y,1,cst%vf_y%curv)   
+               ! ! call add_surfgrid_variable(smesh_y,2,cst%vf_y%interface_type)   
+               ! ! Transfer polygons to smesh
+               ! call cst%vf_z%update_surfmesh(smesh_z)
+               ! ! call add_surfgrid_variable(smesh_z,1,cst%vf_z%curv)   
+               ! ! call add_surfgrid_variable(smesh_z,2,cst%vf_z%interface_type)   
             end block update_smesh  
             call vtk_out%write_data(time%t)
          end if
@@ -689,23 +769,25 @@ contains
 
 
    !> Make a surface scalar variable
-   subroutine add_surfgrid_variable(smesh,var_index,A)
+   subroutine add_surfgrid_variable(smesh,var_index,A,vf_local)
       use irl_fortran_interface, only: getNumberOfPlanes,getNumberOfVertices
       use vfs_class,only: VFhi,VFlo
       implicit none
       class(surfmesh), intent(inout) :: smesh
       integer, intent(in) :: var_index
-      real(WP), dimension(vf%cfg%imino_:vf%cfg%imaxo_,vf%cfg%jmino_:vf%cfg%jmaxo_,vf%cfg%kmino_:vf%cfg%kmaxo_), intent(in) :: A 
+      type(vfs) :: vf_local
+      real(WP), dimension(vf_local%cfg%imino_:vf_local%cfg%imaxo_,vf_local%cfg%jmino_:vf_local%cfg%jmaxo_,vf_local%cfg%kmino_:vf_local%cfg%kmaxo_), intent(in) :: A 
       integer :: i,j,k,n,shape,np,nplane,nbt
-
+      
       ! Fill out arrays
+      ! print *,"Fill Arrays"
       if ((smesh%nPoly+smesh%nBezierTri).gt.0) then
          np=0; nbt = 0
          ! Start with quadratic surfaces
-         do k=vf%cfg%kmin_,vf%cfg%kmax_
-            do j=vf%cfg%jmin_,vf%cfg%jmax_
-               do i=vf%cfg%imin_,vf%cfg%imax_
-                  shape=getNumberOfTriangles(vf%interface_mixed_surface(i,j,k))
+         do k=vf_local%cfg%kmin_,vf_local%cfg%kmax_
+            do j=vf_local%cfg%jmin_,vf_local%cfg%jmax_
+               do i=vf_local%cfg%imin_,vf_local%cfg%imax_
+                  shape=getNumberOfTriangles(vf_local%interface_mixed_surface(i,j,k))
                   if (shape.gt.0) then
                      do n=1,shape
                         nbt=nbt+1
@@ -716,11 +798,12 @@ contains
             end do
          end do
          ! Then do planes
-         do k=vf%cfg%kmin_,vf%cfg%kmax_
-            do j=vf%cfg%jmin_,vf%cfg%jmax_
-               do i=vf%cfg%imin_,vf%cfg%imax_
-                  do nplane=1,getNumberOfPlanes(vf%liquid_gas_interface(i,j,k))
-                     shape=getNumberOfVertices(vf%interface_polygon(nplane,i,j,k))
+         ! print *,"Fill Planes"
+         do k=vf_local%cfg%kmin_,vf_local%cfg%kmax_
+            do j=vf_local%cfg%jmin_,vf_local%cfg%jmax_
+               do i=vf_local%cfg%imin_,vf_local%cfg%imax_
+                  do nplane=1,getNumberOfPlanes(vf_local%liquid_gas_interface(i,j,k))
+                     shape=getNumberOfVertices(vf_local%interface_polygon(nplane,i,j,k))
                      if (shape.gt.0) then
                         ! Increment polygon counter
                         np=np+1
@@ -734,7 +817,7 @@ contains
       else
          smesh%polyvar(var_index,1)=1
       end if      
-
+   ! print *,"Fill End"
    end subroutine add_surfgrid_variable
 
 end module simulation

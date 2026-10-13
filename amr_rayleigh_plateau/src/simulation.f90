@@ -543,7 +543,7 @@ contains
 
 
       !---------------------------------------------------------------
-      ! Create flow solver
+      ! Create flow solver           
       !---------------------------------------------------------------
       create_flow_solver: block
 
@@ -578,13 +578,14 @@ contains
 
       end block create_flow_solver
 
-      ! Create Surface Tension Solver
+      ! Create Surface Tension Solver 
       create_surface_tension_solver : block 
          ! print *,"Making CST"
          call cst%initialize(fs,"laplace_cst")
          call param_read('Marangoni',cst%MarangoniOption,default=[0.0_WP,0.0_WP,0.0_WP])
          call param_read('Pressure',cst%PressureOption,default=0.0_WP)
          call param_read('Smoothing Option',cst%SmoothingOption,default=1)
+         call param_read('Levelset Option',cst%LevelsetOption,default=2)
          call param_read('Surface Tension Option',cst%SurfaceTensionOption,default=1)
          call param_read('Curvature Option',cst%CurvatureOption,default=1)
          call param_read('PU Spread',cst%PU_spread,default=2.0_WP)
@@ -613,7 +614,7 @@ contains
 
          regrid_evt=event(time=time,name='Regrid')
          call param_read('Regrid nsteps',regrid_evt%nper)
-         call param_read('Interface Type',InterfaceTypes,default=1)
+         call param_read('Interface Type',InterfaceTypes,default=2)
          if (restarted) then
 
             call amr%init_from_checkpoint(dirname=trim(restart_dir),time=time%t)
@@ -625,11 +626,11 @@ contains
 
             SELECT CASE (InterfaceTypes)
                case (1)
-                  call fs%build_plic(time%t)
+                  call fs%build_ppic(time%t)
                case (2) 
                   call fs%build_ppic(time%t)
                case default 
-                  call fs%build_plic(time%t)
+                  call fs%build_ppic(time%t)
             END SELECT
 
             call fs%build_subVF()
@@ -746,7 +747,7 @@ contains
          call cflfile%add_column(fs%CFLv_z,'CFLv_z')
          call cflfile%write()
 
-         gridfile=monitor(amRoot=amr%amRoot,name='grid')
+         gridfile=monitor(amRoot=amr%amRoot,name='grid')  
          call gridfile%add_column(time%n,'Timestep')
          call gridfile%add_column(time%t,'Time')
          call gridfile%add_column(amr%nlevels,'Nlvl')
@@ -774,7 +775,7 @@ contains
 
 
    !====================================================================
-   ! Run simulation
+   ! Run simulation 
    !====================================================================
 
    subroutine simulation_run()
@@ -795,10 +796,9 @@ contains
          if (viz_evt%occurs()) fs%update_smesh=.true.
 
          !------------------------------------------------------------
-         ! Subiterations
+         ! Subiterations    
          !------------------------------------------------------------
          do while (time%it.le.time%itmax)
-
             ! Mid-time velocity
             call fs%Q%lincomb(a=0.5_WP,src1=fs%Qold,b=0.5_WP,src2=fs%Q)
             call fs%U%lincomb(a=0.5_WP,src1=fs%Uold,b=0.5_WP,src2=fs%U)
@@ -806,40 +806,46 @@ contains
             call fs%W%lincomb(a=0.5_WP,src1=fs%Wold,b=0.5_WP,src2=fs%W)
 
             ! Advection + viscous terms
+            ! print *,"get_dQdt"
             call cst%get_dQdt(dQdt=dQdt,dt=time%dt,time=time%t)
+            ! print *,"lincomb"
             call fs%Q%lincomb(a=1.0_WP,src1=fs%Qold,b=time%dt,src2=dQdt)
-
+            ! print *,"average_down"
             call fs%Q%average_down()
             call fs%Q%fill(time%t)
 
-            ! Rebuild interface
+            ! Rebuild interface 
             SELECT CASE (InterfaceTypes)
                case (1)
-                  call fs%build_plic(time%t)
+                  call fs%build_ppic(time%t)
                   ! print *,"BUILDING PLIC"
                case (2) 
                   call fs%build_ppic(time%t)
                   ! print *,"BUILDING PPIC"
                case default 
-                  call fs%build_plic(time%t)
+                  call fs%build_ppic(time%t)
                   ! print *,"BUILDING DEFAULT"
             END SELECT
 
             call fs%build_subVF()
 
             ! Cell-centered -> face velocity
+            ! print *,"get_face_velocity"
             call fs%get_face_velocity()
 
             ! Current pressure term
+            ! print *,"add_pressure"
             call fs%add_pressure(scale=time%dt,phi=fs%P)
 
             ! Surface tension
+            ! print *,"add_surface_tension"
             call cst%add_surface_tension(scale=time%dt)
-
+           
             ! Fill hierarchy
+            !  print *,"average_down"
             call fs%Q%average_down()
             call fs%Q%fill(time=time%t)
-
+            !  print *,"average_down_velocity"
             call fs%average_down_velocity()
             call fs%fill_velocity(time=time%t)
 
@@ -886,7 +892,7 @@ contains
          call compute_rp_stats()
          call rpfile%write()
 
-         ! Visualization
+         ! Viz
          if (viz_evt%occurs()) then
             call viz%write(time=time%t)
             fs%update_smesh=.false.

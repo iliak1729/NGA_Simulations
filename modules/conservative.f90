@@ -1,7 +1,7 @@
 module conservative_st
     use precision,         only: WP
     use mathtools,         only: Pi
-    use geometry,          only: cfg
+    use geometry,          only: cfg,cfg_x,cfg_y,cfg_z
     use hypre_str_class,   only: hypre_str
     use ddadi_class,       only: ddadi
     use tpns_class,        only: tpns
@@ -30,21 +30,25 @@ module conservative_st
         ! Options
         real(WP), dimension(3) :: MarangoniOption
         integer :: SurfaceTensionOption,CurvatureOption,SmoothingOption
+        integer :: LevelsetOption
         logical :: TwoD
         real(WP) :: PressureOption
         ! Solvers
         type(tpns),pointer,public :: fs => null()
         type(vfs),pointer,public :: vf => null()
+        type(vfs),public :: vf_x,vf_y,vf_z
         type(timetracker),pointer,public :: time => null()
         ! Working and Display Arrays
         real(WP) :: PU_spread ! How far the PU spreads
         real(WP), dimension(:,:,:), allocatable :: sigma_xx,sigma_yy,sigma_xy,sigma_yx ! Used Stress Tensor components
         real(WP), dimension(:,:,:), allocatable :: sigma_xx_P,sigma_yy_P,sigma_xy_P,sigma_yx_P ! Pressure Component
         real(WP), dimension(:,:,:), allocatable :: sigma_xx_NoP,sigma_yy_NoP,sigma_xy_NoP,sigma_yx_NoP ! Tangent Component
-        real(WP), dimension(:,:,:,:,:), allocatable :: sigma_3D,sigma_3D_Exact
+        real(WP), dimension(:,:,:,:,:), allocatable :: sigma_3D,sigma_3D_Exact,sigma_3D_OLD,dSigma
         real(WP), dimension(:,:,:), allocatable :: force_potential_field,poisson_source ! Potential Field Tools
         real(WP), dimension(:,:,:), allocatable :: Fst_x,Fst_y,Fst_z ! Forces sent to momentum equation
         real(WP), dimension(:,:,:), allocatable :: Fst_x_3D,Fst_y_3D,Fst_z_3D
+        real(WP), dimension(:,:,:), allocatable :: Fst_x_3D_OLD,Fst_y_3D_OLD,Fst_z_3D_OLD
+        real(WP), dimension(:,:,:), allocatable :: Fst_x_3D_diff,Fst_y_3D_diff,Fst_z_3D_diff
         real(WP), dimension(:,:,:), allocatable :: Fst_x_3D_Exact,Fst_y_3D_Exact,Fst_z_3D_Exact
         real(WP), dimension(:,:,:), allocatable :: PjxD,PjyD,PjzD ! CSF Forces
         real(WP), dimension(:,:,:), allocatable :: Pjx_ST,Pjy_ST,Pjz_ST ! Forces from UpdateSTForces
@@ -99,6 +103,7 @@ module conservative_st
         procedure, private :: updateSurfaceTensionForces3D
         procedure, private :: updateSurfaceTensionForces3DEllipsoid
 
+
         procedure, private :: applyLaplacianSmoothing
         procedure, private :: applyGradientSmoothing
         procedure, private :: applyPoissonSmoothing
@@ -126,6 +131,10 @@ module conservative_st
         ! procedure, private :: updateSaudForces
         ! procedure, private :: height_function_surface_tension
 
+        ! Momentum VF Methods
+        procedure, private :: fill_momentum_vfs
+        procedure, private :: compute_paraboloid_force
+
         
     end type conservative_st_type
 contains 
@@ -136,6 +145,7 @@ subroutine temp(this)
 end subroutine temp
 
 subroutine init(this,fs_in,vf_in,time_in)
+    use vfs_class,only: r2p,lvira,VFhi,VFlo,jibben,plicnet,jibbenPU,jibbenSq,PUppic,jibbenPLIC
     class(conservative_st_type), intent(inout) :: this
     class(tpns),target, intent(in) :: fs_in
     class(vfs),target, intent(in) :: vf_in
@@ -144,6 +154,11 @@ subroutine init(this,fs_in,vf_in,time_in)
     this%fs => fs_in
     this%vf => vf_in
     this%time => time_in
+    ! Create Momentum VF options
+    call this%vf_x%initialize(cfg=cfg_x,reconstruction_method = PUppic,name='X-VOF')
+    call this%vf_y%initialize(cfg=cfg_y,reconstruction_method = PUppic,name='Y-VOF')
+    call this%vf_z%initialize(cfg=cfg_z,reconstruction_method = PUppic,name='Z-VOF')
+    call fill_momentum_vfs(this)
     ! Allocate arrays
     allocate(this%sigma_xx(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%sigma_yy(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
@@ -167,6 +182,14 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%Fst_x_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%Fst_y_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%Fst_z_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+
+    allocate(this%Fst_x_3D_OLD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%Fst_y_3D_OLD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%Fst_z_3D_OLD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+
+    allocate(this%Fst_x_3D_diff(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%Fst_y_3D_diff(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%Fst_z_3D_diff(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
 
     allocate(this%Fst_x_3D_Exact(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%Fst_y_3D_Exact(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
@@ -237,6 +260,8 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%Gy_Storage(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,0:2))
     allocate(this%curvature_storage(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,0:2))
     allocate(this%sigma_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
+    allocate(this%dSigma(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
+    allocate(this%sigma_3D_OLD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
     allocate(this%sigma_3D_Exact(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
     
     allocate(this%phi(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
@@ -884,6 +909,7 @@ subroutine add_3D_surface_tension_jump(this,dt,div,contact_model)
     this%fs%Pjx = this%Fst_x_3D 
     this%fs%Pjy = this%Fst_y_3D
     this%fs%Pjz = this%Fst_z_3D
+
     ! print *,sqrt(sum(this%Fst_z_3D**2))
     SELECT CASE (this%SmoothingOption)
         CASE(1)
@@ -930,6 +956,7 @@ subroutine add_3D_surface_tension_jump(this,dt,div,contact_model)
         end do
     end do
 end subroutine add_3D_surface_tension_jump
+
    
 subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
     use messager,  only: die
@@ -1593,10 +1620,12 @@ subroutine updateSurfaceTensionStresses3D(this)
     integer :: i,j,k,j_in,i_in,k_in,shift_first_index,shift_second_index ! Current Cell Location
     type(PUNeigh_RectCub_type) :: neighborhood,neighborhood_trimmed
     type(PUST_RectCub_type) :: solver
-    
+    integer, dimension(1:3) :: shift_index_normal,shift_index_momentum,index
     ! Temp Items
     type(SeparatorVariant_type) :: plane
-    real(WP), dimension(1:3) :: cen,force,corner,dvec,shift
+    type(SeparatorVariant_type) :: interface_component
+    real(WP), dimension(1:3) :: cen,corner,dvec,shift,force,face_normal
+    real(WP), dimension(1:3) :: force1,force2,force3,force4
     real(WP), dimension(1:3) :: P0,P1,P2,P3,pressure_cell_center,velocity_cell_center,face_center
     real(WP) :: dx,dy,dz
     real(WP) :: x_i,y_j,z_k
@@ -1606,10 +1635,16 @@ subroutine updateSurfaceTensionStresses3D(this)
     dz = this%vf%cfg%dz(1)
     dvec = (/dx,dy,dz/)
     shift = dvec
+    ! Zero out values
+    this%sigma_3D_OLD = 0.0_WP 
+    this%sigma_3D = 0.0_WP
     ! Create Neighborhood and solver  
     call new(neighborhood) 
     call new(neighborhood_trimmed) 
     call new(solver)
+    if(this%LevelsetOption .eq. 3) then 
+         call this%fill_momentum_vfs()
+    endif
     ! Loop over real domain 
     do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
         do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
@@ -1620,28 +1655,77 @@ subroutine updateSurfaceTensionStresses3D(this)
                 call emptyNeighborhood(neighborhood) 
                 ! Add 7x7x7 (3 on each side) stencil, in plane  
                 ! write(*,'(A)') '=============== New: ' 
-                do j_in = -3,3
-                    do i_in = -3,3
-                        do k_in = -3,3 
-                            call this%addCellToNeighborhood(neighborhood,i+i_in,j+j_in,k+k_in)
-                        enddo
-                    end do
-                end do
-                ! Set Neighborhood in solver
-                call setNeighborhood(solver,neighborhood)
-                call setKernelSize(solver,this%PU_spread*this%vf%cfg%dx(1))
+                SELECT CASE(this%LevelsetOption)
+                    CASE(3)
+                        do j_in = -3,3
+                            do i_in = -3,3
+                                do k_in = -3,3 
+                                    call this%addCellToNeighborhood(neighborhood,i+i_in,j+j_in,k+k_in)
+                                enddo
+                            end do
+                        end do
+                        ! Set Neighborhood in solver
+                        call setNeighborhood(solver,neighborhood)
+                        call setKernelSize(solver,this%PU_spread*this%vf%cfg%dx(1))
 
-                ! Empty Neighborhood
-                call emptyNeighborhood(neighborhood_trimmed) 
-                ! Add 7x7x7 (3 on each side) stencil, in plane  
-                ! write(*,'(A)') '=============== New: ' 
-                do j_in = -3,3
-                    do i_in = -3,3
-                        do k_in = -3,3 
-                            call this%addCellToNeighborhood(neighborhood_trimmed,i+i_in,j+j_in,k+k_in,solver)
-                        enddo
-                    end do
-                end do
+                        ! Empty Neighborhood
+                        call emptyNeighborhood(neighborhood_trimmed) 
+                        ! Add 7x7x7 (3 on each side) stencil, in plane  
+                        ! write(*,'(A)') '=============== New: ' 
+                        do j_in = -3,3
+                            do i_in = -3,3
+                                do k_in = -3,3 
+                                    call this%addCellToNeighborhood(neighborhood_trimmed,i+i_in,j+j_in,k+k_in,solver)
+                                enddo
+                            end do
+                        end do
+                    CASE(2)
+                        do j_in = -3,3
+                            do i_in = -3,3
+                                do k_in = -3,3 
+                                    call this%addCellToNeighborhood(neighborhood,i+i_in,j+j_in,k+k_in)
+                                enddo
+                            end do
+                        end do
+                        ! Set Neighborhood in solver
+                        call setNeighborhood(solver,neighborhood)
+                        call setKernelSize(solver,this%PU_spread*this%vf%cfg%dx(1))
+
+                        ! Empty Neighborhood
+                        call emptyNeighborhood(neighborhood_trimmed) 
+                        ! Add 7x7x7 (3 on each side) stencil, in plane  
+                        ! write(*,'(A)') '=============== New: ' 
+                        do j_in = -3,3
+                            do i_in = -3,3
+                                do k_in = -3,3 
+                                    call this%addCellToNeighborhood(neighborhood_trimmed,i+i_in,j+j_in,k+k_in,solver)
+                                enddo
+                            end do
+                        end do
+                    CASE DEFAULT
+                        do j_in = -3,3
+                            do i_in = -3,3
+                                do k_in = -3,3 
+                                    call this%addCellToNeighborhood(neighborhood,i+i_in,j+j_in,k+k_in)
+                                enddo
+                            end do
+                        end do
+                        ! Set Neighborhood in solver
+                        call setNeighborhood(solver,neighborhood)
+                        call setKernelSize(solver,this%PU_spread*this%vf%cfg%dx(1))
+
+                        ! Empty Neighborhood
+                        call emptyNeighborhood(neighborhood_trimmed) 
+                        ! Add 7x7x7 (3 on each side) stencil, in plane  
+                        ! write(*,'(A)') '=============== New: ' 
+                        do j_in = -3,3
+                            do i_in = -3,3
+                                do k_in = -3,3 
+                                    call this%addCellToNeighborhood(neighborhood_trimmed,i+i_in,j+j_in,k+k_in,solver)
+                                enddo
+                            end do
+                        end do
+                END SELECT
                 ! Set Neighborhood in solver
                 call setNeighborhood(solver,neighborhood_trimmed)
                 call setKernelSize(solver,this%PU_spread*this%vf%cfg%dx(1))
@@ -1658,12 +1742,18 @@ subroutine updateSurfaceTensionStresses3D(this)
                     ! Set up shift to velocity cell
                     shift = (/0.0_WP,0.0_WP,0.0_WP/)  
                     shift(i_in) = dvec(i_in)/2
+                    shift_index_momentum = (/0,0,0/)
+                    shift_index_momentum(i_in) = 1
                     ! Move center to velocity cell we are looking at
                     velocity_cell_center = pressure_cell_center - shift
                     do j_in = 1,3 ! Face Loop, This tells us the normal direction
                         force = (/0.0_WP,0.0_WP,0.0_WP/)
                         ! Shift from velocity cell center ot the face center we are looking at:
                         shift = (/0.0_WP,0.0_WP,0.0_WP/)  
+                        shift_index_normal = (/0,0,0/)
+                        shift_index_normal(j_in) = 1
+                        face_normal = (/0.0_WP,0.0_WP,0.0_WP/)
+                        face_normal(j_in) = 1.0_WP
                         shift(j_in) = dvec(j_in)/2
                         face_center = velocity_cell_center + shift
                         ! Now that we have the face center and normal direction (all positive normals)
@@ -1704,10 +1794,107 @@ subroutine updateSurfaceTensionStresses3D(this)
 
                         ! Now that we have the face corners, run the code and get the force
                         ! if(this%vf%VF(i,j,k) .gt. 1e-12 .and. this%vf%VF(i,j,k) .lt. 1.0_WP - 1e-12) then 
-                        call solveFace(solver,this%fs%sigma,P0,P1,P2,P3,this%PU_spread*dx,this%PressureOption,this%MarangoniOption,force)
+                        SELECT CASE (this%LevelsetOption)
+                            CASE(3)
+                                force = (/0.0_WP,0.0_WP,0.0_WP/)
+
+                                ! Depending on the momentum cell, use the appropriate VF and then 
+                                if(i_in .eq. 1) then 
+                                    call compute_paraboloid_force(this,this%vf_x,i,j,k,j_in,P0,P1,P2,P3,force)
+                                elseif(i_in .eq. 2) then 
+                                    call compute_paraboloid_force(this,this%vf_y,i,j,k,j_in,P0,P1,P2,P3,force)
+                                else
+                                    call compute_paraboloid_force(this,this%vf_z,i,j,k,j_in,P0,P1,P2,P3,force)
+                                endif
+                            CASE(2)
+                                force = (/0.0_WP,0.0_WP,0.0_WP/)
+                                force1 = (/0.0_WP,0.0_WP,0.0_WP/)
+                                force2 = (/0.0_WP,0.0_WP,0.0_WP/)
+                                force3 = (/0.0_WP,0.0_WP,0.0_WP/)
+                                force4 = (/0.0_WP,0.0_WP,0.0_WP/)
+                               
+                                if(i_in .eq. j_in) then 
+                                    ! If on main diagonal, we don't need to do a multi-cell averaging. 
+                                    if(this%VF%vf(i,j,k) .gt. 1e-12 .and. this%VF%vf(i,j,k) .lt. 1.0_WP - 1e-12) then 
+                                        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,this%vf%liquid_gas_interface(i,j,k),this%PressureOption,this%MarangoniOption,force)
+                                    endif
+                                    if(sum(force*face_normal) .lt. -1e-12) then
+                                        force = -force
+                                    endif
+                                else
+                                    ! If off diagonal, then we are touching four cells. 
+                                    ! The values in the normal direction (shift_index_normal) are seperated
+                                    ! The values in the momentum direction (shift_index_momentum) are grouped
+
+                                    ! 0 Normal, 0 Momentum
+                                    index = (/i,j,k/)
+                                    if(this%VF%vf(index(1),index(2),index(3)) .gt. 1e-12 .and. this%VF%vf(index(1),index(2),index(3)) .lt. 1.0_WP - 1e-12) then 
+                                        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force1)
+                                    endif
+                                    if(sum(force1*face_normal) .lt. -1e-12) then
+                                        force1 = -force1
+                                    endif
+                                    ! 0 Normal, 1 Momentum
+                                    index = (/i,j,k/)
+                                    index = index - shift_index_momentum
+                                    if(this%VF%vf(index(1),index(2),index(3)) .gt. 1e-12 .and. this%VF%vf(index(1),index(2),index(3)) .lt. 1.0_WP - 1e-12) then 
+                                        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force2)
+                                    endif
+                                    if(sum(force2*face_normal) .lt. -1e-12) then
+                                        force2 = -force2
+                                    endif
+                                    ! 1 Normal, 0 Momentum
+                                    index = (/i,j,k/)
+                                    index = index + shift_index_normal
+                                    if(this%VF%vf(index(1),index(2),index(3)) .gt. 1e-12 .and. this%VF%vf(index(1),index(2),index(3)) .lt. 1.0_WP - 1e-12) then 
+                                        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force3)
+                                    endif
+                                    if(sum(force3*face_normal) .lt. -1e-12) then
+                                        force3 = -force3
+                                    endif
+                                    ! 1 Normal, 1 Momentum 
+                                    index = (/i,j,k/)
+                                    index = index + shift_index_normal - shift_index_momentum
+                                    if(this%VF%vf(index(1),index(2),index(3)) .gt. 1e-12 .and. this%VF%vf(index(1),index(2),index(3)) .lt. 1.0_WP - 1e-12) then 
+                                        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force4)
+                                    endif
+                                    if(sum(force4*face_normal) .lt. -1e-12) then
+                                        force4 = -force4
+                                    endif
+
+                                    ! Now we have all the forces, so sum them properly 
+                                    ! Combine momentum direction
+                                    force1 = force1+force2
+                                    force3 = force3+force4
+                                    ! Average Normal Direction
+                                    ! force = (force1 + force3 + force2 + force4)/4.0_WP
+                                    if(sum(force1**2) .gt. 1e-11 .and. sum(force3**2) .gt. 1e-11) then 
+                                        force = (force1 + force3)/2.0_WP
+                                    elseif(sum(force1**2) .gt. 1e-12 .or. sum(force3**2) .gt. 1e-12) then
+                                        force = force1 + force3
+                                    else 
+                                        force = (force1 + force3 + force2 + force4)/4.0_WP
+                                    endif
+                                endif
+                                
+                            CASE DEFAULT
+                                call solveFace(solver,this%fs%sigma,P0,P1,P2,P3,this%PU_spread*dx,this%PressureOption,this%MarangoniOption,force)
+                                if(sum(force*face_normal) .lt. -1e-12) then
+                                    force = -force
+                                endif
+                                this%sigma_3D_OLD(i,j,k,i_in,j_in) = force(i_in)
+                        END SELECT
                         ! endif
                         ! print *, force 
+                        if(sum(force*face_normal) .lt. -1e-12) then
+                            force = -force
+                        endif
                         this%sigma_3D(i,j,k,i_in,j_in) = force(i_in)
+
+                        force4 = (/0.0_WP,0.0_WP,0.0_WP/)
+                        call solveFace(solver,this%fs%sigma,P0,P1,P2,P3,this%PU_spread*dx,this%PressureOption,this%MarangoniOption,force4)
+                        this%sigma_3D_OLD(i,j,k,i_in,j_in) = force4(i_in)
+                        this%dSigma(i,j,k,i_in,j_in) = this%sigma_3D(i,j,k,i_in,j_in)-this%sigma_3D_OLD(i,j,k,i_in,j_in)
                         ! Do Prints here 
 
                         ! print *, "==================================="
@@ -1751,6 +1938,32 @@ subroutine updateSurfaceTensionStresses3D(this)
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,1))
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,2))
     call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,3))
+
+    ! Boundary Conditions 
+    call this%vf%cfg%sync(this%sigma_3D_OLD(:,:,:,1,1))
+    call this%vf%cfg%sync(this%sigma_3D_OLD(:,:,:,1,2))
+    call this%vf%cfg%sync(this%sigma_3D_OLD(:,:,:,1,3))
+
+    call this%vf%cfg%sync(this%sigma_3D_OLD(:,:,:,2,1))
+    call this%vf%cfg%sync(this%sigma_3D_OLD(:,:,:,2,2))
+    call this%vf%cfg%sync(this%sigma_3D_OLD(:,:,:,2,3))
+
+    call this%vf%cfg%sync(this%sigma_3D_OLD(:,:,:,3,1))
+    call this%vf%cfg%sync(this%sigma_3D_OLD(:,:,:,3,2))
+    call this%vf%cfg%sync(this%sigma_3D_OLD(:,:,:,3,3))
+
+    ! Boundary Conditions 
+    call this%vf%cfg%sync(this%dSigma(:,:,:,1,1))
+    call this%vf%cfg%sync(this%dSigma(:,:,:,1,2))
+    call this%vf%cfg%sync(this%dSigma(:,:,:,1,3))
+
+    call this%vf%cfg%sync(this%dSigma(:,:,:,2,1))
+    call this%vf%cfg%sync(this%dSigma(:,:,:,2,2))
+    call this%vf%cfg%sync(this%dSigma(:,:,:,2,3))
+
+    call this%vf%cfg%sync(this%dSigma(:,:,:,3,1))
+    call this%vf%cfg%sync(this%dSigma(:,:,:,3,2))
+    call this%vf%cfg%sync(this%dSigma(:,:,:,3,3))
 
 end subroutine updateSurfaceTensionStresses3D
 
@@ -1943,15 +2156,56 @@ subroutine updateSurfaceTensionForces3D(this)
                                 (this%sigma_3D(i,j,k,3,3)-this%sigma_3D(i,j,k-1,3,3))
             endif
             this%Fst_z_3D(i,j,k) = this%Fst_z_3D(i,j,k) * this%fs%cfg%dxi(i) * this%fs%cfg%dyi(j)
+
+            ! OLD FOR VIZ
+            ! X Component
+            this%Fst_x_3D_OLD(i,j,k) = (this%sigma_3D_OLD(i,j,k,1,1)-this%sigma_3D_OLD(i-1,j,k,1,1)) + &
+                                (this%sigma_3D_OLD(i,j,k,1,2)-this%sigma_3D_OLD(i,j-1,k,1,2)) 
+            if(.not. this%TwoD) then 
+                this%Fst_x_3D_OLD(i,j,k) = this%Fst_x_3D_OLD(i,j,k) + &
+                                (this%sigma_3D_OLD(i,j,k,1,3)-this%sigma_3D_OLD(i,j,k-1,1,3))
+            endif
+
+            this%Fst_x_3D_OLD(i,j,k) = this%Fst_x_3D_OLD(i,j,k) * this%fs%cfg%dzi(k) * this%fs%cfg%dyi(j) ! This assumes uniform mesh 
+            ! Y Component
+            this%Fst_y_3D_OLD(i,j,k) = (this%sigma_3D_OLD(i,j,k,2,1)-this%sigma_3D_OLD(i-1,j,k,2,1)) + &
+                                (this%sigma_3D_OLD(i,j,k,2,2)-this%sigma_3D_OLD(i,j-1,k,2,2))
+            if(.not. this%TwoD) then 
+                this%Fst_y_3D_OLD(i,j,k) = this%Fst_y_3D_OLD(i,j,k) + &
+                                (this%sigma_3D_OLD(i,j,k,2,3)-this%sigma_3D_OLD(i,j,k-1,2,3))
+            endif
+                                
+            this%Fst_y_3D_OLD(i,j,k) = this%Fst_y_3D_OLD(i,j,k) * this%fs%cfg%dzi(k) * this%fs%cfg%dxi(i)
+            ! Z Component
+            this%Fst_z_3D_OLD(i,j,k) = 0.0_WP 
+            if(.not. this%TwoD) then 
+                this%Fst_z_3D_OLD(i,j,k) = (this%sigma_3D_OLD(i,j,k,3,1)-this%sigma_3D_OLD(i-1,j,k,3,1)) + &
+                                (this%sigma_3D_OLD(i,j,k,3,2)-this%sigma_3D_OLD(i,j-1,k,3,2)) + &
+                                (this%sigma_3D_OLD(i,j,k,3,3)-this%sigma_3D_OLD(i,j,k-1,3,3))
+            endif
+            this%Fst_z_3D_OLD(i,j,k) = this%Fst_z_3D_OLD(i,j,k) * this%fs%cfg%dxi(i) * this%fs%cfg%dyi(j)
         end do
         end do
     end do
     
     ! Here, we would need to do assignment to Fst_xyz to actually use in the operators.  
+    this%Fst_x_3D_diff = this%Fst_x_3D - this%Fst_x_3D_OLD
+    this%Fst_y_3D_diff = this%Fst_y_3D - this%Fst_y_3D_OLD
+    this%Fst_z_3D_diff = this%Fst_z_3D - this%Fst_z_3D_OLD
+
     call this%vf%cfg%sync(this%Fst_z_3D(:,:,:))
     call this%vf%cfg%sync(this%Fst_y_3D(:,:,:))
     call this%vf%cfg%sync(this%Fst_x_3D(:,:,:))
+
+    call this%vf%cfg%sync(this%Fst_z_3D_OLD(:,:,:))
+    call this%vf%cfg%sync(this%Fst_y_3D_OLD(:,:,:))
+    call this%vf%cfg%sync(this%Fst_x_3D_OLD(:,:,:))
+
+    call this%vf%cfg%sync(this%Fst_z_3D_diff(:,:,:))
+    call this%vf%cfg%sync(this%Fst_y_3D_diff(:,:,:))
+    call this%vf%cfg%sync(this%Fst_x_3D_diff(:,:,:))
 end subroutine updateSurfaceTensionForces3D
+
 
 subroutine updateSurfaceTensionForces3DEllipsoid(this)
     use irl_fortran_interface
@@ -3645,5 +3899,128 @@ subroutine addCellToNeighborhood(this,neighborhood,i,j,k,solver)
         ! enddo
     endif
 end subroutine addCellToNeighborhood
+
+subroutine fill_momentum_vfs(this) 
+    integer :: i,j,k 
+    real(WP) :: liq_vol, gas_vol,tot_vol
+    class(conservative_st_type), intent(inout) :: this
+
+    ! Initialize VFs
+    ! Calculate rho_U/V/Wold using subcell phasic volumes
+    this%vf_x%VF = 0.0_WP
+    this%vf_y%VF = 0.0_WP
+    this%vf_z%VF = 0.0_WP
+    do k=this%vf%cfg%kmino_+1,this%vf%cfg%kmaxo_
+        do j=this%vf%cfg%jmino_+1,this%vf%cfg%jmaxo_
+            do i=this%vf%cfg%imino_+1,this%vf%cfg%imaxo_
+                ! U-cell
+                liq_vol=sum(this%vf%Lvol(0,:,:,i,j,k))+sum(this%vf%Lvol(1,:,:,i-1,j,k))
+                gas_vol=sum(this%vf%Gvol(0,:,:,i,j,k))+sum(this%vf%Gvol(1,:,:,i-1,j,k))
+                tot_vol=gas_vol+liq_vol
+                this%vf_x%vf(i,j,k) = 0.0_WP
+                if (tot_vol.gt.0.0_WP) this%vf_x%vf(i,j,k)=liq_vol/tot_vol
+                ! V-cell
+                liq_vol=sum(this%vf%Lvol(:,0,:,i,j,k))+sum(this%vf%Lvol(:,1,:,i,j-1,k))
+                gas_vol=sum(this%vf%Gvol(:,0,:,i,j,k))+sum(this%vf%Gvol(:,1,:,i,j-1,k))
+                tot_vol=gas_vol+liq_vol
+                this%vf_y%vf(i,j,k) = 0.0_WP
+                if (tot_vol.gt.0.0_WP) this%vf_y%vf(i,j,k)=liq_vol/tot_vol
+                ! W-cell
+                liq_vol=sum(this%vf%Lvol(:,:,0,i,j,k))+sum(this%vf%Lvol(:,:,1,i,j,k-1))
+                gas_vol=sum(this%vf%Gvol(:,:,0,i,j,k))+sum(this%vf%Gvol(:,:,1,i,j,k-1))
+                tot_vol=gas_vol+liq_vol
+                this%vf_z%vf(i,j,k) = 0.0_WP
+                if (tot_vol.gt.0.0_WP) this%vf_z%vf(i,j,k)=liq_vol/tot_vol
+            end do
+        end do
+    end do
+    ! Update the band
+    call this%vf_x%update_band()
+    call this%vf_y%update_band()
+    call this%vf_z%update_band()
+    ! Perform interface reconstruction from VOF field
+    call this%vf_x%build_interface()
+    call this%vf_y%build_interface()
+    call this%vf_z%build_interface()
+    ! Create discontinuous polygon mesh from IRL interface
+    call this%vf_x%polygonalize_interface()
+    call this%vf_y%polygonalize_interface()
+    call this%vf_z%polygonalize_interface()
+    ! Calculate distance from polygons
+    call this%vf_x%distance_from_polygon()
+    call this%vf_y%distance_from_polygon()
+    call this%vf_z%distance_from_polygon()
+    ! Calculate subcell phasic volumes
+    call this%vf_x%subcell_vol()
+    call this%vf_y%subcell_vol()
+    call this%vf_z%subcell_vol()
+    ! Calculate curvature
+    call this%vf_x%get_curvature()
+    call this%vf_y%get_curvature()
+    call this%vf_z%get_curvature()
+    ! Perform PPIC reconstruction
+    if (this%vf_x%ppic) call this%vf_x%build_quadratic_interface()
+    if (this%vf_y%ppic) call this%vf_y%build_quadratic_interface()
+    if (this%vf_z%ppic) call this%vf_z%build_quadratic_interface()
+    ! Reset moments to guarantee compatibility with interface reconstruction
+    call this%vf_x%reset_volume_moments()
+    call this%vf_y%reset_volume_moments()
+    call this%vf_z%reset_volume_moments()
+end subroutine fill_momentum_vfs
+
+subroutine compute_paraboloid_force(this,vf_input,i,j,k,j_in,P0,P1,P2,P3,force)
+    class(conservative_st_type), intent(inout) :: this
+    type(vfs) :: vf_input
+    integer :: i,j,k,j_in
+    real(WP), dimension(1:3) :: P0,P1,P2,P3 
+    real(WP), dimension(1:3),intent(out) :: force
+
+    integer,dimension(1:3) :: shift_index_normal
+    real(WP),dimension(1:3) :: face_normal 
+    real(WP),dimension(1:3) :: force1,force2
+    real(WP) :: vf
+    type(PUST_RectCub_type) :: solver
+    
+    ! Setup
+    shift_index_normal = (/0,0,0/)
+    shift_index_normal(j_in) = 1
+    face_normal = (/0.0_WP,0.0_WP,0.0_WP/)
+    face_normal(j_in) = 1.0_WP
+
+    force1 = (/0.0_WP,0.0_WP,0.0_WP/)
+    force2 = (/0.0_WP,0.0_WP,0.0_WP/)
+    force  = (/0.0_WP,0.0_WP,0.0_WP/)
+
+    call new(solver)
+    ! Current Cell
+    vf = vf_input%VF(i,j,k)
+    if(vf .gt. 1e-12 .and. vf .lt. 1.0_WP - 1e-12) then 
+        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,vf_input%liquid_gas_interface(i,j,k),this%PressureOption,this%MarangoniOption,force1)
+        if(sum(force1*face_normal) .lt. -1e-12) then
+            force1 = -force1
+        endif
+    endif
+
+    ! Adjacent Cell Cell
+    vf = vf_input%VF(i+shift_index_normal(1),j+shift_index_normal(2),k+shift_index_normal(3))
+    if(vf .gt. 1e-12 .and. vf .lt. 1.0_WP - 1e-12) then 
+        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,&
+                                vf_input%liquid_gas_interface(i+shift_index_normal(1),j+shift_index_normal(2),k+shift_index_normal(3)),&
+                                this%PressureOption,this%MarangoniOption,force2)
+        if(sum(force2*face_normal) .lt. -1e-12) then
+            force2 = -force2
+        endif
+    endif
+    ! Combine face forces
+    force = (force1 + force2)/2.0_WP
+    ! if(sum(force1**2) .gt. 1e-11 .and. sum(force2**2) .gt. 1e-11) then 
+    !     force = (force1 + force2)/2.0_WP
+    ! elseif(sum(force1**2) .gt. 1e-12 .or. sum(force2**2) .gt. 1e-12) then
+    !     force = force1 + force3
+    ! else 
+    !     force = (force1 + force2)/2.0_WP
+    ! endif
+    
+end subroutine compute_paraboloid_force
 
 end module conservative_st

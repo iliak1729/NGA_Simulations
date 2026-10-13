@@ -19,6 +19,7 @@ Perturbation mode:      1
 Marangoni :  0 0 0
 Pressure : 0
 Smoothing Option : 1
+Levelset Option : 1
 # 1 For CSF, 2 for integral, 3 for CSF shift 
 Surface Tension Option : 4
 Curvature Option : 1
@@ -37,10 +38,10 @@ Surface tension coefficient: 0.072
 
 
 # Time integration
-Max time:               50
+Max time:               10
 Max dt:                 0.05
-Max CFL:                0.5
+Max CFL:                0.25
 
 
 # Output
-Output period:          0.1
+Output period:          1e-12

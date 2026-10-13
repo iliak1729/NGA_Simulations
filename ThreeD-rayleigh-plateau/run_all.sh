@@ -1,14 +1,13 @@
 
 CASES=(
-    "input_NoP_PPIC_Laplacian"
-    "input_NoP_Laplacian"
+    "input_NoP_PPIC"
 )
 make -j 10
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./NONAMR_RUNS/NONAMR_Cell14D_${CASE}"
+    DIR="./NONAMR_RUNS/NONAMR_Paraboloid_Levelset2_Cell14D_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"
