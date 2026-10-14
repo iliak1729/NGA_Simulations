@@ -15,7 +15,7 @@ module simulation
    use event_class,          only: event
    use monitor_class,        only: monitor
    use config_class, only: config
-   use temp_transport
+   ! use temp_transport
    use irl_fortran_interface
    use conservative_st
    
@@ -27,7 +27,7 @@ module simulation
    type(ddadi),          public :: vs
    type(tpns),           public :: fs
    type(vfs),            public :: vf
-   type(tads),           public :: ts
+   ! type(tads),           public :: ts
    type(timetracker),    public :: time
    type(conservative_st_type), public :: cst
 
@@ -235,23 +235,31 @@ contains
       ! Initialize our VOF solver and field
       create_and_initialize_vof: block
          use mms_geom,  only: cube_refine_vol
-         use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage,lvira,jibben
+         use vfs_class,only: r2p,lvira,VFhi,VFlo,jibben,plicnet,jibbenPU,jibbenSq,PUppic,jibbenPLIC
          use mathtools, only: Pi
-         integer :: i,j,k,n,si,sj,sk,reconType
+         integer :: i,j,k,n,si,sj,sk,InterfaceTypes
          real(WP), dimension(3,8) :: cube_vertex
          real(WP), dimension(3) :: v_cent,a_cent
          real(WP) :: vol,area
          integer, parameter :: amr_ref_lvl=4
          real(WP) :: B
          ! Create a VOF solver
-         call param_read('Reconstruction Type',reconType)
-         SELECT CASE (reconType)
-            CASE(1)
-               call vf%initialize(cfg=cfg,reconstruction_method=lvira,transport_method=flux_storage,name='VOF')
-            CASE(2) 
-               call vf%initialize(cfg=cfg,reconstruction_method=jibben,transport_method=flux_storage,name='VOF')
-            CASE DEFAULT
-               call vf%initialize(cfg=cfg,reconstruction_method=lvira,transport_method=flux_storage,name='VOF')
+         call param_read('Interface Type',InterfaceTypes,default=1)
+         SELECT CASE (InterfaceTypes)
+            case (1)
+               call vf%initialize(cfg=cfg,reconstruction_method=lvira,name='VOF')
+            case (2) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibben,name='VOF')
+            case (3) 
+               call vf%initialize(cfg=cfg,reconstruction_method=plicnet,name='VOF')
+            case (4) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibbenPU,name='VOF')
+            case (5) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibbenSq,name='VOF')
+            case (6) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibbenPU,name='VOF')
+            case default 
+               call vf%initialize(cfg=cfg,reconstruction_method=lvira,name='VOF')
          END SELECT
       
          
@@ -376,14 +384,14 @@ contains
       ! Create Surface Tension Object
       create_surface_tension_solver : block
          call cst%init(fs,vf,time)
-         call param_read('Marangoni',cst%MarangoniOption)
-         call param_read('Pressure',cst%PressureOption)
-         call param_read('Smoothing Option',cst%SmoothingOption)
-         call param_read('Surface Tension Option',cst%SurfaceTensionOption)
-         call param_read('Curvature Option',cst%CurvatureOption)
-         call param_read('PU Spread',cst%PU_spread)
-         call param_read('Two Dimensional',cst%TwoD)
-         call cst%temp()
+         call param_read('Marangoni',cst%MarangoniOption,default = [0.0_WP,0.0_WP,0.0_WP])
+         call param_read('Pressure',cst%PressureOption,default = 0.0_WP)
+         call param_read('Smoothing Option',cst%SmoothingOption,default = 1)
+         call param_read('Surface Tension Option',cst%SurfaceTensionOption,default = 8)
+         call param_read('Levelset Option',cst%LevelsetOption,default = 2)
+         call param_read('Curvature Option',cst%CurvatureOption,default = 1)
+         call param_read('PU Spread',cst%PU_spread,default = 2.0_WP)
+         call param_read('Two Dimensional',cst%TwoD,default = .false.)
       end block create_surface_tension_solver
      
 

@@ -305,21 +305,21 @@ contains
          ! Create a VOF solver with r2p reconstruction
          call param_read('Interface Type',InterfaceTypes,default=1)
          SELECT CASE (InterfaceTypes)
-               case (1)
-                  call vf%initialize(cfg=cfg,reconstruction_method=lvira,name='VOF')
-               case (2) 
-                  call vf%initialize(cfg=cfg,reconstruction_method=jibben,name='VOF')
-               case (3) 
-                  call vf%initialize(cfg=cfg,reconstruction_method=plicnet,name='VOF')
-               case (4) 
-                  call vf%initialize(cfg=cfg,reconstruction_method=jibbenPU,name='VOF')
-               case (5) 
-                  call vf%initialize(cfg=cfg,reconstruction_method=jibbenSq,name='VOF')
-               case (6) 
-                  call vf%initialize(cfg=cfg,reconstruction_method=jibbenPU,name='VOF')
-               case default 
-                  call vf%initialize(cfg=cfg,reconstruction_method=lvira,name='VOF')
-            END SELECT
+            case (1)
+               call vf%initialize(cfg=cfg,reconstruction_method=lvira,name='VOF')
+            case (2) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibben,name='VOF')
+            case (3) 
+               call vf%initialize(cfg=cfg,reconstruction_method=plicnet,name='VOF')
+            case (4) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibbenPU,name='VOF')
+            case (5) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibbenSq,name='VOF')
+            case (6) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibbenPU,name='VOF')
+            case default 
+               call vf%initialize(cfg=cfg,reconstruction_method=lvira,name='VOF')
+         END SELECT
          ! Reading ligament parameters
          call param_read('Ligament radius',radius)
          call param_read('Ligament center',center,default=[0.0_WP,0.0_WP,0.0_WP])
