@@ -418,10 +418,19 @@ contains
          call ens_out%add_vector('sigma_3d_x',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
          call ens_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
          call ens_out%add_vector('sigma_3d_z',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
-         call ens_out%add_scalar('sigma_xx_NoP',cst%sigma_xx_NoP)
-         call ens_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
-         call ens_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
-         call ens_out%add_scalar('sigma_yy_NoP',cst%sigma_yy_NoP)
+
+         call ens_out%add_vector('OLD sigma_3d_x',cst%sigma_3D_OLD(:,:,:,1,1),cst%sigma_3D_OLD(:,:,:,1,2),cst%sigma_3D_OLD(:,:,:,1,3))
+         call ens_out%add_vector('OLD sigma_3d_y',cst%sigma_3D_OLD(:,:,:,2,1),cst%sigma_3D_OLD(:,:,:,2,2),cst%sigma_3D_OLD(:,:,:,2,3))
+         call ens_out%add_vector('OLD sigma_3d_z',cst%sigma_3D_OLD(:,:,:,3,1),cst%sigma_3D_OLD(:,:,:,3,2),cst%sigma_3D_OLD(:,:,:,3,3))
+
+         call ens_out%add_vector('d sigma_3d_x',cst%dSigma(:,:,:,1,1),cst%dSigma(:,:,:,1,2),cst%dSigma(:,:,:,1,3))
+         call ens_out%add_vector('d sigma_3d_y',cst%dSigma(:,:,:,2,1),cst%dSigma(:,:,:,2,2),cst%dSigma(:,:,:,2,3))
+         call ens_out%add_vector('d sigma_3d_z',cst%dSigma(:,:,:,3,1),cst%dSigma(:,:,:,3,2),cst%dSigma(:,:,:,3,3))
+         
+         call ens_out%add_vector('diff ST Force',cst%Fst_x_3D_diff,cst%Fst_y_3D_diff,cst%Fst_z_3D_diff)
+
+         call ens_out%add_vector('OLD ST Force',cst%Fst_x_3D_OLD,cst%Fst_y_3D_OLD,cst%Fst_z_3D_OLD)
+
          call ens_out%add_vector('ST Force',fs%Pjx,fs%Pjy,fs%Pjz)
          call ens_out%add_vector('CSF Force',cst%PjxD,cst%PjyD,cst%PjzD)
 
