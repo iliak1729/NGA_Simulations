@@ -15,6 +15,7 @@ module conservative_st
     use sgrid_class,       only: sgrid
     use config_class,      only: config
     use irl_fortran_interface
+    
     implicit none
     private
 
@@ -1613,7 +1614,7 @@ subroutine updateSurfaceTensionStresses3D(this)
     use irl_fortran_interface
     use f_PUNeigh_RectCub_class
     use f_SeparatorVariant_class
-    use f_PUST_RectCub_class, only: solveFace
+    use f_PUST_RectCub_class, only: solveFace,solveFaceParaboloid
 
     implicit none
     class(conservative_st_type), intent(inout) :: this
@@ -1627,6 +1628,7 @@ subroutine updateSurfaceTensionStresses3D(this)
     real(WP), dimension(1:3) :: cen,corner,dvec,shift,force,face_normal
     real(WP), dimension(1:3) :: force1,force2,force3,force4
     real(WP), dimension(1:3) :: P0,P1,P2,P3,pressure_cell_center,velocity_cell_center,face_center
+    real(WP), dimension(1:3) :: R0,R1,R2,R3
     real(WP) :: dx,dy,dz
     real(WP) :: x_i,y_j,z_k
 
@@ -1825,38 +1827,41 @@ subroutine updateSurfaceTensionStresses3D(this)
                                     ! If off diagonal, then we are touching four cells. 
                                     ! The values in the normal direction (shift_index_normal) are seperated
                                     ! The values in the momentum direction (shift_index_momentum) are grouped
-
+                                    ! Get Appropriate Half Face (Positive)
+                                    call getHalfFace(P0,P1,P2,P3,i_in,j_in,2,R0,R1,R2,R3)
                                     ! 0 Normal, 0 Momentum
                                     index = (/i,j,k/)
                                     if(this%VF%vf(index(1),index(2),index(3)) .gt. 1e-12 .and. this%VF%vf(index(1),index(2),index(3)) .lt. 1.0_WP - 1e-12) then 
-                                        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force1)
+                                        call solveFaceParaboloid(solver,this%fs%sigma,R0,R1,R2,R3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force1)
                                     endif
                                     if(sum(force1*face_normal) .lt. -1e-12) then
                                         force1 = -force1
-                                    endif
-                                    ! 0 Normal, 1 Momentum
-                                    index = (/i,j,k/)
-                                    index = index - shift_index_momentum
-                                    if(this%VF%vf(index(1),index(2),index(3)) .gt. 1e-12 .and. this%VF%vf(index(1),index(2),index(3)) .lt. 1.0_WP - 1e-12) then 
-                                        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force2)
-                                    endif
-                                    if(sum(force2*face_normal) .lt. -1e-12) then
-                                        force2 = -force2
                                     endif
                                     ! 1 Normal, 0 Momentum
                                     index = (/i,j,k/)
                                     index = index + shift_index_normal
                                     if(this%VF%vf(index(1),index(2),index(3)) .gt. 1e-12 .and. this%VF%vf(index(1),index(2),index(3)) .lt. 1.0_WP - 1e-12) then 
-                                        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force3)
+                                        call solveFaceParaboloid(solver,this%fs%sigma,R0,R1,R2,R3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force3)
                                     endif
                                     if(sum(force3*face_normal) .lt. -1e-12) then
                                         force3 = -force3
+                                    endif
+                                    ! Get other half face (Negative)
+                                     call getHalfFace(P0,P1,P2,P3,i_in,j_in,1,R0,R1,R2,R3)
+                                    ! 0 Normal, 1 Momentum
+                                    index = (/i,j,k/)
+                                    index = index - shift_index_momentum
+                                    if(this%VF%vf(index(1),index(2),index(3)) .gt. 1e-12 .and. this%VF%vf(index(1),index(2),index(3)) .lt. 1.0_WP - 1e-12) then 
+                                        call solveFaceParaboloid(solver,this%fs%sigma,R0,R1,R2,R3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force2)
+                                    endif
+                                    if(sum(force2*face_normal) .lt. -1e-12) then
+                                        force2 = -force2
                                     endif
                                     ! 1 Normal, 1 Momentum 
                                     index = (/i,j,k/)
                                     index = index + shift_index_normal - shift_index_momentum
                                     if(this%VF%vf(index(1),index(2),index(3)) .gt. 1e-12 .and. this%VF%vf(index(1),index(2),index(3)) .lt. 1.0_WP - 1e-12) then 
-                                        call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force4)
+                                        call solveFaceParaboloid(solver,this%fs%sigma,R0,R1,R2,R3,this%vf%liquid_gas_interface(index(1),index(2),index(3)),this%PressureOption,this%MarangoniOption,force4)
                                     endif
                                     if(sum(force4*face_normal) .lt. -1e-12) then
                                         force4 = -force4
@@ -3969,6 +3974,7 @@ subroutine fill_momentum_vfs(this)
 end subroutine fill_momentum_vfs
 
 subroutine compute_paraboloid_force(this,vf_input,i,j,k,j_in,P0,P1,P2,P3,force)
+    use f_PUST_RectCub_class
     class(conservative_st_type), intent(inout) :: this
     type(vfs) :: vf_input
     integer :: i,j,k,j_in
@@ -4022,5 +4028,68 @@ subroutine compute_paraboloid_force(this,vf_input,i,j,k,j_in,P0,P1,P2,P3,force)
     ! endif
     
 end subroutine compute_paraboloid_force
+
+subroutine getHalfFace(P0,P1,P2,P3,i_in,j_in,half,R0,R1,R2,R3)
+    implicit none
+
+    real(WP), intent(in) :: P0(3),P1(3),P2(3),P3(3)
+    integer, intent(in) :: i_in,j_in,half
+    real(WP), intent(out) :: R0(3),R1(3),R2(3),R3(3)
+
+    real(WP) :: M01(3),M12(3),M23(3),M30(3)
+    integer :: shift_first_index,shift_second_index
+
+    ! Determine the two directions perpendicular to the face normal
+    shift_first_index  = mod(j_in,3)+1
+    shift_second_index = mod(j_in+1,3)+1
+
+    ! Calculate edge midpoints
+    M01 = 0.5_WP*(P0+P1)
+    M12 = 0.5_WP*(P1+P2)
+    M23 = 0.5_WP*(P2+P3)
+    M30 = 0.5_WP*(P3+P0)
+
+    ! Split along momentum direction
+    if (i_in == shift_first_index) then
+
+        if (half == 1) then
+            ! Negative momentum half
+            R0 = P0
+            R1 = M01
+            R2 = M23
+            R3 = P3
+        else
+            ! Positive momentum half
+            R0 = M01
+            R1 = P1
+            R2 = P2
+            R3 = M23
+        endif
+
+    elseif (i_in == shift_second_index) then
+
+        if (half == 1) then
+            ! Negative momentum half
+            R0 = P0
+            R1 = P1
+            R2 = M12
+            R3 = M30
+        else
+            ! Positive momentum half
+            R0 = M30
+            R1 = M12
+            R2 = P2
+            R3 = P3
+        endif
+
+    else
+        ! Diagonal component: no splitting necessary
+        R0 = P0
+        R1 = P1
+        R2 = P2
+        R3 = P3
+    endif
+
+end subroutine getHalfFace
 
 end module conservative_st
