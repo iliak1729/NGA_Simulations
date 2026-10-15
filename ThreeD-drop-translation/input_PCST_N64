@@ -20,10 +20,10 @@ Surface tension coefficient : 1
 
 # Options
 Marangoni :  0 0 0
-Pressure : 0
+Pressure : 1
 Smoothing Option : 1
 Surface Tension Option : 8
-Levelset Option : 2
+Levelset Option : 1
 Curvature Option : 1
 PU Spread : 2.0
 # 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
@@ -35,8 +35,8 @@ Droplet Velocity : 0 0 0
 Laplace Number : 120
 
 # Time integration
-Min Viscous Time :            1.0 # Changes Max Time
-Min Capillary Time :          1.0 # This will almost never matter, as the viscous time is so much longer, but it is fine
+Min Viscous Time :            0.05 # Changes Max Time
+Min Capillary Time :          0.05 # This will almost never matter, as the viscous time is so much longer, but it is fine
 
 # Time integration
 Max timestep size : 0.4  # Default Values, Overriden

@@ -373,6 +373,9 @@ contains
          time%dt=time%dtmax
          call fs%apply_bcond(time%t,time%dt)
          time%tmax = max(minTv*Tv,minTc*Tc)
+         print *, "Viscous Time = ",Tv 
+         print *, "Capillary Time = ",Tc
+         print *, "dt = ",time%dt
          
          ! Zero inflow velocity
          Vin=0.0_WP
