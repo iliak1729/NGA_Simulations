@@ -33,7 +33,7 @@ Marangoni :  0 0 0
 Pressure : 0
 Smoothing Option : 1
 Surface Tension Option : 8
-Levelset Option : 2
+Levelset Option : 1
 Curvature Option : 1
 PU Spread : 2.0
 # 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA

@@ -120,22 +120,31 @@ sim_cases = [
     #     "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Cell14D_NoP_PPIC_Laplacian/monitor/rayleigh_plateau",
     #     "Non-AMR,NoP,PPIC,Laplacian"
     # ),
-    (
-        "ThreeD-rayleigh-plateau/monitor/rayleigh_plateau",
-        "NoP,ParaboloidForm,FourCells"
-    ),
+    # (
+    #     "ThreeD-rayleigh-plateau/monitor/rayleigh_plateau",
+    #     "LIVE,NoP,PU,New"
+    # ),
     (
         "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Paraboloid_Cell14D_NoP_PPIC/monitor/rayleigh_plateau",
         "NoP,ParaboloidForm,Jibben"
     ),
     (
-        "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Paraboloid_JibbenPU_Cell14D_NoP_PPIC/monitor/rayleigh_plateau",
-        "NoP,ParaboloidForm,JibbenPU"
+        "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Cell14D_NoP_PPIC/monitor/rayleigh_plateau",
+        "NoP,PU"
     ),
     (
-        "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Paraboloid_PUppic_Cell14D_NoP_PPIC/monitor/rayleigh_plateau",
-        "NoP,ParaboloidForm,PUppic"
+        "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_PUST_Cell14D_P_PPIC/monitor/rayleigh_plateau",
+        "P,PU"
     ),
+
+    # (
+    #     "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Paraboloid_JibbenPU_Cell14D_NoP_PPIC/monitor/rayleigh_plateau",
+    #     "NoP,ParaboloidForm,JibbenPU"
+    # ),
+    # (
+    #     "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Paraboloid_PUppic_Cell14D_NoP_PPIC/monitor/rayleigh_plateau",
+    #     "NoP,ParaboloidForm,PUppic"
+    # ),
 
 
 
@@ -212,7 +221,7 @@ plt.grid(True, which="both")
 plt.legend()
 
 # plt.ylim(1, 10)
-plt.xlim(0, 2.5)
+# plt.xlim(0, 2.5)
 plt.title('Maximum radius growth comparison')
 plt.show()
 
@@ -255,6 +264,6 @@ plt.grid(True, which="both")
 plt.legend()
 
 # plt.ylim(1, 10)
-plt.xlim(0, 2.5)
+# plt.xlim(0, 2.5)
 plt.title('Minimum radius growth comparison')
 plt.show()

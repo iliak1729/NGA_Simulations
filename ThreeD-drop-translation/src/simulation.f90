@@ -376,6 +376,7 @@ contains
          print *, "Viscous Time = ",Tv 
          print *, "Capillary Time = ",Tc
          print *, "dt = ",time%dt
+         print *, "tmax = ",time%tmax
          
          ! Zero inflow velocity
          Vin=0.0_WP

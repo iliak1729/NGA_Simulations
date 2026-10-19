@@ -20,9 +20,9 @@ Surface tension coefficient : 1
 
 # Options
 Marangoni :  0 0 0
-Pressure : 1
+Pressure : 0
 Smoothing Option : 1
-Surface Tension Option : 8
+Surface Tension Option : 9
 Levelset Option : 1
 Curvature Option : 1
 PU Spread : 2.0
@@ -35,8 +35,8 @@ Droplet Velocity : 0 0 0
 Laplace Number : 120
 
 # Time integration
-Min Viscous Time :            0.05 # Changes Max Time
-Min Capillary Time :          0.05 # This will almost never matter, as the viscous time is so much longer, but it is fine
+Min Viscous Time :            0.013 # Changes Max Time
+Min Capillary Time :          0.013 # This will almost never matter, as the viscous time is so much longer, but it is fine
 
 # Time integration
 Max timestep size : 0.4  # Default Values, Overriden

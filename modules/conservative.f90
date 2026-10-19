@@ -95,10 +95,12 @@ module conservative_st
         procedure, private :: add_CSF_Shift_surface_tension_jump
         procedure, private :: add_Seric_surface_tension_jump
         procedure, private :: add_3D_surface_tension_jump
+        procedure, private :: add_3D_surface_tension_jump_face_paraboloids
         procedure, private :: add_3D_CSF_Shift_surface_tension_jump
 
         procedure, private :: updateSurfaceTensionStresses
         procedure, private :: updateSurfaceTensionStresses3D
+        procedure, private :: updateSurfaceTensionStresses3DFaceParaboloids
         procedure, private :: updateSurfaceTensionStresses3DEllipsoid
         procedure, private :: updateSurfaceTensionForces
         procedure, private :: updateSurfaceTensionForces3D
@@ -332,6 +334,8 @@ subroutine add_surface_tension_jump(this)
         case (8)
             call this%add_3D_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
         case(9)
+            call this%add_3D_surface_tension_jump_face_paraboloids(dt=this%time%dt,div=this%fs%div)
+        case(10)
             call this%add_3D_CSF_Shift_surface_tension_jump(dt=this%time%dt,div=this%fs%div)
         CASE DEFAULT
             call this%fs%add_surface_tension_jump(dt=this%time%dt,div=this%fs%div,vf=this%vf)
@@ -957,6 +961,117 @@ subroutine add_3D_surface_tension_jump(this,dt,div,contact_model)
         end do
     end do
 end subroutine add_3D_surface_tension_jump
+
+subroutine add_3D_surface_tension_jump_face_paraboloids(this,dt,div,contact_model)
+    use messager,  only: die
+    use vfs_class, only: vfs
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class 
+    use f_PUST_RectCub_class
+
+    implicit none
+    class(conservative_st_type), intent(inout) :: this
+    real(WP), intent(inout) :: dt     !< Timestep size over which to advance 
+    real(WP), dimension(this%fs%cfg%imino_:,this%fs%cfg%jmino_:,this%fs%cfg%kmino_:), intent(inout) :: div  !< Needs to be (imino_:imaxo_,jmino_:jmaxo_,kmino_:kmaxo_)
+    integer, intent(in), optional :: contact_model
+    integer :: i,j,k
+    real(WP) :: mycurv,mysurf
+    
+    ! Store old jump
+    this%fs%DPjx=this%fs%Pjx
+    this%fs%DPjy=this%fs%Pjy
+    this%fs%DPjz=this%fs%Pjz
+    ! Calculate pressure jump
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_+1
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_+1
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_+1
+            ! X face
+            mysurf=sum(this%vf%SD(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i-1:i,j,k)*this%vf%curv(i-1:i,j,k)*this%fs%cfg%vol(i-1:i,j,k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjx(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divu_x(:,i,j,k)*this%vf%VF(i-1:i,j,k))
+            ! Y face
+            mysurf=sum(this%vf%SD(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i,j-1:j,k)*this%vf%curv(i,j-1:j,k)*this%fs%cfg%vol(i,j-1:j,k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjy(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divv_y(:,i,j,k)*this%vf%VF(i,j-1:j,k))
+            ! Z face
+            mysurf=sum(this%vf%SD(i,j,k-1:k)*this%fs%cfg%vol(i,j,k-1:k))
+            if (mysurf.gt.0.0_WP) then
+                mycurv=sum(this%vf%SD(i,j,k-1:k)*this%vf%curv(i,j,k-1:k)*this%fs%cfg%vol(i,j,k-1:k))/mysurf
+            else
+                mycurv=0.0_WP
+            end if
+            this%fs%Pjz(i,j,k)=this%fs%sigma*mycurv*sum(this%fs%divw_z(:,i,j,k)*this%vf%VF(i,j,k-1:k))
+        end do
+        end do
+    end do
+
+    this%PjxD = this%fs%Pjx
+    this%PjyD = this%fs%Pjy 
+    this%PjzD = this%fs%Pjz
+
+    ! Update Values
+    call this%updateSurfaceTensionStresses3DFaceParaboloids()
+    call this%updateSurfaceTensionForces3D()
+    
+    this%fs%Pjx = this%Fst_x_3D 
+    this%fs%Pjy = this%Fst_y_3D
+    this%fs%Pjz = this%Fst_z_3D
+
+    ! print *,sqrt(sum(this%Fst_z_3D**2))
+    SELECT CASE (this%SmoothingOption)
+        CASE(1)
+        
+        CASE(2)
+        call this%applyLaplacianSmoothing()
+        CASE(3)
+        call this%applyGradientSmoothing()
+        CASE(4)
+        call this%applyPoissonSmoothing()
+        case(5) ! This is using the Peskin Delta Function 
+        call this%applyPeskinSmoothing()
+        CASE DEFAULT
+
+    END SELECT
+
+    ! Add wall contact force to pressure jump 
+    if (present(contact_model)) then
+        select case (contact_model)
+        case (1)
+        call this%fs%add_static_contact(vf=this%vf)
+        case default
+        call die('[tpns: add_surface_tension_jump] Unknown contact model!')
+        end select
+    end if
+    
+    ! Compute jump of DP
+    this%fs%DPjx=this%fs%Pjx-this%fs%DPjx
+    this%fs%DPjy=this%fs%Pjy-this%fs%DPjy
+    this%fs%DPjz=this%fs%Pjz-this%fs%DPjz
+    
+    ! Add div(Pjump) to RP
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+        do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+            this%SurfaceTensionDiv(i,j,k) = dt*(sum(this%fs%divp_x(:,i,j,k)*this%fs%DPjx(i:i+1,j,k)/this%fs%rho_U(i:i+1,j,k))&
+            &                                  +sum(this%fs%divp_y(:,i,j,k)*this%fs%DPjy(i,j:j+1,k)/this%fs%rho_V(i,j:j+1,k))&
+            &                                  +sum(this%fs%divp_z(:,i,j,k)*this%fs%DPjz(i,j,k:k+1)/this%fs%rho_W(i,j,k:k+1)))
+            ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
+            !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
+            ! endif
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+        end do
+        end do
+    end do
+end subroutine add_3D_surface_tension_jump_face_paraboloids
 
    
 subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
@@ -1971,6 +2086,228 @@ subroutine updateSurfaceTensionStresses3D(this)
     call this%vf%cfg%sync(this%dSigma(:,:,:,3,3))
 
 end subroutine updateSurfaceTensionStresses3D
+
+subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
+    use irl_fortran_interface
+    use f_PUNeigh_RectCub_class
+    use f_SeparatorVariant_class
+    use f_PUST_RectCub_class, only: solveFace,solveFaceParaboloid
+    use mathtools, only: normalize
+    implicit none 
+    class(conservative_st_type), intent(inout) :: this
+    type(PUNeigh_RectCub_type) :: neighborhood
+    type(PUST_RectCub_type) :: solver
+    type(SeparatorVariant_type) :: interface_component 
+    ! Geometry and Forces
+    integer, dimension(1:3) :: shift_index_normal,shift_index_momentum,index
+    integer :: i,j,k,j_in,i_in,k_in
+    integer :: shift_first_index,shift_second_index
+    real(WP), dimension(1:3) :: cen, dvec, shift,face_normal
+    real(WP), dimension(1:3) :: force
+    real(WP), dimension(1:3) :: P0,P1,P2,P3,R0,R1,R2,R3 
+    real(WP), dimension(1:3) :: pressure_cell_center, velocity_cell_center,face_center
+    real(WP) :: dx,dy,dz
+    ! Jibben Stuff
+    integer :: ind,ii,jj,kk, icenter 
+    integer, dimension(1:3) :: lower,upper
+    real(WP), dimension(1:3) :: datum,normal
+    real(WP) :: vf_sample,count,normal_mag
+    type(JibbenNeigh_type) :: jibben_neighborhood
+    type(RectCub_type) :: cell
+    logical :: found_interface 
+
+    dx = this%vf%cfg%dx(1)
+    dy = this%vf%cfg%dy(1)
+    dz = this%vf%cfg%dz(1)
+    dvec = (/dx,dy,dz/)
+    shift = dvec
+    ! Zero Out 
+    this%Sigma_3D = 0.0_WP 
+
+    ! Create Neighborhood Empty
+    call new(neighborhood) 
+    call new(solver)
+    call setNeighborhood(solver,neighborhood) 
+    call new(interface_component)
+    ! print *, "Solver Neighbhorhood"
+    ! Jibben Start
+    call new(cell)
+    call new(jibben_neighborhood)
+    call reserve(jibben_neighborhood,48) ! 4x4x3 Stencil, with extra cells in offset direction
+    ! print *, "Jibben Neighbhorhood"/
+    ! Stress
+    ! First, get the cell center of the cell we are in
+    do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
+    do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
+    do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+        pressure_cell_center = (/this%fs%cfg%xm(i),this%fs%cfg%ym(j),this%fs%cfg%zm(k)/)
+        do i_in = 1,3 
+            ! Set up shift to velocity cell
+            shift = (/0.0_WP,0.0_WP,0.0_WP/)  
+            shift(i_in) = dvec(i_in)/2
+            shift_index_momentum = (/0,0,0/)
+            shift_index_momentum(i_in) = 1
+            ! Move center to velocity cell we are looking at
+            velocity_cell_center = pressure_cell_center - shift
+
+            do j_in = 1,3 
+                ! Shift from velocity cell center ot the face center we are looking at:
+                shift = (/0.0_WP,0.0_WP,0.0_WP/)  
+                shift_index_normal = (/0,0,0/)
+                shift_index_normal(j_in) = 1
+                face_normal = (/0.0_WP,0.0_WP,0.0_WP/)
+                face_normal(j_in) = 1.0_WP
+                shift(j_in) = dvec(j_in)/2
+                face_center = velocity_cell_center + shift
+                ! Now that we have the face center and normal direction (all positive normals)
+                ! we can use the pattern below to get a CCW orientation:
+                ! -- =>  +- => ++ => -+
+                ! The directions we apply this two are the directions perpendicular to our normal, in CCW order. This is to say if our directional order is:
+                ! (x,y,z) then we use  (y,z) for x normal, (z,x) for y normal, and (x,y) for z normal
+                ! This is where we define those directions, in indices
+                shift_first_index = mod(j_in,3)+1
+                shift_second_index = mod(j_in+1,3)+1
+                ! Apply to get first corner
+                shift = dvec/2     
+                shift(j_in) = 0.0_WP
+                shift(shift_first_index) = -shift(shift_first_index)
+                shift(shift_second_index) = -shift(shift_second_index)
+                P0 = face_center + shift
+
+                ! Apply to get first corner
+                shift = dvec/2     
+                shift(j_in) = 0.0_WP
+                shift(shift_first_index) = shift(shift_first_index)
+                shift(shift_second_index) = -shift(shift_second_index)
+                P1 = face_center + shift
+
+                ! Apply to get first corner
+                shift = dvec/2     
+                shift(j_in) = 0.0_WP
+                shift(shift_first_index) = shift(shift_first_index)
+                shift(shift_second_index) = shift(shift_second_index)
+                P2 = face_center + shift
+
+                ! Apply to get first corner
+                shift = dvec/2     
+                shift(j_in) = 0.0_WP
+                shift(shift_first_index) = -shift(shift_first_index)
+                shift(shift_second_index) = shift(shift_second_index)
+                P3 = face_center + shift
+                ! print *, "Points"
+                ! Now we need to get the paraboloid using the face centered formulation 
+                ! Make Jibben Neighborhood 
+                call setSize(jibben_neighborhood,0)
+                ! print *, "SetSize"
+                ind = 0 
+                found_interface = .false. 
+                ! Set neighborhood bounds
+                lower = (/i-1, j-1, k-1/)
+                upper = (/i+1, j+1, k+1/)
+                if (i_in.ne.j_in) then
+                    lower(i_in) = lower(i_in) - 1
+                    upper(j_in) = upper(j_in) + 1
+                endif
+                do kk=lower(3),upper(3)
+                do jj=lower(2),upper(2)
+                do ii=lower(1),upper(1)
+                    if(getNumberOfVertices(this%vf%interface_polygon(1,ii,jj,kk)) .gt. 0) then
+                        call addMember(jibben_neighborhood,this%vf%interface_polygon(1,ii,jj,kk),1.0_WP)
+                        if(ii.eq.i.and.jj.eq.j.and.kk.eq.k) then 
+                            icenter=ind
+                            found_interface=.true.
+                            call setCenterOfStencil(jibben_neighborhood,icenter)
+                        endif
+                        ind = ind+1
+                    endif
+                enddo
+                enddo
+                enddo
+                ! print *, "Added Members" 
+                ! Get Datum and Normal
+                datum = face_center
+                normal = (/0.0_WP,0.0_WP,0.0_WP/)
+                found_interface = .false.
+                count = 0.0_WP
+                if(i_in .eq. j_in) then 
+                    index = (/i,j,k/)
+                    vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
+                        normal = calculateNormal(this%vf%interface_polygon(1,i,j,k))
+                        found_interface = .true. 
+                    endif
+                    ! print *, "Eq Branch"
+                else
+                    
+                    index = (/i,j,k/)
+                    vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
+                        normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        count = count + 1.0_WP
+                        found_interface = .true. 
+                    endif
+
+                    index = (/i,j,k/)
+                    index = index+shift_index_normal
+                    vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
+                        normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        count = count + 1.0_WP
+                        found_interface = .true. 
+                    endif
+
+                    index = (/i,j,k/)
+                    index = index + shift_index_normal - shift_index_momentum 
+                    vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
+                        normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        count = count + 1.0_WP
+                        found_interface = .true. 
+                    endif
+
+                    index = (/i,j,k/)
+                    index = index - shift_index_momentum 
+                    vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
+                        normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        count = count + 1.0_WP
+                        found_interface = .true. 
+                    endif
+
+                    normal = normal/(count+1e-12)
+                    if(found_interface) then 
+                        normal_mag = sqrt(sum(normal**2))
+                        normal = normal/normal_mag 
+                    else
+                        normal = (/0.0_WP,0.0_WP,0.0_WP/)
+                    endif
+                    ! print *, "Not EQ Branch" 
+                endif
+                
+                ! Compute Force 
+                force = (/0.0_WP,0.0_WP,0.0_WP/)
+                if(found_interface) then 
+                    ! Localize Jibben neighborhood
+                    call setDelta(jibben_neighborhood, 2.5_WP*this%vf%cfg%meshsize(i,j,k))
+                    ! print *, "setDelta"
+                    ! print *, "Datum: ",datum
+                    ! print *, "Normal: ",normal
+                    call localize(jibben_neighborhood, datum, normal)
+                    ! print *, "localize"
+                    call reconstructJibben3D(jibben_neighborhood,interface_component)
+                    ! print *, "reconstructJibben3D"
+                    call emptyNeighborhood(jibben_neighborhood)
+                    ! print *, "emptyNeighborhood"
+                    call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3, interface_component,this%PressureOption,this%MarangoniOption,force)
+                    ! print *, "solveFaceParaboloid"
+                endif
+                this%sigma_3D(i,j,k,i_in,j_in) = force(i_in)
+            enddo
+        enddo
+    enddo
+    enddo
+    enddo
+end subroutine updateSurfaceTensionStresses3DFaceParaboloids
 
 subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
     use irl_fortran_interface
