@@ -1,13 +1,14 @@
 
 CASES=(
-    "input_PCST_N64"
+    "input_PCST_N64_NoP"
+    "input_PCST_N64_P"
 )
 make -j 10
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./SANITY_RUNS/NONAMR_FaceParaboloid_${CASE}"
+    DIR="./SANITY_RUNS/NONAMR_FaceParaboloid_withoutVFMatching_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"

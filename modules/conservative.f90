@@ -2110,11 +2110,17 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
     ! Jibben Stuff
     integer :: ind,ii,jj,kk, icenter 
     integer, dimension(1:3) :: lower,upper
-    real(WP), dimension(1:3) :: datum,normal
-    real(WP) :: vf_sample,count,normal_mag
+    real(WP), dimension(1:3) :: datum,normal,quarter_size
+    real(WP) :: vf_sample,count,normal_mag,liquid_in_cell,cell_volume_total,vf_cell
     type(JibbenNeigh_type) :: jibben_neighborhood
     type(RectCub_type) :: cell
     logical :: found_interface 
+    type(SepVM_type)   :: phase_moments
+    real(WP) :: cell_volume
+    real(WP) :: liquid_volume
+    real(WP) :: gas_volume
+    real(WP) :: liquid_fraction
+    real(WP) :: gas_fraction
 
     dx = this%vf%cfg%dx(1)
     dy = this%vf%cfg%dy(1)
@@ -2129,6 +2135,7 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
     call new(solver)
     call setNeighborhood(solver,neighborhood) 
     call new(interface_component)
+    call new(phase_moments)
     ! print *, "Solver Neighbhorhood"
     ! Jibben Start
     call new(cell)
@@ -2229,84 +2236,191 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                 normal = (/0.0_WP,0.0_WP,0.0_WP/)
                 found_interface = .false.
                 count = 0.0_WP
+                liquid_in_cell = 0.0_WP 
+                cell_volume = 0.0_WP 
+                vf_cell = 0.0_WP
+                cell_volume_total = 0.0_WP
+                ! Create a cell centered at the faceCenter 
                 if(i_in .eq. j_in) then 
                     index = (/i,j,k/)
                     vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    vf_cell = vf_sample
                     if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
                         normal = calculateNormal(this%vf%interface_polygon(1,i,j,k))
                         found_interface = .true. 
                     endif
                     ! print *, "Eq Branch"
                 else
-                    
+                    ! ========================== First Pressure Cell
                     index = (/i,j,k/)
                     vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    ! Construct quarter cell
+                    ! Shift to quarter cell center
+                    shift = 0.0_WP
+                    shift(i_in) = 0.25_WP*dvec(i_in)
+                    shift(j_in) = -0.25_WP*dvec(j_in)
+                    ! Cell Size
+                    quarter_size = dvec
+                    quarter_size(i_in) = 0.5_WP*dvec(i_in)
+                    quarter_size(j_in) = 0.5_WP*dvec(j_in)
+                    ! Construct
+                    call construct_2pt(cell, &
+                        face_center + shift - 0.5_WP*quarter_size, &
+                        face_center + shift + 0.5_WP*quarter_size)
+                    ! VF work
                     if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
                         normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
-                        count = count + 1.0_WP
+
+                        call getNormMoments(cell,this%vf%liquid_gas_interface(index(1),index(2),index(3)),phase_moments)
+                        liquid_volume = getVolume(phase_moments, 0)
+                        cell_volume = calculateVolume(cell)
+
+                        liquid_in_cell = liquid_in_cell + liquid_volume
+                        cell_volume_total = cell_volume_total + cell_volume
+
                         found_interface = .true. 
                     endif
-
+                    ! ========================== Second Pressure Cell
                     index = (/i,j,k/)
                     index = index+shift_index_normal
                     vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    ! Construct quarter cell
+                    ! Shift to quarter cell center
+                    shift = 0.0_WP
+                    shift(i_in) = 0.25_WP*dvec(i_in)
+                    shift(j_in) = 0.25_WP*dvec(j_in)
+                    ! Cell Size
+                    quarter_size = dvec
+                    quarter_size(i_in) = 0.5_WP*dvec(i_in)
+                    quarter_size(j_in) = 0.5_WP*dvec(j_in)
+                    ! Construct
+                    call construct_2pt(cell, &
+                        face_center + shift - 0.5_WP*quarter_size, &
+                        face_center + shift + 0.5_WP*quarter_size)
+                    ! VF work
                     if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
                         normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
-                        count = count + 1.0_WP
+
+                        call getNormMoments(cell,this%vf%liquid_gas_interface(index(1),index(2),index(3)),phase_moments)
+                        liquid_volume = getVolume(phase_moments, 0)
+                        cell_volume = calculateVolume(cell)
+
+                        liquid_in_cell = liquid_in_cell + liquid_volume
+                        cell_volume_total = cell_volume_total + cell_volume
+
                         found_interface = .true. 
                     endif
-
+                    ! ========================== Third Pressure Cell
                     index = (/i,j,k/)
                     index = index + shift_index_normal - shift_index_momentum 
                     vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    ! Construct quarter cell
+                    ! Shift to quarter cell center
+                    shift = 0.0_WP
+                    shift(i_in) = -0.25_WP*dvec(i_in)
+                    shift(j_in) = 0.25_WP*dvec(j_in)
+                    ! Cell Size
+                    quarter_size = dvec
+                    quarter_size(i_in) = 0.5_WP*dvec(i_in)
+                    quarter_size(j_in) = 0.5_WP*dvec(j_in)
+                    ! Construct
+                    call construct_2pt(cell, &
+                        face_center + shift - 0.5_WP*quarter_size, &
+                        face_center + shift + 0.5_WP*quarter_size)
+                    ! VF work
                     if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
                         normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
-                        count = count + 1.0_WP
+
+                        call getNormMoments(cell,this%vf%liquid_gas_interface(index(1),index(2),index(3)),phase_moments)
+                        liquid_volume = getVolume(phase_moments, 0)
+                        cell_volume = calculateVolume(cell)
+
+                        liquid_in_cell = liquid_in_cell + liquid_volume
+                        cell_volume_total = cell_volume_total + cell_volume
+
                         found_interface = .true. 
                     endif
-
+                    ! ========================== Fourth Pressure Cell
                     index = (/i,j,k/)
                     index = index - shift_index_momentum 
                     vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    ! Construct quarter cell
+                    ! Shift to quarter cell center
+                    shift = 0.0_WP
+                    shift(i_in) = -0.25_WP*dvec(i_in)
+                    shift(j_in) = -0.25_WP*dvec(j_in)
+                    ! Cell Size
+                    quarter_size = dvec
+                    quarter_size(i_in) = 0.5_WP*dvec(i_in)
+                    quarter_size(j_in) = 0.5_WP*dvec(j_in)
+                    ! Construct
+                    call construct_2pt(cell, &
+                        face_center + shift - 0.5_WP*quarter_size, &
+                        face_center + shift + 0.5_WP*quarter_size)
+                    ! VF work
                     if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
                         normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
-                        count = count + 1.0_WP
+
+                        call getNormMoments(cell,this%vf%liquid_gas_interface(index(1),index(2),index(3)),phase_moments)
+                        liquid_volume = getVolume(phase_moments, 0)
+                        cell_volume = calculateVolume(cell)
+
+                        liquid_in_cell = liquid_in_cell + liquid_volume
+                        cell_volume_total = cell_volume_total + cell_volume
+
                         found_interface = .true. 
                     endif
 
-                    normal = normal/(count+1e-12)
+                    
                     if(found_interface) then 
-                        normal_mag = sqrt(sum(normal**2))
-                        normal = normal/normal_mag 
+                        vf_cell = liquid_in_cell/cell_volume_total
                     else
-                        normal = (/0.0_WP,0.0_WP,0.0_WP/)
+                        vf_cell = 0.0_WP 
                     endif
                     ! print *, "Not EQ Branch" 
                 endif
-                
+                vf_cell = min(vf_cell,1.0_WP)
+                vf_cell = max(vf_cell,0.0_WP)
+
+                if(found_interface) then 
+                    normal_mag = sqrt(sum(normal**2))
+                    if(normal_mag .gt. 1e-12) then 
+                        normal = normal/normal_mag 
+                    endif
+                else
+                    normal = (/0.0_WP,0.0_WP,0.0_WP/)
+                endif
+        
                 ! Compute Force 
+                ! print *,"computeForce"
                 force = (/0.0_WP,0.0_WP,0.0_WP/)
+                call construct_2pt(cell, &
+                        face_center - 0.5_WP*dvec, &
+                        face_center + 0.5_WP*dvec)
+
                 if(found_interface) then 
                     ! Localize Jibben neighborhood
                     call setDelta(jibben_neighborhood, 2.5_WP*this%vf%cfg%meshsize(i,j,k))
-                    ! print *, "setDelta"
-                    ! print *, "Datum: ",datum
-                    ! print *, "Normal: ",normal
+
                     call localize(jibben_neighborhood, datum, normal)
-                    ! print *, "localize"
+
                     call reconstructJibben3D(jibben_neighborhood,interface_component)
-                    ! print *, "reconstructJibben3D"
+
+                    ! We now have VF cell and
+                    ! print *,"VF Cell=",vf_cell 
+                    ! call matchVolumeFraction(cell,vf_cell,interface_component) 
+
                     call emptyNeighborhood(jibben_neighborhood)
-                    ! print *, "emptyNeighborhood"
                     call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3, interface_component,this%PressureOption,this%MarangoniOption,force)
-                    ! print *, "solveFaceParaboloid"
                 endif
+                ! print *,"Force DOne"
                 this%sigma_3D(i,j,k,i_in,j_in) = force(i_in)
             enddo
         enddo
     enddo
     enddo
     enddo
+    ! print *,"MethodDone"
 end subroutine updateSurfaceTensionStresses3DFaceParaboloids
 
 subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
