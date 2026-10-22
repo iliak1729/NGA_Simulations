@@ -125,16 +125,20 @@ sim_cases = [
     #     "LIVE,NoP,PU,New"
     # ),
     (
-        "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Paraboloid_Cell14D_NoP_PPIC/monitor/rayleigh_plateau",
-        "NoP,ParaboloidForm,Jibben"
+        "ThreeD-rayleigh-plateau/FACE_PARABOLOID/FaceParaboloid_Cell14D_PCST_NoP_Matching/monitor/rayleigh_plateau",
+        "NoP,Matching"
     ),
     (
-        "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_Cell14D_NoP_PPIC/monitor/rayleigh_plateau",
-        "NoP,PU"
+        "ThreeD-rayleigh-plateau/FACE_PARABOLOID/FaceParaboloid_Cell14D_PCST_NoP_NoMatching/monitor/rayleigh_plateau",
+        "NoP,NoMatching"
     ),
     (
-        "ThreeD-rayleigh-plateau/NONAMR_RUNS/NONAMR_PUST_Cell14D_P_PPIC/monitor/rayleigh_plateau",
-        "P,PU"
+        "ThreeD-rayleigh-plateau/FACE_PARABOLOID/FaceParaboloid_Cell14D_PCST_P_Matching/monitor/rayleigh_plateau",
+        "P,Matching"
+    ),
+    (
+        "ThreeD-rayleigh-plateau/FACE_PARABOLOID/FaceParaboloid_Cell14D_PCST_P_NoMatching/monitor/rayleigh_plateau",
+        "P,NoMatching"
     ),
 
     # (
@@ -152,10 +156,15 @@ sim_cases = [
 
 # Store simulation data here
 sim_data = []
-
+def safe_float(x):
+    try:
+        return float(x)
+    except ValueError:
+        return np.nan
+    
 for filename, label in sim_cases:
 
-    data = np.loadtxt(filename, skiprows=2)
+    data = np.loadtxt(filename, skiprows=2, converters=safe_float)
 
     step_data = data[:, 0].astype(int)
     tstar_data = data[:, 2]
@@ -221,7 +230,7 @@ plt.grid(True, which="both")
 plt.legend()
 
 # plt.ylim(1, 10)
-# plt.xlim(0, 2.5)
+plt.xlim(0, 5)
 plt.title('Maximum radius growth comparison')
 plt.show()
 
@@ -264,6 +273,6 @@ plt.grid(True, which="both")
 plt.legend()
 
 # plt.ylim(1, 10)
-# plt.xlim(0, 2.5)
+plt.xlim(0, 5)
 plt.title('Minimum radius growth comparison')
 plt.show()

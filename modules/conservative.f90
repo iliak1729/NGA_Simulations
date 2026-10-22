@@ -31,7 +31,7 @@ module conservative_st
         ! Options
         real(WP), dimension(3) :: MarangoniOption
         integer :: SurfaceTensionOption,CurvatureOption,SmoothingOption
-        integer :: LevelsetOption
+        integer :: LevelsetOption,MatchingOption
         logical :: TwoD
         real(WP) :: PressureOption
         ! Solvers
@@ -46,12 +46,12 @@ module conservative_st
         real(WP), dimension(:,:,:), allocatable :: sigma_xx_NoP,sigma_yy_NoP,sigma_xy_NoP,sigma_yx_NoP ! Tangent Component
         real(WP), dimension(:,:,:,:,:), allocatable :: sigma_3D,sigma_3D_Exact,sigma_3D_OLD,dSigma
         real(WP), dimension(:,:,:), allocatable :: force_potential_field,poisson_source ! Potential Field Tools
-        real(WP), dimension(:,:,:), allocatable :: Fst_x,Fst_y,Fst_z ! Forces sent to momentum equation
+        real(WP), dimension(:,:,:), allocatable :: Fst_x,Fst_y,Fst_z,Fst_mag ! Forces sent to momentum equation
         real(WP), dimension(:,:,:), allocatable :: Fst_x_3D,Fst_y_3D,Fst_z_3D
         real(WP), dimension(:,:,:), allocatable :: Fst_x_3D_OLD,Fst_y_3D_OLD,Fst_z_3D_OLD
         real(WP), dimension(:,:,:), allocatable :: Fst_x_3D_diff,Fst_y_3D_diff,Fst_z_3D_diff
         real(WP), dimension(:,:,:), allocatable :: Fst_x_3D_Exact,Fst_y_3D_Exact,Fst_z_3D_Exact
-        real(WP), dimension(:,:,:), allocatable :: PjxD,PjyD,PjzD ! CSF Forces
+        real(WP), dimension(:,:,:), allocatable :: PjxD,PjyD,PjzD,CSF_Mag ! CSF Forces
         real(WP), dimension(:,:,:), allocatable :: Pjx_ST,Pjy_ST,Pjz_ST ! Forces from UpdateSTForces
         real(WP), dimension(:,:,:), allocatable :: Pjx_Marangoni,Pjy_Marangoni,Pjz_Marangoni ! Storage
         real(WP), dimension(:,:,:), allocatable :: Pjx_NoMarangoni,Pjy_NoMarangoni,Pjz_NoMarangoni ! Storage
@@ -181,6 +181,7 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%Fst_x(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%Fst_y(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%Fst_z(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%Fst_mag(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
 
     allocate(this%Fst_x_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%Fst_y_3D(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
@@ -201,6 +202,7 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%PjxD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%PjyD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%PjzD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
+    allocate(this%CSF_Mag(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
 
     allocate(this%Pjx_ST(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%Pjy_ST(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
@@ -1017,7 +1019,7 @@ subroutine add_3D_surface_tension_jump_face_paraboloids(this,dt,div,contact_mode
     this%PjxD = this%fs%Pjx
     this%PjyD = this%fs%Pjy 
     this%PjzD = this%fs%Pjz
-
+    this%CSF_Mag = sqrt(this%PjxD**2 + this%PjyD**2 + this%PjzD**2)
     ! Update Values
     call this%updateSurfaceTensionStresses3DFaceParaboloids()
     call this%updateSurfaceTensionForces3D()
@@ -2408,7 +2410,13 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
 
                     ! We now have VF cell and
                     ! print *,"VF Cell=",vf_cell 
-                    ! call matchVolumeFraction(cell,vf_cell,interface_component) 
+                    SELECT CASE(this%MatchingOption)
+                        CASE(2)
+                            ! print *,"MATCHING"
+                            call matchVolumeFraction(cell,vf_cell,interface_component) 
+                        CASE DEFAULT
+                            ! print *,"NOT MATCHING"
+                    END SELECT
 
                     call emptyNeighborhood(jibben_neighborhood)
                     call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3, interface_component,this%PressureOption,this%MarangoniOption,force)
@@ -2421,6 +2429,18 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
     enddo
     enddo
     ! print *,"MethodDone"
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,1,1))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,1,2))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,1,3))
+
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,2,1))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,2,2))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,2,3))
+
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,1))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,2))
+    call this%vf%cfg%sync(this%sigma_3D(:,:,:,3,3))
+
 end subroutine updateSurfaceTensionStresses3DFaceParaboloids
 
 subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
@@ -2525,9 +2545,6 @@ subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
                         ! endif
                         ! print *, force  
                         this%sigma_3D_Exact(i,j,k,i_in,j_in) = force(i_in)
-                        if(force(i_in) .gt. 1e6) then 
-                            Stop
-                        endif
                         ! Do Prints here 
 
                         ! print *, "==================================="
@@ -2583,7 +2600,7 @@ subroutine updateSurfaceTensionForces3D(this)
     class(conservative_st_type), intent(inout) :: this
     integer :: i,j,k 
     real(WP) :: dxi,dyi,dzi
-
+    real(WP) :: Force_Mag
     do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
         do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
         do i=this%fs%cfg%imin_,this%fs%cfg%imax_
@@ -2617,6 +2634,11 @@ subroutine updateSurfaceTensionForces3D(this)
             endif
             this%Fst_z_3D(i,j,k) = this%Fst_z_3D(i,j,k)*dxi*dyi*dzi
 
+            Force_Mag = sqrt(this%Fst_x_3D(i,j,k)**2 + this%Fst_y_3D(i,j,k)**2 + this%Fst_z_3D(i,j,k)**2)
+            this%Fst_mag(i,j,k) = Force_Mag
+            ! if(Force_Mag .gt. 4e3) then 
+            !     print *, "Large Force at i,j,k = ",i,j,k,Force_Mag
+            ! endif
             ! OLD FOR VIZ
             ! X Component
             this%Fst_x_3D_OLD(i,j,k) = (this%sigma_3D_OLD(i,j,k,1,1)-this%sigma_3D_OLD(i-1,j,k,1,1)) + &
@@ -2647,7 +2669,7 @@ subroutine updateSurfaceTensionForces3D(this)
         end do
         end do
     end do
-    
+    ! STOP
     ! Here, we would need to do assignment to Fst_xyz to actually use in the operators.   
     this%Fst_x_3D_diff = this%Fst_x_3D - this%Fst_x_3D_OLD
     this%Fst_y_3D_diff = this%Fst_y_3D - this%Fst_y_3D_OLD

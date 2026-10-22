@@ -27,7 +27,7 @@ module simulation
    type(conservative_st_type), public :: cst
 
    !> Ensight postprocessing
-   type(surfmesh) :: smesh,smesh_x,smesh_y,smesh_z
+   type(surfmesh) :: smesh
    type(vtk)      :: vtk_out
    type(event)    :: vtk_evt
 
@@ -503,6 +503,7 @@ contains
          call param_read('Smoothing Option',cst%SmoothingOption,default = 1)
          call param_read('Surface Tension Option',cst%SurfaceTensionOption,default = 8)
          call param_read('Levelset Option',cst%LevelsetOption,default = 2)
+         call param_read('Matching Option',cst%MatchingOption,default = 1)
          call param_read('Curvature Option',cst%CurvatureOption,default = 1)
          call param_read('PU Spread',cst%PU_spread,default = 2.0_WP)
          call param_read('Two Dimensional',cst%TwoD,default = .false.)
@@ -522,48 +523,6 @@ contains
          call add_surfgrid_variable(smesh,1,vf%curv,vf)  
          call add_surfgrid_variable(smesh,1,vf%interface_type,vf)    
       end block create_smesh
-
-      create_smesh_x: block
-         use irl_fortran_interface
-         integer :: i,j,k,nplane,np
-         ! Include an extra variable for number of planes
-         smesh_x=surfmesh(nvar=0,name='X_PLIC')
-         ! smesh_x%varname(1)='curv'
-         ! smesh_x%varname(1)='interface_type'
-         ! Transfer polygons to smesh
-         call cst%vf_x%update_surfmesh(smesh_x)
-         ! Also populate nplane variable
-         ! call add_surfgrid_variable(smesh_x,1,cst%vf_x%curv)  
-         ! call add_surfgrid_variable(smesh_x,1,cst%vf_x%interface_type,cst%vf_x)    
-      end block create_smesh_x
-      print *,"smesh_x end"
-      ! create_smesh_y: block
-      !    use irl_fortran_interface
-      !    integer :: i,j,k,nplane,np
-      !    ! Include an extra variable for number of planes
-      !    smesh_y=surfmesh(nvar=2,name='X_PLIC')
-      !    smesh_y%varname(1)='curv'
-      !    smesh_y%varname(2)='interface_type'
-      !    ! Transfer polygons to smesh
-      !    call cst%vf_y%update_surfmesh(smesh_y)
-      !    ! Also populate nplane variable
-      !    ! call add_surfgrid_variable(smesh_y,1,cst%vf_x%curv)  
-      !    ! call add_surfgrid_variable(smesh_y,1,cst%vf_x%interface_type)    
-      ! end block create_smesh_y
-
-      ! create_smesh_z: block
-      !    use irl_fortran_interface
-      !    integer :: i,j,k,nplane,np
-      !    ! Include an extra variable for number of planes
-      !    smesh_z=surfmesh(nvar=2,name='X_PLIC')
-      !    smesh_z%varname(1)='curv'
-      !    smesh_z%varname(2)='interface_type'
-      !    ! Transfer polygons to smesh
-      !    call cst%vf_z%update_surfmesh(smesh_z)
-      !    ! Also populate nplane variable
-      !    ! call add_surfgrid_variable(smesh_z,1,cst%vf_x%curv)  
-      !    ! call add_surfgrid_variable(smesh_z,1,cst%vf_x%interface_type)    
-      ! end block create_smesh_z
 
       ! Add Ensight output
       create_vtk: block
@@ -596,10 +555,8 @@ contains
          call vtk_out%add_scalar('VOFY',cst%vf_y%VF)
          call vtk_out%add_scalar('VOFZ',cst%vf_z%VF)
          call vtk_out%add_scalar('curvature',vf%curv)
+         call vtk_out%add_scalar('Pressure',fs%P)
          call vtk_out%add_surface('plic',smesh) 
-         call vtk_out%add_surface('plic_x',smesh_x) 
-         ! call vtk_out%add_surface('plic_y',smesh_y) 
-         ! call vtk_out%add_surface('plic_z',smesh_z) 
          ! Output to vtk
          if (vtk_evt%occurs()) call vtk_out%write_data(time%t)
       end block create_vtk
@@ -730,18 +687,7 @@ contains
                call vf%update_surfmesh(smesh)
                call add_surfgrid_variable(smesh,1,vf%curv,vf)   
                call add_surfgrid_variable(smesh,2,vf%interface_type,vf)   
-               ! Transfer polygons to smesh
-               call cst%vf_x%update_surfmesh(smesh_x)
-               ! ! call add_surfgrid_variable(smesh_x,1,cst%vf_x%curv)   
-               ! call add_surfgrid_variable(smesh_x,1,cst%vf_x%interface_type,cst%vf_x)   
-               ! ! Transfer polygons to smesh
-               ! call cst%vf_y%update_surfmesh(smesh_y)
-               ! ! call add_surfgrid_variable(smesh_y,1,cst%vf_y%curv)   
-               ! ! call add_surfgrid_variable(smesh_y,2,cst%vf_y%interface_type)   
-               ! ! Transfer polygons to smesh
-               ! call cst%vf_z%update_surfmesh(smesh_z)
-               ! ! call add_surfgrid_variable(smesh_z,1,cst%vf_z%curv)   
-               ! ! call add_surfgrid_variable(smesh_z,2,cst%vf_z%interface_type)   
+
             end block update_smesh  
             call vtk_out%write_data(time%t)
          end if

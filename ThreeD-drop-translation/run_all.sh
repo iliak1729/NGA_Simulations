@@ -1,14 +1,14 @@
 
 CASES=(
-    "input_PCST_N64_NoP"
-    "input_PCST_N64_P"
+    input_PUST_N64_P_LA120
+    input_PUST_N64_NoPP_LA120
 )
 make -j 10
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./SANITY_RUNS/NONAMR_FaceParaboloid_withoutVFMatching_${CASE}"
+    DIR="./LONG_RUNS/TranslatingDrop_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"
@@ -20,6 +20,7 @@ for INPUT in "${CASES[@]}"; do
     rm -rf ./vtk/
 
     echo "Running with $INPUT ..."
+    echo "Simulation start time: $(date '+%Y-%m-%d %H:%M:%S')"
     time mpiexec -n 8 ./nga.dp.gnu.opt.mpi.exe -i "$INPUT" -v 0
     
     echo "Saving monitor data"

@@ -1,13 +1,13 @@
 
 CASES=(
-    "input_NoP_PPIC"
+    "input_PCST_P_Matching"
 )
 make -j 10
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./NONAMR_RUNS/NONAMR_PUST_Cell14D_${CASE}"
+    DIR="./FACE_PARABOLOID/Debugging_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"

@@ -29,15 +29,18 @@ Gas density:                 1000
 Surface tension coefficient: 0.072
 
 # Options
+# Options
 Marangoni :  0 0 0
 Pressure : 1
 Smoothing Option : 1
-Surface Tension Option : 8
+Surface Tension Option : 9
 Levelset Option : 1
+Matching Option : 1
 Curvature Option : 1
 PU Spread : 2.0
 # 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
 Interface Type : 2
+
 # Time integration
 Max time:               50
 Max timestep size:      0.05
