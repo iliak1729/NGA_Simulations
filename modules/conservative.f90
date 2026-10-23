@@ -14,6 +14,7 @@ module conservative_st
     use monitor_class,     only: monitor
     use sgrid_class,       only: sgrid
     use config_class,      only: config
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan,ieee_is_finite
     use irl_fortran_interface
     
     implicit none
@@ -2095,6 +2096,7 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
     use f_SeparatorVariant_class
     use f_PUST_RectCub_class, only: solveFace,solveFaceParaboloid
     use mathtools, only: normalize
+    
     implicit none 
     class(conservative_st_type), intent(inout) :: this
     type(PUNeigh_RectCub_type) :: neighborhood
@@ -2130,8 +2132,7 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
     dvec = (/dx,dy,dz/)
     shift = dvec
     ! Zero Out 
-    this%Sigma_3D = 0.0_WP 
-
+    this%sigma_3D = 0.0_WP 
     ! Create Neighborhood Empty
     call new(neighborhood) 
     call new(solver)
@@ -2421,8 +2422,20 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     call emptyNeighborhood(jibben_neighborhood)
                     call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3, interface_component,this%PressureOption,this%MarangoniOption,force)
                 endif
-                ! print *,"Force DOne"
+                ! print *,"Force DOne"   
                 this%sigma_3D(i,j,k,i_in,j_in) = force(i_in)
+                if (ieee_is_nan(force(i_in))) then 
+                    print *, "=========================="
+                    print *, "VALUE IS NAN"
+                    print *, "i,j,k = ", i,j,k
+                    print *, "i_in,j_in = ", i_in,j_in 
+                    print *, "VALUE = ", force(i_in)
+                    print *, "vf_cell = ",vf_cell
+                    print *, "normal = ", normal 
+                    call printToScreen(interface_component)
+                    call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3, interface_component,this%PressureOption,this%MarangoniOption,force,.true.)
+                    print *, "=========================="
+                endif
             enddo
         enddo
     enddo
@@ -2475,6 +2488,7 @@ subroutine updateSurfaceTensionStresses3DEllipsoid(this,A,v)
     do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
         do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
         do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+                
             ! if(vf%VF(i,j,k) .gt. vf%VFmin .and. vf%VF(i,j,k) .lt. vf%VFmax) then   
                 ! Empty Neighborhood
                 call emptyNeighborhood(neighborhood) 

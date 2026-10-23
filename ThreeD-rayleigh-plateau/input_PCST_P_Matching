@@ -42,7 +42,7 @@ PU Spread : 2.0
 Interface Type : 2
 
 # Time integration
-Max time:               2
+Max time:               0.5
 Max timestep size:      0.05
 Max cfl number:         0.1
 

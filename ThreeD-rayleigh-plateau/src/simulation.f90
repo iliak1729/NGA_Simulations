@@ -13,6 +13,7 @@ module simulation
    use surfmesh_class,    only: surfmesh
    use event_class,       only: event
    use monitor_class,     only: monitor
+   use, intrinsic :: ieee_exceptions
    use irl_fortran_interface
    use conservative_st 
    implicit none
@@ -268,6 +269,9 @@ contains
       use param, only: param_read
       implicit none
 
+      call ieee_set_halting_mode(ieee_invalid, .false.)
+      call ieee_set_halting_mode(ieee_divide_by_zero, .false.)
+      call ieee_set_halting_mode(ieee_overflow, .false.)
       ! Allocate work arrays
       allocate_work_arrays: block
          allocate(resU(cfg%imino_:cfg%imaxo_,cfg%jmino_:cfg%jmaxo_,cfg%kmino_:cfg%kmaxo_))
@@ -562,7 +566,7 @@ contains
       end block create_vtk
 
       create_monitor: block
-         ! Create simulation monitor
+         ! Create simulation monitor  
          call param_read('Monitor File Name',MonitorFileName)
          ! Initial nondimensional monitor values
          time_nd = 0.0_WP

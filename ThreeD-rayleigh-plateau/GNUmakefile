@@ -34,7 +34,9 @@ VPATH_LOCATIONS   += $(Ulocs)
 
 # NGA compilation definitions
 include $(NGA_HOME)/tools/GNUMake/Make.defs
-
+# Preserve IEEE behavior for NaN detection
+FFLAGS   += -fno-fast-math -fno-finite-math-only
+F90FLAGS += -fno-fast-math -fno-finite-math-only
 # Include NGA base code
 Bdirs   := non_newtonian core two_phase constant_density data solver config grid libraries
 Bpack   += $(foreach dir, $(Bdirs), $(NGA_HOME)/src/$(dir)/Make.package)
