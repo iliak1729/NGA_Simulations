@@ -15,7 +15,7 @@ Monitor File Name : rayleigh_plateau
 # Ligament definiton
 Ligament radius :           0.10
 Ligament center :           0 0 0
-Perturbation amplitude :    0.01
+Perturbation amplitude :    0.02
 Perturbation mode :         1
 
 # Velocity field
@@ -23,9 +23,9 @@ Initial velocity :           0 0 0
 
 # Fluid properties
 Liquid dynamic viscosity:    1.0e-3
-Gas dynamic viscosity:       1.0e-3
+Gas dynamic viscosity:       1.8e-5
 Liquid density:              1000
-Gas density:                 1000
+Gas density:                 1
 Surface tension coefficient: 0.072
 
 # Options
@@ -42,7 +42,7 @@ PU Spread : 2.0
 Interface Type : 2
 
 # Time integration
-Max time:               50
+Max time:               10
 Max timestep size:      0.05
 Max cfl number:         0.5
 

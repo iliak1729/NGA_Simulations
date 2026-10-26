@@ -15,7 +15,7 @@ Monitor File Name : rayleigh_plateau
 # Ligament definiton
 Ligament radius :           0.10
 Ligament center :           0 0 0
-Perturbation amplitude :    0.01
+Perturbation amplitude :    0.02
 Perturbation mode :         1
 
 # Velocity field

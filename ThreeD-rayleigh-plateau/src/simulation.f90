@@ -194,6 +194,71 @@ contains
       call MPI_ALLREDUCE(MPI_IN_PLACE,r_min,1,MPI_DOUBLE_PRECISION,MPI_MIN,vf%cfg%comm,ierr)
    end subroutine compute_rp_stats
 
+   ! subroutine compute_rp_stats(vf)
+   !    use mpi_f08, only: MPI_ALLREDUCE, MPI_SUM, MPI_DOUBLE_PRECISION
+   !    use mathtools, only: Pi
+   !    implicit none
+
+   !    class(vfs), intent(inout) :: vf
+
+   !    integer :: i,j,k,ierr
+   !    integer :: kg, nz_global
+   !    real(WP) :: dx,dy
+   !    real(WP) :: radius_k
+
+   !    real(WP), allocatable :: area_local(:)
+   !    real(WP), allocatable :: area_global(:)
+
+   !    ! Number of global axial cells
+   !    nz_global = vf%cfg%nz
+
+   !    allocate(area_local(nz_global))
+   !    allocate(area_global(nz_global))
+
+   !    area_local  = 0.0_WP
+   !    area_global = 0.0_WP
+
+   !    ! Compute local contributions to each global axial cross-section
+   !    do k=vf%cfg%kmin_,vf%cfg%kmax_
+
+   !       ! Convert local k index to global k index
+   !       kg = k + vf%cfg%k_offset
+
+   !       do j=vf%cfg%jmin_,vf%cfg%jmax_
+   !             do i=vf%cfg%imin_,vf%cfg%imax_
+
+   !                dx = vf%cfg%dx(i)
+   !                dy = vf%cfg%dy(j)
+
+   !                area_local(kg) = area_local(kg) + &
+   !                   vf%VF(i,j,k)*dx*dy
+
+   !             enddo
+   !       enddo
+
+   !    enddo
+
+   !    ! Sum contributions from all MPI ranks
+   !    call MPI_ALLREDUCE(area_local,area_global,nz_global, &
+   !       MPI_DOUBLE_PRECISION,MPI_SUM,vf%cfg%comm,ierr)
+
+   !    ! Compute minimum and maximum equivalent radii
+   !    r_max = -huge(1.0_WP)
+   !    r_min = huge(1.0_WP)
+
+   !    do kg=1,nz_global
+
+   !       radius_k = sqrt(max(area_global(kg),0.0_WP)/Pi)
+
+   !       r_max = max(r_max,radius_k)
+   !       r_min = min(r_min,radius_k)
+
+   !    enddo
+
+   !    deallocate(area_local,area_global)
+
+   ! end subroutine compute_rp_stats
+
 
    !> modified bessel functions of first kind
    function bessel_i0(x) result(val)

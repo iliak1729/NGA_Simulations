@@ -125,7 +125,7 @@ sim_cases = [
     #     "LIVE,NoP,PU,New"
     # ),
     (
-        "ThreeD-rayleigh-plateau/FACE_PARABOLOID/FaceParaboloid_Cell14D_PCST_NoP_Matching/monitor/rayleigh_plateau",
+        "ThreeD-rayleigh-plateau/FACE_PARABOLOID/Debugging_PCST_P_Matching/monitor/rayleigh_plateau",
         "NoP,Matching"
     ),
     (
@@ -139,6 +139,10 @@ sim_cases = [
     (
         "ThreeD-rayleigh-plateau/FACE_PARABOLOID/FaceParaboloid_Cell14D_PCST_P_NoMatching/monitor/rayleigh_plateau",
         "P,NoMatching"
+    ),
+    (
+        "ThreeD-rayleigh-plateau/monitor/rayleigh_plateau",
+        "LIVE,RP"
     ),
 
     # (

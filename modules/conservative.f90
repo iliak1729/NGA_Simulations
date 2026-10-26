@@ -2270,18 +2270,24 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     call construct_2pt(cell, &
                         face_center + shift - 0.5_WP*quarter_size, &
                         face_center + shift + 0.5_WP*quarter_size)
+                    ! Calculate total quarter-cell volume
+                    cell_volume = calculateVolume(cell)
+                    cell_volume_total = cell_volume_total + cell_volume
+                    
                     ! VF work
-                    if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
-                        normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
-
-                        call getNormMoments(cell,this%vf%liquid_gas_interface(index(1),index(2),index(3)),phase_moments)
+                    if (vf_sample .ge. 1.0_WP - 1e-12_WP) then
+                        ! Full liquid cell
+                        liquid_in_cell = liquid_in_cell + cell_volume
+                    else if (vf_sample .gt. 1e-12_WP) then
+                        ! Mixed cell
+                        normal = normal + calculateNormal( &
+                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        call getNormMoments(cell, &
+                            this%vf%liquid_gas_interface(index(1),index(2),index(3)), &
+                            phase_moments)
                         liquid_volume = getVolume(phase_moments, 0)
-                        cell_volume = calculateVolume(cell)
-
                         liquid_in_cell = liquid_in_cell + liquid_volume
-                        cell_volume_total = cell_volume_total + cell_volume
-
-                        found_interface = .true. 
+                        found_interface = .true.
                     endif
                     ! ========================== Second Pressure Cell
                     index = (/i,j,k/)
@@ -2300,18 +2306,24 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     call construct_2pt(cell, &
                         face_center + shift - 0.5_WP*quarter_size, &
                         face_center + shift + 0.5_WP*quarter_size)
+                    ! Calculate total quarter-cell volume
+                    cell_volume = calculateVolume(cell)
+                    cell_volume_total = cell_volume_total + cell_volume
+                    
                     ! VF work
-                    if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
-                        normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
-
-                        call getNormMoments(cell,this%vf%liquid_gas_interface(index(1),index(2),index(3)),phase_moments)
+                    if (vf_sample .ge. 1.0_WP - 1e-12_WP) then
+                        ! Full liquid cell
+                        liquid_in_cell = liquid_in_cell + cell_volume
+                    else if (vf_sample .gt. 1e-12_WP) then
+                        ! Mixed cell
+                        normal = normal + calculateNormal( &
+                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        call getNormMoments(cell, &
+                            this%vf%liquid_gas_interface(index(1),index(2),index(3)), &
+                            phase_moments)
                         liquid_volume = getVolume(phase_moments, 0)
-                        cell_volume = calculateVolume(cell)
-
                         liquid_in_cell = liquid_in_cell + liquid_volume
-                        cell_volume_total = cell_volume_total + cell_volume
-
-                        found_interface = .true. 
+                        found_interface = .true.
                     endif
                     ! ========================== Third Pressure Cell
                     index = (/i,j,k/)
@@ -2330,18 +2342,24 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     call construct_2pt(cell, &
                         face_center + shift - 0.5_WP*quarter_size, &
                         face_center + shift + 0.5_WP*quarter_size)
+                    ! Calculate total quarter-cell volume
+                    cell_volume = calculateVolume(cell)
+                    cell_volume_total = cell_volume_total + cell_volume
+                    
                     ! VF work
-                    if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
-                        normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
-
-                        call getNormMoments(cell,this%vf%liquid_gas_interface(index(1),index(2),index(3)),phase_moments)
+                    if (vf_sample .ge. 1.0_WP - 1e-12_WP) then
+                        ! Full liquid cell
+                        liquid_in_cell = liquid_in_cell + cell_volume
+                    else if (vf_sample .gt. 1e-12_WP) then
+                        ! Mixed cell
+                        normal = normal + calculateNormal( &
+                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        call getNormMoments(cell, &
+                            this%vf%liquid_gas_interface(index(1),index(2),index(3)), &
+                            phase_moments)
                         liquid_volume = getVolume(phase_moments, 0)
-                        cell_volume = calculateVolume(cell)
-
                         liquid_in_cell = liquid_in_cell + liquid_volume
-                        cell_volume_total = cell_volume_total + cell_volume
-
-                        found_interface = .true. 
+                        found_interface = .true.
                     endif
                     ! ========================== Fourth Pressure Cell
                     index = (/i,j,k/)
@@ -2360,25 +2378,31 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     call construct_2pt(cell, &
                         face_center + shift - 0.5_WP*quarter_size, &
                         face_center + shift + 0.5_WP*quarter_size)
+                    ! Calculate total quarter-cell volume
+                    cell_volume = calculateVolume(cell)
+                    cell_volume_total = cell_volume_total + cell_volume
+                    
                     ! VF work
-                    if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
-                        normal = normal +calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
-
-                        call getNormMoments(cell,this%vf%liquid_gas_interface(index(1),index(2),index(3)),phase_moments)
+                    if (vf_sample .ge. 1.0_WP - 1e-12_WP) then
+                        ! Full liquid cell
+                        liquid_in_cell = liquid_in_cell + cell_volume
+                    else if (vf_sample .gt. 1e-12_WP) then
+                        ! Mixed cell
+                        normal = normal + calculateNormal( &
+                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        call getNormMoments(cell, &
+                            this%vf%liquid_gas_interface(index(1),index(2),index(3)), &
+                            phase_moments)
                         liquid_volume = getVolume(phase_moments, 0)
-                        cell_volume = calculateVolume(cell)
-
                         liquid_in_cell = liquid_in_cell + liquid_volume
-                        cell_volume_total = cell_volume_total + cell_volume
-
-                        found_interface = .true. 
+                        found_interface = .true.
                     endif
 
                     
-                    if(found_interface) then 
-                        vf_cell = liquid_in_cell/cell_volume_total
+                    if (cell_volume_total .gt. 0.0_WP) then
+                        vf_cell = liquid_in_cell / cell_volume_total
                     else
-                        vf_cell = 0.0_WP 
+                        vf_cell = 0.0_WP
                     endif
                     ! print *, "Not EQ Branch" 
                 endif
