@@ -23,9 +23,9 @@ Initial velocity :           0 0 0
 
 # Fluid properties
 Liquid dynamic viscosity:    1.0e-3
-Gas dynamic viscosity:       1.8e-5
+Gas dynamic viscosity:       1.0e-3 ! 1.8e-5
 Liquid density:              1000
-Gas density:                 1
+Gas density:                 1000 ! 1
 Surface tension coefficient: 0.072
 
 # Options
@@ -47,11 +47,11 @@ Max timestep size:      0.05
 Max cfl number:         0.1
 
 # Pressure solver
-Pressure tolerance : 1e-6
+Pressure tolerance : 1e-12
 Pressure iteration : 100
 
 # Implicit velocity solver
-Implicit tolerance : 1e-6
+Implicit tolerance : 1e-12
 Implicit iteration : 100
 
 # Ensight output

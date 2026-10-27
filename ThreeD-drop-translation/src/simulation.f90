@@ -52,6 +52,7 @@ module simulation
    real(WP) :: volume,radius,radius2,Ycent,Vrise
    real(WP) :: Vin,Vin_old,Vrise_ref,Ycent_ref,G,ti
    real(WP) :: Tbot,Ttop,Ly,Lx,dtps,RootMeanSquareVelocity
+   real(WP) :: Fx_sum,Fy_sum,Fz_sum
    logical :: twoD
 
 contains
@@ -196,6 +197,24 @@ contains
             count = count + dy*dx
          end do
       end do
+
+      ! Force Sums
+      Fx_sum = 0.0_WP
+      Fy_sum = 0.0_WP 
+      Fz_sum = 0.0_WP 
+      Fx_sum = sum(fs%Pjx( &
+         fs%cfg%imin_:fs%cfg%imax_, &
+         fs%cfg%jmin_:fs%cfg%jmax_, &
+         fs%cfg%kmin_:fs%cfg%kmax_))
+      Fy_sum = sum(fs%Pjy( &
+         fs%cfg%imin_:fs%cfg%imax_, &
+         fs%cfg%jmin_:fs%cfg%jmax_, &
+         fs%cfg%kmin_:fs%cfg%kmax_))
+      Fz_sum = sum(fs%Pjz( &
+         fs%cfg%imin_:fs%cfg%imax_, &
+         fs%cfg%jmin_:fs%cfg%jmax_, &
+         fs%cfg%kmin_:fs%cfg%kmax_))
+
       CALL MPI_ALLREDUCE(Vrms,VrmsGlobal,1,MPI_DOUBLE_PRECISION,MPI_SUM,cfg%comm,ierr)
       CALL MPI_ALLREDUCE(count,countGlobal,1,MPI_DOUBLE_PRECISION,MPI_SUM,cfg%comm,ierr)
       VrmsGlobal = sqrt(VrmsGlobal/countGlobal)

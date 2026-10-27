@@ -1,20 +1,32 @@
 
 CASES=(
-    "input_PCST_NoP_Matching"
-    "input_PCST_NoP_NoMatching"
-    "input_PCST_P_NoMatching"
-    "input_PCST_P_Matching"
-    "input_PCST_NoP_Matching_Laplacian"
-    "input_PCST_NoP_NoMatching_Laplacian"
-    "input_PCST_P_NoMatching_Laplacian"
-    "input_PCST_P_Matching_Laplacian"
+    
+    # "input_PCST_P_Matching"
+    # "input_PCST_NoP_Matching"
+    # "input_PCST_NoP_NoMatching"
+    # "input_PCST_P_NoMatching"
+    # "input_PCST_P_NoMatching_LVIRA"
+    # "input_PCST_P_NoMatching_PLICNET"
+    # "input_PCST_P_NoMatching_Jibben"
+    # "input_CSF_PLICNET"
+    # "input_CSF_LVIRA"
+    # "input_CSF_Jibben"
+    "input_PCST_P_Matching_Jibben"
+    "input_PCST_P_Matching_LVIRA"
+    "input_PCST_P_Matching_PLICNET"
+    
+    # "input_CSF"
+    # "input_PCST_NoP_Matching_Laplacian"
+    # "input_PCST_NoP_NoMatching_Laplacian"
+    # "input_PCST_P_NoMatching_Laplacian"
+    # "input_PCST_P_Matching_Laplacian"
 )
 make -j 10
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./FACE_PARABOLOID/FixedMatching_${CASE}"
+    DIR="./FACE_PARABOLOID/SliceBased_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"

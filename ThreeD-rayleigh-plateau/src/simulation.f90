@@ -26,12 +26,12 @@ module simulation
    type(vfs),         public :: vf
    type(timetracker), public :: time
    type(conservative_st_type), public :: cst
-
+   
    !> Ensight postprocessing
    type(surfmesh) :: smesh
    type(vtk)      :: vtk_out
    type(event)    :: vtk_evt
-
+   logical, parameter :: printTrue = .false.
    !> Simulation monitor file
    type(monitor) :: mfile,cflfile,curvfile
    character(len = 1000) :: MonitorFileName
@@ -50,7 +50,8 @@ module simulation
    integer  :: npart
    integer :: InterfaceTypes
    !> output monitor variables
-   real(WP) :: r_max, r_min, time_cap, time_nd
+   real(WP) :: r_max, r_min, time_cap, time_nd,Fx_sum,Fy_sum,Fz_sum
+   real(WP) :: loc1,loc2,loc3,loc4,loc5
 
 contains
 
@@ -158,106 +159,140 @@ contains
    end subroutine compute_rp_min_radius
 
 
-   subroutine compute_rp_stats(vf)
-      use mpi_f08, only: MPI_ALLREDUCE, MPI_MAX, MPI_SUM, MPI_DOUBLE_PRECISION,MPI_IN_PLACE,MPI_MIN
-      use mathtools, only: Pi
-      implicit none
-
-      class(vfs), intent(inout) :: vf
-      integer :: i,j,k,ierr
-      real(WP) :: max_radius_local, max_radius_global
-      real(WP) :: x,y,r
-      logical :: found_interface
-      real(WP), dimension(1:3) :: cen
-      r_max = -huge(1.0_WP)
-      r_min = huge(1.0_WP)
-      found_interface=.false.
-
-      do k=vf%cfg%kmin_,vf%cfg%kmax_
-         do j=vf%cfg%jmin_,vf%cfg%jmax_
-            do i=vf%cfg%imin_,vf%cfg%imax_
-               if(vf%VF(i,j,k) .gt. 1e-12 .and. vf%VF(i,j,k).lt.1.0_WP - 1e-12) then 
-                  cen = calculateCentroid(vf%interface_polygon(1,i,j,k))
-                  x = cen(1)-center(1)
-                  y = cen(2)-center(2)
-                  r = sqrt(x*x+y*y)
-
-                  r_max=max(r_max,r)
-                  r_min=min(r_min,r)
-                  found_interface = .true. 
-               endif
-            end do
-         end do
-      end do
-
-      call MPI_ALLREDUCE(MPI_IN_PLACE,r_max,1,MPI_DOUBLE_PRECISION,MPI_MAX,vf%cfg%comm,ierr)
-      call MPI_ALLREDUCE(MPI_IN_PLACE,r_min,1,MPI_DOUBLE_PRECISION,MPI_MIN,vf%cfg%comm,ierr)
-   end subroutine compute_rp_stats
-
    ! subroutine compute_rp_stats(vf)
-   !    use mpi_f08, only: MPI_ALLREDUCE, MPI_SUM, MPI_DOUBLE_PRECISION
+   !    use mpi_f08, only: MPI_ALLREDUCE, MPI_MAX, MPI_SUM, MPI_DOUBLE_PRECISION,MPI_IN_PLACE,MPI_MIN
    !    use mathtools, only: Pi
    !    implicit none
 
    !    class(vfs), intent(inout) :: vf
-
    !    integer :: i,j,k,ierr
-   !    integer :: kg, nz_global
-   !    real(WP) :: dx,dy
-   !    real(WP) :: radius_k
-
-   !    real(WP), allocatable :: area_local(:)
-   !    real(WP), allocatable :: area_global(:)
-
-   !    ! Number of global axial cells
-   !    nz_global = vf%cfg%nz
-
-   !    allocate(area_local(nz_global))
-   !    allocate(area_global(nz_global))
-
-   !    area_local  = 0.0_WP
-   !    area_global = 0.0_WP
-
-   !    ! Compute local contributions to each global axial cross-section
-   !    do k=vf%cfg%kmin_,vf%cfg%kmax_
-
-   !       ! Convert local k index to global k index
-   !       kg = k + vf%cfg%k_offset
-
-   !       do j=vf%cfg%jmin_,vf%cfg%jmax_
-   !             do i=vf%cfg%imin_,vf%cfg%imax_
-
-   !                dx = vf%cfg%dx(i)
-   !                dy = vf%cfg%dy(j)
-
-   !                area_local(kg) = area_local(kg) + &
-   !                   vf%VF(i,j,k)*dx*dy
-
-   !             enddo
-   !       enddo
-
-   !    enddo
-
-   !    ! Sum contributions from all MPI ranks
-   !    call MPI_ALLREDUCE(area_local,area_global,nz_global, &
-   !       MPI_DOUBLE_PRECISION,MPI_SUM,vf%cfg%comm,ierr)
-
-   !    ! Compute minimum and maximum equivalent radii
+   !    real(WP) :: max_radius_local, max_radius_global
+   !    real(WP) :: x,y,r
+   !    logical :: found_interface
+   !    real(WP), dimension(1:3) :: cen
    !    r_max = -huge(1.0_WP)
    !    r_min = huge(1.0_WP)
+   !    found_interface=.false.
 
-   !    do kg=1,nz_global
+   !    do k=vf%cfg%kmin_,vf%cfg%kmax_
+   !       do j=vf%cfg%jmin_,vf%cfg%jmax_
+   !          do i=vf%cfg%imin_,vf%cfg%imax_
+   !             if(vf%VF(i,j,k) .gt. 1e-12 .and. vf%VF(i,j,k).lt.1.0_WP - 1e-12) then 
+   !                cen = calculateCentroid(vf%interface_polygon(1,i,j,k))
+   !                x = cen(1)-center(1)
+   !                y = cen(2)-center(2)
+   !                r = sqrt(x*x+y*y)
 
-   !       radius_k = sqrt(max(area_global(kg),0.0_WP)/Pi)
-
-   !       r_max = max(r_max,radius_k)
-   !       r_min = min(r_min,radius_k)
-
-   !    enddo
-
-   !    deallocate(area_local,area_global)
-
+   !                r_max=max(r_max,r)
+   !                r_min=min(r_min,r)
+   !                found_interface = .true. 
+   !             endif
+   !          end do
+   !       end do
+   !    end do
+   !    ! Force Sums
+   !    Fx_sum = 0.0_WP
+   !    Fy_sum = 0.0_WP 
+   !    Fz_sum = 0.0_WP 
+   !    Fx_sum = sum(fs%Pjx( &
+   !       fs%cfg%imin_:fs%cfg%imax_, &
+   !       fs%cfg%jmin_:fs%cfg%jmax_, &
+   !       fs%cfg%kmin_:fs%cfg%kmax_))
+   !    Fy_sum = sum(fs%Pjy( &
+   !       fs%cfg%imin_:fs%cfg%imax_, &
+   !       fs%cfg%jmin_:fs%cfg%jmax_, &
+   !       fs%cfg%kmin_:fs%cfg%kmax_))
+   !    Fz_sum = sum(fs%Pjz( &
+   !       fs%cfg%imin_:fs%cfg%imax_, &
+   !       fs%cfg%jmin_:fs%cfg%jmax_, &
+   !       fs%cfg%kmin_:fs%cfg%kmax_))
+   !    call MPI_ALLREDUCE(MPI_IN_PLACE,Fx_sum,1,MPI_DOUBLE_PRECISION,MPI_SUM,vf%cfg%comm,ierr)
+   !    call MPI_ALLREDUCE(MPI_IN_PLACE,Fy_sum,1,MPI_DOUBLE_PRECISION,MPI_SUM,vf%cfg%comm,ierr)
+   !    call MPI_ALLREDUCE(MPI_IN_PLACE,Fz_sum,1,MPI_DOUBLE_PRECISION,MPI_SUM,vf%cfg%comm,ierr)
+   !    call MPI_ALLREDUCE(MPI_IN_PLACE,r_max,1,MPI_DOUBLE_PRECISION,MPI_MAX,vf%cfg%comm,ierr)
+   !    call MPI_ALLREDUCE(MPI_IN_PLACE,r_min,1,MPI_DOUBLE_PRECISION,MPI_MIN,vf%cfg%comm,ierr)
    ! end subroutine compute_rp_stats
+
+   subroutine compute_rp_stats(vf)
+   use mpi_f08, only: MPI_ALLREDUCE, MPI_MAX, MPI_SUM, &
+                      MPI_DOUBLE_PRECISION, MPI_IN_PLACE, MPI_MIN
+   use mathtools, only: Pi
+   implicit none
+
+   class(vfs), intent(inout) :: vf
+
+   integer :: i,j,k,ierr,nk
+   real(WP) :: radius_k
+   real(WP), allocatable, dimension(:) :: slice_volume_local, slice_volume_global
+
+   ! Allocate arrays for each global z-slice
+   allocate(slice_volume_local(vf%cfg%kmin:vf%cfg%kmax))
+   allocate(slice_volume_global(vf%cfg%kmin:vf%cfg%kmax))
+
+   slice_volume_local  = 0.0_WP
+   slice_volume_global = 0.0_WP
+
+   ! Accumulate local contribution to each global z-slice
+   do k=vf%cfg%kmin_,vf%cfg%kmax_
+      do j=vf%cfg%jmin_,vf%cfg%jmax_
+         do i=vf%cfg%imin_,vf%cfg%imax_
+            slice_volume_local(k) = slice_volume_local(k) + &
+               vf%VF(i,j,k)*vf%cfg%vol(i,j,k)
+         end do
+      end do
+   end do
+
+   nk = vf%cfg%kmax - vf%cfg%kmin + 1
+
+   ! Sum slice volumes across all MPI ranks
+   call MPI_ALLREDUCE(slice_volume_local, slice_volume_global, nk, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, vf%cfg%comm, ierr)
+
+   ! Initialize maximum and minimum radii
+   r_max = -huge(1.0_WP)
+   r_min = huge(1.0_WP)
+
+   ! Calculate equivalent radius for each z-slice
+   do k=vf%cfg%kmin,vf%cfg%kmax
+
+      radius_k = sqrt(max(slice_volume_global(k),0.0_WP)/ &
+                      (Pi*vf%cfg%dz(k)))
+
+      r_max = max(r_max,radius_k)
+      r_min = min(r_min,radius_k)
+
+   end do
+
+   ! Force Sums
+   Fx_sum = sum(fs%Pjx( &
+      fs%cfg%imin_:fs%cfg%imax_, &
+      fs%cfg%jmin_:fs%cfg%jmax_, &
+      fs%cfg%kmin_:fs%cfg%kmax_))
+
+   Fy_sum = sum(fs%Pjy( &
+      fs%cfg%imin_:fs%cfg%imax_, &
+      fs%cfg%jmin_:fs%cfg%jmax_, &
+      fs%cfg%kmin_:fs%cfg%kmax_))
+
+   Fz_sum = sum(fs%Pjz( &
+      fs%cfg%imin_:fs%cfg%imax_, &
+      fs%cfg%jmin_:fs%cfg%jmax_, &
+      fs%cfg%kmin_:fs%cfg%kmax_))
+
+   ! Global force summations
+   call MPI_ALLREDUCE(MPI_IN_PLACE,Fx_sum,1, &
+      MPI_DOUBLE_PRECISION,MPI_SUM,vf%cfg%comm,ierr)
+
+   call MPI_ALLREDUCE(MPI_IN_PLACE,Fy_sum,1, &
+      MPI_DOUBLE_PRECISION,MPI_SUM,vf%cfg%comm,ierr)
+
+   call MPI_ALLREDUCE(MPI_IN_PLACE,Fz_sum,1, &
+      MPI_DOUBLE_PRECISION,MPI_SUM,vf%cfg%comm,ierr)
+
+   ! Cleanup
+   deallocate(slice_volume_local,slice_volume_global)
+
+end subroutine compute_rp_stats
 
 
    !> modified bessel functions of first kind
@@ -643,6 +678,15 @@ contains
          call mfile%add_column(time_nd,'t/tc')
          call mfile%add_column(r_max,'Rmax')
          call mfile%add_column(r_min,'Rmin')
+         call mfile%add_column(Fx_sum,'Fx_sum')
+         call mfile%add_column(Fy_sum,'Fy_sum')
+         call mfile%add_column(Fz_sum,'Fz_sum')
+         call mfile%add_column(fs%divmax,'Max Div')
+         call mfile%add_column(loc1,'VFint Loc 1')
+         call mfile%add_column(loc2,'VFint Loc 2')
+         call mfile%add_column(loc3,'VFint Loc 3')
+         call mfile%add_column(loc4,'VFint Loc 4')
+         call mfile%add_column(loc5,'VFint Loc 5')
 
          call mfile%write()         
       end block create_monitor
@@ -656,15 +700,22 @@ contains
 
       ! Perform time integration
       do while (.not.time%done())
-
          ! Increment time
          call fs%get_cfl(time%dt,time%cfl)
          call time%adjust_dt()
          call time%increment()
-
+         if(cfg%amRoot .and. printTrue) then 
+            print *,"===================="
+            print *," t = ",time%t
+            print *," n = ",time%n
+         endif
          ! Remember old VOF
          vf%VFold=vf%VF
-
+         call vf%get_max()
+         if(cfg%amRoot .and. printTrue) then
+            print *,"Location 1 VFInt = ",vf%VFint
+         endif
+         loc1 = vf%VFint
          ! Remember old velocity
          fs%Uold=fs%U
          fs%Vold=fs%V
@@ -678,14 +729,16 @@ contains
 
          ! VOF solver step
          call vf%advance(dt=time%dt,U=fs%U,V=fs%V,W=fs%W)
-
+         call vf%get_max()
+         if(cfg%amRoot .and. printTrue) then
+            print *,"Location 2 VFInt = ",vf%VFint
+         endif
+         loc2 = vf%VFint
          ! monitor variables for diagonistics
          ! call compute_rp_max_radius(vf)
          ! call compute_rp_min_radius(vf)
 
-         call compute_rp_stats(vf)
          time_nd = time%t / time_cap
-         call mfile%write()
 
          ! Prepare new staggered viscosity (at n+1)
          call fs%get_viscosity(vf=vf)
@@ -703,7 +756,11 @@ contains
 
             ! Explicit calculation of drho*u/dt from NS
             call cst%get_dmomdt(resU,resV,resW)
-
+            call vf%get_max()
+            if(cfg%amRoot .and. printTrue) then
+               print *,"Location 3 VFInt = ",vf%VFint
+            endif
+            loc3 = vf%VFint
             ! Assemble explicit residual
             resU=-2.0_WP*fs%rho_U*fs%U+(fs%rho_Uold+fs%rho_U)*fs%Uold+time%dt*resU
             resV=-2.0_WP*fs%rho_V*fs%V+(fs%rho_Vold+fs%rho_V)*fs%Vold+time%dt*resV
@@ -724,7 +781,18 @@ contains
             call fs%update_laplacian()
             call fs%correct_mfr()
             call fs%get_div()
+
+            call vf%get_max()
+            if(cfg%amRoot .and. printTrue) then
+               print *,"Location 4 VFInt = ",vf%VFint
+            endif
+            loc4 = vf%VFint
             call cst%add_surface_tension_jump()
+            call vf%get_max()
+            if(cfg%amRoot .and. printTrue) then
+               print *,"Location 5 VFInt = ",vf%VFint
+            endif
+            loc5 = vf%VFint
             fs%psolv%rhs=-fs%cfg%vol*fs%div/time%dt
             fs%psolv%sol=0.0_WP
             call fs%psolv%solve()
@@ -745,7 +813,9 @@ contains
          ! Recompute interpolated velocity and divergence
          call fs%interp_vel(Ui,Vi,Wi)
          call fs%get_div()
-
+         call compute_rp_stats(vf)
+         call fs%get_max()
+         call mfile%write()         
          ! Output to vtk
          if (vtk_evt%occurs()) then
             ! Update surfmesh object

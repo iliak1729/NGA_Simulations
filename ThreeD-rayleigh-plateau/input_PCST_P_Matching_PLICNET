@@ -1,0 +1,59 @@
+# Parallelization
+Partition : 2 2 4
+
+# Mesh definition
+Lx : 1.0
+Ly : 1.0
+Lz : 1.0
+nx : 64
+ny : 64
+nz : 64
+
+# monitor file name
+Monitor File Name : rayleigh_plateau
+
+# Ligament definiton
+Ligament radius :           0.10
+Ligament center :           0 0 0
+Perturbation amplitude :    0.02
+Perturbation mode :         1
+
+# Velocity field
+Initial velocity :           0 0 0
+
+# Fluid properties
+Liquid dynamic viscosity:    1.0e-3
+Gas dynamic viscosity:       1.0e-3 ! 1.8e-5
+Liquid density:              1000
+Gas density:                 1000 ! 1
+Surface tension coefficient: 0.072
+
+# Options
+# Options
+Marangoni :  0 0 0
+Pressure : 1
+Smoothing Option : 1
+Surface Tension Option : 9
+Levelset Option : 1
+Matching Option : 1
+Curvature Option : 1
+PU Spread : 2.0
+# 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
+Interface Type : 3
+
+# Time integration
+Max time:               50
+Max timestep size:      0.05
+Max cfl number:         0.5
+
+# Pressure solver
+Pressure tolerance : 1e-12
+Pressure iteration : 100
+
+# Implicit velocity solver
+Implicit tolerance : 1e-12
+Implicit iteration : 100
+
+# Ensight output
+Ensight output period : 1e-1
+ 
