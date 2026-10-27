@@ -1,6 +1,32 @@
 
 CASES=(
-    
+    # CSF Cases
+    "Basak_input_CSF_LVIRA"
+    "Basak_input_CSF_PLICNET"
+
+    # PCST - No Pressure, Matching
+    "Basak_input_PCST_NoP_M_LVIRA"
+    "Basak_input_PCST_NoP_M_PLICNET"
+
+    # PCST - No Pressure, No Matching
+    "Basak_input_PCST_NoP_NoM_LVIRA"
+    "Basak_input_PCST_NoP_NoM_PLICNET"
+
+    # PCST - Pressure, Matching
+    "Basak_input_PCST_P_M_LVIRA"
+    "Basak_input_PCST_P_M_PLICNET"
+
+    # PCST - Pressure, No Matching
+    "Basak_input_PCST_P_NoM_LVIRA"
+    "Basak_input_PCST_P_NoM_PLICNET"
+
+    # Jibben Cases
+    "Basak_input_CSF_Jibben"
+    "Basak_input_PCST_NoP_M_Jibben"
+    "Basak_input_PCST_NoP_NoM_Jibben"
+    "Basak_input_PCST_P_M_Jibben"
+    "Basak_input_PCST_P_NoM_Jibben"
+
     # "input_PCST_P_Matching"
     # "input_PCST_NoP_Matching"
     # "input_PCST_NoP_NoMatching"
@@ -11,10 +37,9 @@ CASES=(
     # "input_CSF_PLICNET"
     # "input_CSF_LVIRA"
     # "input_CSF_Jibben"
-    "input_PCST_P_Matching_Jibben"
-    "input_PCST_P_Matching_LVIRA"
-    "input_PCST_P_Matching_PLICNET"
-    
+    # "input_PCST_P_Matching_Jibben"
+    # "input_PCST_P_Matching_LVIRA"
+    # "input_PCST_P_Matching_PLICNET"
     # "input_CSF"
     # "input_PCST_NoP_Matching_Laplacian"
     # "input_PCST_NoP_NoMatching_Laplacian"
@@ -26,7 +51,7 @@ for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./FACE_PARABOLOID/SliceBased_${CASE}"
+    DIR="./Basak/First_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"
