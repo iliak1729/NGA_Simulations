@@ -1,14 +1,70 @@
-
 CASES=(
-    input_PUST_N64_P_LA120
-    input_PUST_N64_NoPP_LA120
+    # ========================================
+    # D8
+    # ========================================
+    Basak_input_CSF_D8_SingleFluid
+    Basak_input_PCST_D8_NoP_NoMatching_SingleFluid
+    Basak_input_PCST_D8_NoP_Matching_SingleFluid
+    Basak_input_PCST_D8_P_NoMatching_SingleFluid
+    Basak_input_PCST_D8_P_Matching_SingleFluid
+
+    # Basak_input_CSF_D8_DiffFluid
+    # Basak_input_PCST_D8_NoP_NoMatching_DiffFluid
+    # Basak_input_PCST_D8_NoP_Matching_DiffFluid
+    # Basak_input_PCST_D8_P_NoMatching_DiffFluid
+    # Basak_input_PCST_D8_P_Matching_DiffFluid
+
+    # ========================================
+    # D16
+    # ========================================
+    Basak_input_CSF_D16_SingleFluid
+    Basak_input_PCST_D16_NoP_NoMatching_SingleFluid
+    Basak_input_PCST_D16_NoP_Matching_SingleFluid
+    Basak_input_PCST_D16_P_NoMatching_SingleFluid
+    Basak_input_PCST_D16_P_Matching_SingleFluid
+
+    # Basak_input_CSF_D16_DiffFluid
+    # Basak_input_PCST_D16_NoP_NoMatching_DiffFluid
+    # Basak_input_PCST_D16_NoP_Matching_DiffFluid
+    # Basak_input_PCST_D16_P_NoMatching_DiffFluid
+    # Basak_input_PCST_D16_P_Matching_DiffFluid
+
+    # ========================================
+    # D32
+    # ========================================
+    Basak_input_CSF_D32_SingleFluid
+    Basak_input_PCST_D32_NoP_NoMatching_SingleFluid
+    Basak_input_PCST_D32_NoP_Matching_SingleFluid
+    Basak_input_PCST_D32_P_NoMatching_SingleFluid
+    Basak_input_PCST_D32_P_Matching_SingleFluid
+
+    # Basak_input_CSF_D32_DiffFluid
+    # Basak_input_PCST_D32_NoP_NoMatching_DiffFluid
+    # Basak_input_PCST_D32_NoP_Matching_DiffFluid
+    # Basak_input_PCST_D32_P_NoMatching_DiffFluid
+    # Basak_input_PCST_D32_P_Matching_DiffFluid
+
+    # ========================================
+    # D64
+    # ========================================
+    # Basak_input_CSF_D64_SingleFluid
+    # Basak_input_PCST_D64_NoP_NoMatching_SingleFluid
+    # Basak_input_PCST_D64_NoP_Matching_SingleFluid
+    # Basak_input_PCST_D64_P_NoMatching_SingleFluid
+    # Basak_input_PCST_D64_P_Matching_SingleFluid
+
+    # Basak_input_CSF_D64_DiffFluid
+    # Basak_input_PCST_D64_NoP_NoMatching_DiffFluid
+    # Basak_input_PCST_D64_NoP_Matching_DiffFluid
+    # Basak_input_PCST_D64_P_NoMatching_DiffFluid
+    # Basak_input_PCST_D64_P_Matching_DiffFluid
 )
 make -j 10
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
-    CASE="${INPUT#input_}"
-    DIR="./LONG_RUNS/TranslatingDrop_${CASE}"
+    CASE="${INPUT#Basak_input_}"
+    DIR="./Basak_Jibben/StaticDrop_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"

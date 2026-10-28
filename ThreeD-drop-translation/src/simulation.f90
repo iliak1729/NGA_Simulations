@@ -51,7 +51,7 @@ module simulation
    real(WP), dimension(3) :: center,center2,gravity,U1,U2
    real(WP) :: volume,radius,radius2,Ycent,Vrise
    real(WP) :: Vin,Vin_old,Vrise_ref,Ycent_ref,G,ti
-   real(WP) :: Tbot,Ttop,Ly,Lx,dtps,RootMeanSquareVelocity
+   real(WP) :: Tbot,Ttop,Ly,Lx,dtps,RootMeanSquareVelocity,MaxVelocity
    real(WP) :: Fx_sum,Fy_sum,Fz_sum
    logical :: twoD
 
@@ -168,56 +168,53 @@ contains
    end subroutine
    
    function Calc_RMS_Velocity() result(VrmsGlobal)
-      use mpi_f08, only: MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD
+      use mpi_f08, only: MPI_ALLREDUCE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_MAX
       implicit none
-      integer :: i,j,k
-      integer :: ierr
-      real(WP) :: Vrms,Umag,count,VrmsGlobal,countGlobal,dx,dy
-      ! Flow variables
-      real(WP), dimension(:,:,:), allocatable :: U        !< U velocity array
-      real(WP), dimension(:,:,:), allocatable :: V        !< V velocity array
-      real(WP), dimension(:,:,:), allocatable :: W        !< W velocity array
-      
-      ! Get Values
-      U = fs%U - U1(1)
-      V = fs%V - U1(2)
-      W = fs%W - U1(3)
 
-      dx = vf%cfg%dx(1)
-      dy = vf%cfg%dy(1)
-      
+      integer :: i,j,k,ierr
+      real(WP) :: Vrms,count,VrmsGlobal,countGlobal
+      real(WP) :: Vmax,Vmag2,VmaxGlobal
+      real(WP) :: Urel,Vrel,Wrel
+      real(WP) :: dvol
+
       Vrms = 0.0_WP
+      Vmax = 0.0_WP
       count = 0.0_WP
-      k = 1
-      ! Loop Over all points, sum magnitudes
-      do i = cfg%imin_,cfg%imax_
+
+      do k = cfg%kmin_,cfg%kmax_
          do j = cfg%jmin_,cfg%jmax_
-            Vrms = Vrms + (U(i,j,k)*U(i,j,k) + V(i,j,k)*V(i,j,k))*dy*dx
-            
-            count = count + dy*dx
+            do i = cfg%imin_,cfg%imax_
+
+               ! Velocity relative to imposed droplet velocity
+               Urel = fs%U(i,j,k) - U1(1)
+               Vrel = fs%V(i,j,k) - U1(2)
+               Wrel = fs%W(i,j,k) - U1(3)
+
+               ! Velocity magnitude squared
+               Vmag2 = Urel**2 + Vrel**2 + Wrel**2
+
+               ! Cell volume
+               dvol = cfg%dx(i)*cfg%dy(j)*cfg%dz(k)
+
+               ! RMS velocity
+               Vrms = Vrms + Vmag2*dvol
+               count = count + dvol
+
+               ! Maximum velocity
+               Vmax = max(Vmax,sqrt(Vmag2))
+
+            end do
          end do
       end do
 
-      ! Force Sums
-      Fx_sum = 0.0_WP
-      Fy_sum = 0.0_WP 
-      Fz_sum = 0.0_WP 
-      Fx_sum = sum(fs%Pjx( &
-         fs%cfg%imin_:fs%cfg%imax_, &
-         fs%cfg%jmin_:fs%cfg%jmax_, &
-         fs%cfg%kmin_:fs%cfg%kmax_))
-      Fy_sum = sum(fs%Pjy( &
-         fs%cfg%imin_:fs%cfg%imax_, &
-         fs%cfg%jmin_:fs%cfg%jmax_, &
-         fs%cfg%kmin_:fs%cfg%kmax_))
-      Fz_sum = sum(fs%Pjz( &
-         fs%cfg%imin_:fs%cfg%imax_, &
-         fs%cfg%jmin_:fs%cfg%jmax_, &
-         fs%cfg%kmin_:fs%cfg%kmax_))
+      ! MPI reductions
+      call MPI_ALLREDUCE(Vrms,VrmsGlobal,1,MPI_DOUBLE_PRECISION,MPI_SUM,cfg%comm,ierr)
+      call MPI_ALLREDUCE(count,countGlobal,1,MPI_DOUBLE_PRECISION,MPI_SUM,cfg%comm,ierr)
+      call MPI_ALLREDUCE(Vmax,VmaxGlobal,1,MPI_DOUBLE_PRECISION,MPI_MAX,cfg%comm,ierr)
 
-      CALL MPI_ALLREDUCE(Vrms,VrmsGlobal,1,MPI_DOUBLE_PRECISION,MPI_SUM,cfg%comm,ierr)
-      CALL MPI_ALLREDUCE(count,countGlobal,1,MPI_DOUBLE_PRECISION,MPI_SUM,cfg%comm,ierr)
       VrmsGlobal = sqrt(VrmsGlobal/countGlobal)
+      MaxVelocity = VmaxGlobal
+
    end function Calc_RMS_Velocity
 
    !> Initialization of problem solver
@@ -353,7 +350,7 @@ contains
          fs=tpns(cfg=cfg,name='Two-phase NS')
          ! Assign constant density to each phase
          call param_read('Liquid density',fs%rho_l)
-         call param_read('Gas density',fs%rho_g)
+         call param_read('Density Ratio',fs%rho_g); fs%rho_g=fs%rho_l/fs%rho_g
          ! Assign acceleration of gravity
          call param_read('Gravity',gravity); fs%gravity=gravity
          ! Configure pressure solver
@@ -367,7 +364,6 @@ contains
          call fs%setup(pressure_solver=ps,implicit_solver=vs)
          ! initial field
          call param_read('Droplet Velocity',U1)
-         U1 = (/U,0.0_WP,0.0_WP/)
          fs%U = U1(1)
          fs%V = U1(2)
          fs%W = U1(3)
@@ -376,13 +372,13 @@ contains
          call param_read('Surface tension coefficient',fs%sigma)
          call param_read('Laplace Number',La)
          fs%visc_l = sqrt(fs%rho_l*fs%sigma*2*radius/La)
-         fs%visc_g = sqrt(fs%rho_l*fs%sigma*2*radius/La)
+         call param_read('Viscosity Ratio',fs%visc_g); fs%visc_g = fs%visc_l/fs%visc_g
 
          call param_read('Min Viscous Time',minTv)
          call param_read('Min Capillary Time', minTc)
          call param_read('Lx',Lx)
          call param_read('nx',nx)
-         Tv = 4*radius*radius*fs%rho_l/fs%visc_g
+         Tv = 4*radius*radius*fs%rho_l/fs%visc_l
          Tc = sqrt(fs%rho_l*8*radius*radius*radius/fs%sigma)
          delta = Lx/nx
          dtCap = sqrt(fs%rho_l*delta*delta*delta/(Pi*fs%sigma))
@@ -392,11 +388,22 @@ contains
          time%dt=time%dtmax
          call fs%apply_bcond(time%t,time%dt)
          time%tmax = max(minTv*Tv,minTc*Tc)
-         print *, "Viscous Time = ",Tv 
-         print *, "Capillary Time = ",Tc
-         print *, "dt = ",time%dt
-         print *, "tmax = ",time%tmax
-         
+         if(cfg%amRoot) then 
+            print *, "============== TIME INFO ================="
+            print *, "Viscous Time = ",Tv
+            print *, "Capillary Time = ",Tc
+            print *, "dt = ",time%dt
+            print *, "tmax = ",time%tmax
+
+            print *, "============== FLUID INFO ================"
+            print *, "Liquid Density = ",fs%rho_l
+            print *, "Gas Density = ",fs%rho_g
+            print *, "Density Ratio = ",fs%rho_l/fs%rho_g
+            print *, "Liquid Viscosity = ",fs%visc_l
+            print *, "Gas Viscosity = ",fs%visc_g
+            print *, "Viscosity Ratio = ",fs%visc_l/fs%visc_g
+            print *, "Surface Tension Coefficient = ",fs%sigma
+         endif
          ! Zero inflow velocity
          Vin=0.0_WP
          ! Calculate cell-centered velocities and divergence
@@ -416,35 +423,48 @@ contains
          call param_read('Curvature Option',cst%CurvatureOption,default = 1)
          call param_read('PU Spread',cst%PU_spread,default = 2.0_WP)
          call param_read('Two Dimensional',cst%TwoD,default = .false.)
+         if(cfg%amRoot) then 
+            print *, "============== SURFACE TENSION INFO ================"
+            print *, "Marangoni Option = ",cst%MarangoniOption
+            print *, "Pressure Option = ",cst%PressureOption
+            print *, "Smoothing Option = ",cst%SmoothingOption
+            print *, "Surface Tension Option = ",cst%SurfaceTensionOption
+            print *, "Levelset Option = ",cst%LevelsetOption
+            print *, "Matching Option = ",cst%MatchingOption
+            print *, "Curvature Option = ",cst%CurvatureOption
+            print *, "PU Spread = ",cst%PU_spread
+            print *, "Two Dimensional = ",cst%TwoD
+            print *, "===================================================="
+         endif
       end block create_surface_tension_solver
      
 
 
       ! Create surfmesh object for interface polygon output
       create_smesh: block
-         smesh=surfmesh(nvar=19,name='plic')
+         smesh=surfmesh(nvar=2,name='plic')
          smesh%varname(1)='curv'
          smesh%varname(2)='interface_type'
 
-         smesh%varname(3)='STx'
-         smesh%varname(4)='STy'
-         smesh%varname(5)='STz'
-         smesh%varname(6)='STmag'
+         ! smesh%varname(3)='STx'
+         ! smesh%varname(4)='STy'
+         ! smesh%varname(5)='STz'
+         ! smesh%varname(6)='STmag'
 
-         smesh%varname(7)='Sigma_xx'
-         smesh%varname(8)='Sigma_xy'
-         smesh%varname(9)='Sigma_xz'
-         smesh%varname(10)='Sigma_yx'
-         smesh%varname(11)='Sigma_yy'
-         smesh%varname(12)='Sigma_yz'
-         smesh%varname(13)='Sigma_zx'
-         smesh%varname(14)='Sigma_zy'
-         smesh%varname(15)='Sigma_zz'
+         ! smesh%varname(7)='Sigma_xx'
+         ! smesh%varname(8)='Sigma_xy'
+         ! smesh%varname(9)='Sigma_xz'
+         ! smesh%varname(10)='Sigma_yx'
+         ! smesh%varname(11)='Sigma_yy'
+         ! smesh%varname(12)='Sigma_yz'
+         ! smesh%varname(13)='Sigma_zx'
+         ! smesh%varname(14)='Sigma_zy'
+         ! smesh%varname(15)='Sigma_zz'
 
-         smesh%varname(16)='CSFx'
-         smesh%varname(17)='CSFy'
-         smesh%varname(18)='CSFz'
-         smesh%varname(19)='CSFmag'
+         ! smesh%varname(16)='CSFx'
+         ! smesh%varname(17)='CSFy'
+         ! smesh%varname(18)='CSFz'
+         ! smesh%varname(19)='CSFmag'
 
 
          call vf%update_surfmesh(smesh)
@@ -452,25 +472,25 @@ contains
          call add_surfgrid_variable(smesh,1,vf%curv,vf)  
          call add_surfgrid_variable(smesh,2,vf%interface_type,vf)    
 
-         call add_surfgrid_variable(smesh,3,fs%Pjx,vf)  
-         call add_surfgrid_variable(smesh,4,fs%Pjy,vf)    
-         call add_surfgrid_variable(smesh,5,fs%Pjz,vf)  
-         call add_surfgrid_variable(smesh,6,cst%Fst_mag,vf)    
+         ! call add_surfgrid_variable(smesh,3,fs%Pjx,vf)  
+         ! call add_surfgrid_variable(smesh,4,fs%Pjy,vf)    
+         ! call add_surfgrid_variable(smesh,5,fs%Pjz,vf)  
+         ! call add_surfgrid_variable(smesh,6,cst%Fst_mag,vf)    
 
-         call add_surfgrid_variable(smesh,7,cst%sigma_3D(:,:,:,1,1),vf)  
-         call add_surfgrid_variable(smesh,8,cst%sigma_3D(:,:,:,1,2),vf)    
-         call add_surfgrid_variable(smesh,9,cst%sigma_3D(:,:,:,1,3),vf)  
-         call add_surfgrid_variable(smesh,10,cst%sigma_3D(:,:,:,2,1),vf)  
-         call add_surfgrid_variable(smesh,11,cst%sigma_3D(:,:,:,2,2),vf)  
-         call add_surfgrid_variable(smesh,12,cst%sigma_3D(:,:,:,2,3),vf)    
-         call add_surfgrid_variable(smesh,13,cst%sigma_3D(:,:,:,3,1),vf)  
-         call add_surfgrid_variable(smesh,14,cst%sigma_3D(:,:,:,3,2),vf)    
-         call add_surfgrid_variable(smesh,15,cst%sigma_3D(:,:,:,3,3),vf)    
+         ! call add_surfgrid_variable(smesh,7,cst%sigma_3D(:,:,:,1,1),vf)  
+         ! call add_surfgrid_variable(smesh,8,cst%sigma_3D(:,:,:,1,2),vf)    
+         ! call add_surfgrid_variable(smesh,9,cst%sigma_3D(:,:,:,1,3),vf)  
+         ! call add_surfgrid_variable(smesh,10,cst%sigma_3D(:,:,:,2,1),vf)  
+         ! call add_surfgrid_variable(smesh,11,cst%sigma_3D(:,:,:,2,2),vf)  
+         ! call add_surfgrid_variable(smesh,12,cst%sigma_3D(:,:,:,2,3),vf)    
+         ! call add_surfgrid_variable(smesh,13,cst%sigma_3D(:,:,:,3,1),vf)  
+         ! call add_surfgrid_variable(smesh,14,cst%sigma_3D(:,:,:,3,2),vf)    
+         ! call add_surfgrid_variable(smesh,15,cst%sigma_3D(:,:,:,3,3),vf)    
 
-         call add_surfgrid_variable(smesh,16,cst%PjxD,vf)  
-         call add_surfgrid_variable(smesh,17,cst%PjyD,vf)    
-         call add_surfgrid_variable(smesh,18,cst%PjzD,vf)  
-         call add_surfgrid_variable(smesh,19,cst%CSF_Mag,vf)    
+         ! call add_surfgrid_variable(smesh,16,cst%PjxD,vf)  
+         ! call add_surfgrid_variable(smesh,17,cst%PjyD,vf)    
+         ! call add_surfgrid_variable(smesh,18,cst%PjzD,vf)  
+         ! call add_surfgrid_variable(smesh,19,cst%CSF_Mag,vf)    
 
       end block create_smesh
       
@@ -486,7 +506,7 @@ contains
          call ens_out%add_scalar('VOF',vf%VF)
          call ens_out%add_scalar('pressure',fs%P)
          call ens_out%add_scalar('curvature',vf%curv)
-         call ens_out%add_surface('plic',smesh)
+         ! call ens_out%add_surface('plic',smesh)
          call ens_out%add_vector('sigma_3d_x',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
          call ens_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
          call ens_out%add_vector('sigma_3d_z',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
@@ -524,6 +544,7 @@ contains
          call mfile%add_column(time%t,'Time')
          call mfile%add_column(time%dt,'Timestep size')
          call mfile%add_column(RootMeanSquareVelocity,'RMS Velocity')
+         call mfile%add_column(MaxVelocity,'Max Velocity')
          call mfile%write()
          ! Create CFL monitor
          cflfile=monitor(fs%cfg%amRoot,'cfl')
@@ -560,10 +581,14 @@ contains
          ! print *,"Time = ",time%t,"/",time%tmax
          ! print *,"dt = ",time%dt
          ! Increment time
+         ! if (cfg%amRoot) print *, "START TIMESTEP",time%n+1
+
          call fs%get_cfl(time%dt,time%cfl)
          call time%adjust_dt()
          call time%increment()
-         
+
+         ! if (cfg%amRoot) print *, "TIME INCREMENT COMPLETE"
+      
          ! Remember old VOF
          vf%VFold=vf%VF
          
@@ -583,7 +608,11 @@ contains
          call fs%get_olddensity(vf=vf)
          
          ! VOF solver step
+         ! if (cfg%amRoot) print *, "START VOF ADVANCE"
+
          call vf%advance(dt=time%dt,U=fs%U,V=fs%V,W=fs%W)
+
+         ! if (cfg%amRoot) print *, "END VOF ADVANCE"
          ! Prepare new staggered viscosity (at n+1)
          call fs%get_viscosity(vf=vf,strat=harmonic_visc)
          
@@ -609,7 +638,11 @@ contains
             resW=-2.0_WP*fs%rho_W*fs%W+(fs%rho_Wold+fs%rho_W)*fs%Wold+time%dt*resW
             
             ! Form implicit residuals
+            ! if (cfg%amRoot) print *, "START IMPLICIT SOLVE"
+
             call fs%solve_implicit(time%dt,resU,resV,resW)
+
+            ! if (cfg%amRoot) print *, "END IMPLICIT SOLVE"
             
             ! Apply these residuals
             fs%U=2.0_WP*fs%U-fs%Uold+resU
@@ -623,11 +656,19 @@ contains
             call fs%update_laplacian()
             call fs%correct_mfr()
             call fs%get_div()
+            ! if (cfg%amRoot) print *, "START SURFACE TENSION JUMP"
+
             call cst%add_surface_tension_jump()
+
+            ! if (cfg%amRoot) print *, "END SURFACE TENSION JUMP"
             !call fs%add_surface_tension_jump_thin(dt=time%dt,div=fs%div,vf=vf)
             fs%psolv%rhs=-fs%cfg%vol*fs%div/time%dt
             fs%psolv%sol=0.0_WP
+            ! if (cfg%amRoot) print *, "START PRESSURE SOLVE"
+
             call fs%psolv%solve()
+
+            ! if (cfg%amRoot) print *, "END PRESSURE SOLVE"
             call fs%shift_p(fs%psolv%sol)
             
             ! Correct velocity
@@ -643,48 +684,56 @@ contains
          end do
          
          ! Recompute interpolated velocity and divergence
+         ! Recompute interpolated velocity and divergence
+         ! if (cfg%amRoot) print *, "START INTERP VEL"
          call fs%interp_vel(Ui,Vi,Wi)
+         ! if (cfg%amRoot) print *, "END INTERP VEL"
+
+         ! if (cfg%amRoot) print *, "START GET DIV"
          call fs%get_div()
-         
-         ! Update VF_PU
-         ! print *,"Updated vfPU"
-         ! Output to ensight
+         ! if (cfg%amRoot) print *, "END GET DIV"
+
+         ! Output to Ensight
          if (ens_evt%occurs()) then
+
+            ! if (cfg%amRoot) print *, "START UPDATE SURFMESH"
             call vf%update_surfmesh(smesh)
-            call add_surfgrid_variable(smesh,1,vf%curv,vf)  
-            call add_surfgrid_variable(smesh,2,vf%interface_type,vf)    
-
-            call add_surfgrid_variable(smesh,3,fs%Pjx,vf)  
-            call add_surfgrid_variable(smesh,4,fs%Pjy,vf)    
-            call add_surfgrid_variable(smesh,5,fs%Pjz,vf)  
-            call add_surfgrid_variable(smesh,6,cst%Fst_mag,vf)    
-
-            call add_surfgrid_variable(smesh,7,cst%sigma_3D(:,:,:,1,1),vf)  
-            call add_surfgrid_variable(smesh,8,cst%sigma_3D(:,:,:,1,2),vf)    
-            call add_surfgrid_variable(smesh,9,cst%sigma_3D(:,:,:,1,3),vf)  
-            call add_surfgrid_variable(smesh,10,cst%sigma_3D(:,:,:,2,1),vf)  
-            call add_surfgrid_variable(smesh,11,cst%sigma_3D(:,:,:,2,2),vf)  
-            call add_surfgrid_variable(smesh,12,cst%sigma_3D(:,:,:,2,3),vf)    
-            call add_surfgrid_variable(smesh,13,cst%sigma_3D(:,:,:,3,1),vf)  
-            call add_surfgrid_variable(smesh,14,cst%sigma_3D(:,:,:,3,2),vf)    
-            call add_surfgrid_variable(smesh,15,cst%sigma_3D(:,:,:,3,3),vf)    
-
-            call add_surfgrid_variable(smesh,16,cst%PjxD,vf)  
-            call add_surfgrid_variable(smesh,17,cst%PjyD,vf)    
-            call add_surfgrid_variable(smesh,18,cst%PjzD,vf)  
-            call add_surfgrid_variable(smesh,19,cst%CSF_Mag,vf)   
-
+            ! if (cfg%amRoot) print *, "END UPDATE SURFMESH"
+            call add_surfgrid_variable(smesh,1,vf%curv,vf)   
+            call add_surfgrid_variable(smesh,2,vf%interface_type,vf)   
+            ! if (cfg%amRoot) print *, "START WRITE DATA"
             call ens_out%write_data(time%t)
-         end if
-         
+            ! if (cfg%amRoot) print *, "END WRITE DATA"
+
+         endif
+
          ! Perform and output monitoring
+         ! if (cfg%amRoot) print *, "START FS GET MAX"
          call fs%get_max()
+         ! if (cfg%amRoot) print *, "END FS GET MAX"
+
+         ! if (cfg%amRoot) print *, "START VF GET MAX"
          call vf%get_max()
+         ! if (cfg%amRoot) print *, "END VF GET MAX"
+
+         ! if (cfg%amRoot) print *, "START RMS VELOCITY"
          RootMeanSquareVelocity = Calc_RMS_Velocity()
+         ! if (cfg%amRoot) print *, "END RMS VELOCITY"
+
+         ! if (cfg%amRoot) print *, "START MONITOR WRITE"
          call mfile%write()
          call cflfile%write()
          call bubblefile%write()
-         
+         ! if (cfg%amRoot) print *, "END MONITOR WRITE"
+         if (cfg%amRoot) then
+            ! print *, "======================================="
+            ! print *, "Timestep = ",time%n
+            ! print *, "Current Time = ",time%t
+            ! print *, "Maximum Time = ",time%tmax
+            ! print *, "dt = ",time%dt
+            ! print *, "Time Done = ",time%done()
+            ! print *, "======================================="
+         endif
       end do
       
    end subroutine simulation_run

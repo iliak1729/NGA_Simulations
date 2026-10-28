@@ -25,7 +25,7 @@ rho = 1
 D = 0.4
 La = 120
 mu = np.sqrt(sigma*rho*D/La)
-Usigma = 1.0
+Usigma = mu/sigma
 Tmu = rho*D**2/mu
 
 print("Usigma = ", Usigma)
