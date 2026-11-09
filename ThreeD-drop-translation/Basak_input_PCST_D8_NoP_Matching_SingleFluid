@@ -33,15 +33,15 @@ Interface Type : 2
 
 # Simulation Parameters
 Droplet Radius : 0.5
-Droplet Velocity : 0 0 0 
-Laplace Number : 120
+Droplet Velocity : 1 0 0 
+Laplace Number : 1200
 
 # Time integration
-Min Viscous Time :            2.5 # Changes Max Time
-Min Capillary Time :          2.5 # This will almost never matter, as the viscous time is so much longer, but it is fine
+Min Viscous Time :            1 # Changes Max Time
+Min Capillary Time :          1 # This will almost never matter, as the viscous time is so much longer, but it is fine
 
 # Time integration
-Max timestep size : 0.4  # Default Values, Overriden
+Max timestep size : 1e-2  # Default Values, Overriden
 Max time :          0.08  # Default Values, Overriden
 
 Timestep factor : 0.5 # Scale on Delta t_max. That is to say, we scale sqrt(rho*delta^3/(pi*sigma)), which is the max time step, by this value to get our Max time step.

@@ -2120,6 +2120,7 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
     type(RectCub_type) :: cell
     logical :: found_interface 
     type(SepVM_type)   :: phase_moments
+    real(WP) :: weight,distance,length_scale
     real(WP) :: cell_volume
     real(WP) :: liquid_volume
     real(WP) :: gas_volume
@@ -2250,8 +2251,11 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     vf_cell = vf_sample
                     if(vf_sample .gt. 1e-12 .and. vf_sample .lt. 1.0_WP - 1e-12) then 
                         normal = calculateNormal(this%vf%interface_polygon(1,i,j,k))
+                        datum = calculateCentroid( &
+                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         found_interface = .true. 
                     endif
+                    count = 1.0_WP
                     ! print *, "Eq Branch"
                 else
                     ! ========================== First Pressure Cell
@@ -2273,20 +2277,42 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     ! Calculate total quarter-cell volume
                     cell_volume = calculateVolume(cell)
                     cell_volume_total = cell_volume_total + cell_volume
-                    
-                    ! VF work
+                    ! Other Math
                     if (vf_sample .ge. 1.0_WP - 1e-12_WP) then
                         ! Full liquid cell
                         liquid_in_cell = liquid_in_cell + cell_volume
                     else if (vf_sample .gt. 1e-12_WP) then
-                        ! Mixed cell
-                        normal = normal + calculateNormal( &
+                        ! Weight
+                        ! Surface Area Weight
+                        ! weight = this%vf%SD(index(1),index(2),index(3))
+                        ! ! VF Weight
+                        ! weight = 1.0_WP 
+                        ! if(vf_sample .lt. 0.1_WP) then 
+                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*vf_sample)
+                        ! endif 
+                        ! if(vf_sample .gt. 0.9_WP) then 
+                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*(1.0_WP-vf_sample))
+                        ! endif 
+                        !Distance Weights
+                        ! Calculate interface centroid
+                        cen = calculateCentroid( &
+                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        ! Distance from momentum face center to interface centroid
+                        distance = sqrt(sum((face_center - cen)**2))
+                        ! Characteristic length scale
+                        length_scale = 0.5_WP * minval(dvec)
+                        ! Inverse-distance-squared weighting (bounded)
+                        weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
+                        ! No Weight
+                        ! weight = 1.0_WP
+                        normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
                             this%vf%liquid_gas_interface(index(1),index(2),index(3)), &
                             phase_moments)
                         liquid_volume = getVolume(phase_moments, 0)
                         liquid_in_cell = liquid_in_cell + liquid_volume
+                        count = count + weight
                         found_interface = .true.
                     endif
                     ! ========================== Second Pressure Cell
@@ -2310,19 +2336,42 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     cell_volume = calculateVolume(cell)
                     cell_volume_total = cell_volume_total + cell_volume
                     
-                    ! VF work
+                    ! Other Math
                     if (vf_sample .ge. 1.0_WP - 1e-12_WP) then
                         ! Full liquid cell
                         liquid_in_cell = liquid_in_cell + cell_volume
                     else if (vf_sample .gt. 1e-12_WP) then
-                        ! Mixed cell
-                        normal = normal + calculateNormal( &
+                        ! Weight
+                        ! Surface Area Weight
+                        ! weight = this%vf%SD(index(1),index(2),index(3))
+                        ! ! VF Weight
+                        ! weight = 1.0_WP 
+                        ! if(vf_sample .lt. 0.1_WP) then 
+                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*vf_sample)
+                        ! endif 
+                        ! if(vf_sample .gt. 0.9_WP) then 
+                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*(1.0_WP-vf_sample))
+                        ! endif 
+                        !Distance Weights
+                        ! Calculate interface centroid
+                        cen = calculateCentroid( &
+                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        ! Distance from momentum face center to interface centroid
+                        distance = sqrt(sum((face_center - cen)**2))
+                        ! Characteristic length scale
+                        length_scale = 0.5_WP * minval(dvec)
+                        ! Inverse-distance-squared weighting (bounded)
+                        weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
+                        ! No Weight
+                        ! weight = 1.0_WP
+                        normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
                             this%vf%liquid_gas_interface(index(1),index(2),index(3)), &
                             phase_moments)
                         liquid_volume = getVolume(phase_moments, 0)
                         liquid_in_cell = liquid_in_cell + liquid_volume
+                        count = count + weight
                         found_interface = .true.
                     endif
                     ! ========================== Third Pressure Cell
@@ -2346,19 +2395,42 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     cell_volume = calculateVolume(cell)
                     cell_volume_total = cell_volume_total + cell_volume
                     
-                    ! VF work
+                    ! Other Math
                     if (vf_sample .ge. 1.0_WP - 1e-12_WP) then
                         ! Full liquid cell
                         liquid_in_cell = liquid_in_cell + cell_volume
                     else if (vf_sample .gt. 1e-12_WP) then
-                        ! Mixed cell
-                        normal = normal + calculateNormal( &
+                        ! Weight
+                        ! Surface Area Weight
+                        ! weight = this%vf%SD(index(1),index(2),index(3))
+                        ! ! VF Weight
+                        ! weight = 1.0_WP 
+                        ! if(vf_sample .lt. 0.1_WP) then 
+                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*vf_sample)
+                        ! endif 
+                        ! if(vf_sample .gt. 0.9_WP) then 
+                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*(1.0_WP-vf_sample))
+                        ! endif 
+                        !Distance Weights
+                        ! Calculate interface centroid
+                        cen = calculateCentroid( &
+                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        ! Distance from momentum face center to interface centroid
+                        distance = sqrt(sum((face_center - cen)**2))
+                        ! Characteristic length scale
+                        length_scale = 0.5_WP * minval(dvec)
+                        ! Inverse-distance-squared weighting (bounded)
+                        weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
+                        ! No Weight
+                        ! weight = 1.0_WP
+                        normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
                             this%vf%liquid_gas_interface(index(1),index(2),index(3)), &
                             phase_moments)
                         liquid_volume = getVolume(phase_moments, 0)
                         liquid_in_cell = liquid_in_cell + liquid_volume
+                        count = count + weight
                         found_interface = .true.
                     endif
                     ! ========================== Fourth Pressure Cell
@@ -2382,19 +2454,42 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     cell_volume = calculateVolume(cell)
                     cell_volume_total = cell_volume_total + cell_volume
                     
-                    ! VF work
+                    ! Other Math
                     if (vf_sample .ge. 1.0_WP - 1e-12_WP) then
                         ! Full liquid cell
                         liquid_in_cell = liquid_in_cell + cell_volume
                     else if (vf_sample .gt. 1e-12_WP) then
-                        ! Mixed cell
-                        normal = normal + calculateNormal( &
+                        ! Weight
+                        ! Surface Area Weight
+                        ! weight = this%vf%SD(index(1),index(2),index(3))
+                        ! ! VF Weight
+                        ! weight = 1.0_WP 
+                        ! if(vf_sample .lt. 0.1_WP) then 
+                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*vf_sample)
+                        ! endif 
+                        ! if(vf_sample .gt. 0.9_WP) then 
+                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*(1.0_WP-vf_sample))
+                        ! endif 
+                        !Distance Weights
+                        ! Calculate interface centroid
+                        cen = calculateCentroid( &
+                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        ! Distance from momentum face center to interface centroid
+                        distance = sqrt(sum((face_center - cen)**2))
+                        ! Characteristic length scale
+                        length_scale = 0.5_WP * minval(dvec)
+                        ! Inverse-distance-squared weighting (bounded)
+                        weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
+                        ! No Weight
+                        ! weight = 1.0_WP
+                        normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
                             this%vf%liquid_gas_interface(index(1),index(2),index(3)), &
                             phase_moments)
                         liquid_volume = getVolume(phase_moments, 0)
                         liquid_in_cell = liquid_in_cell + liquid_volume
+                        count = count + weight
                         found_interface = .true.
                     endif
 
@@ -2410,9 +2505,12 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                 vf_cell = max(vf_cell,0.0_WP)
 
                 if(found_interface) then 
+                    normal = normal/count
                     normal_mag = sqrt(sum(normal**2))
                     if(normal_mag .gt. 1e-12) then 
                         normal = normal/normal_mag 
+                    else 
+                        normal = 0.0_WP
                     endif
                 else
                     normal = (/0.0_WP,0.0_WP,0.0_WP/)

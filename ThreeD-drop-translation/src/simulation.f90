@@ -56,7 +56,215 @@ module simulation
    logical :: twoD
 
 contains
+   ! Locator Functions
+   !> Function that localizes the left (x-) of the domain
+   function xm_locator(pg,i,j,k) result(isIn)
+      use pgrid_class, only: pgrid
+      class(pgrid), intent(in) :: pg
+      integer, intent(in) :: i,j,k
+      logical :: isIn
+      isIn=.false.
+      if (i.eq.pg%imin) isIn=.true.
+   end function xm_locator
+   
+   !> Function that localizes the right (x+) of the domain
+   function xp_locator(pg,i,j,k) result(isIn)
+      use pgrid_class, only: pgrid
+      class(pgrid), intent(in) :: pg
+      integer, intent(in) :: i,j,k
+      logical :: isIn
+      isIn=.false.
+      if (i.eq.pg%imax+1) isIn=.true.
+   end function xp_locator
+   
+   !> Function that localizes the top (y+) of the domain
+   function yp_locator(pg,i,j,k) result(isIn)
+      use pgrid_class, only: pgrid
+      class(pgrid), intent(in) :: pg
+      integer, intent(in) :: i,j,k
+      logical :: isIn
+      isIn=.false.
+      if (j.eq.pg%jmax+1) isIn=.true.
+   end function yp_locator
 
+   !> Function that localizes the top (y-) of the domain
+   function ym_locator(pg,i,j,k) result(isIn)
+      use pgrid_class, only: pgrid
+      class(pgrid), intent(in) :: pg
+      integer, intent(in) :: i,j,k
+      logical :: isIn
+      isIn=.false.
+      if (j.eq.pg%jmin) isIn=.true.
+   end function ym_locator
+
+   !> Function that localizes the end (z+) of the domain
+   function zp_locator(pg,i,j,k) result(isIn)
+      use pgrid_class, only: pgrid
+      class(pgrid), intent(in) :: pg
+      integer, intent(in) :: i,j,k
+      logical :: isIn
+      isIn=.false.
+      if (k.eq.pg%kmax+1) isIn=.true.
+   end function zp_locator
+
+   !> Function that localizes the start (z-) of the domain
+   function zm_locator(pg,i,j,k) result(isIn)
+      use pgrid_class, only: pgrid
+      class(pgrid), intent(in) :: pg
+      integer, intent(in) :: i,j,k
+      logical :: isIn
+      isIn=.false.
+      if (k.eq.pg%kmin) isIn=.true.
+   end function zm_locator
+
+   !> Enforce no-slip boundary conditions at all six domain boundaries
+   subroutine set_wall_velocity()
+      use tpns_class, only: bcond
+      implicit none
+
+      type(bcond), pointer :: mybc
+      integer :: n,i,j,k,stag
+
+      ! ============================================================
+      ! X+ boundary
+      ! ============================================================
+      call fs%get_bcond('bc_xp',mybc)
+      stag=min(mybc%dir,0)
+
+      do n=1,mybc%itr%n_
+         i=mybc%itr%map(1,n)
+         j=mybc%itr%map(2,n)
+         k=mybc%itr%map(3,n)
+
+         ! Normal velocity: no penetration
+         fs%U(i,j,k)=0.0_WP
+
+         ! Tangential velocities: no slip
+         fs%V(i+stag,j:j+1,k) = &
+            -fs%V(i-mybc%dir+stag,j:j+1,k)
+
+         fs%W(i+stag,j,k:k+1) = &
+            -fs%W(i-mybc%dir+stag,j,k:k+1)
+      end do
+
+      ! ============================================================
+      ! X- boundary
+      ! ============================================================
+      call fs%get_bcond('bc_xm',mybc)
+      stag=min(mybc%dir,0)
+
+      do n=1,mybc%itr%n_
+         i=mybc%itr%map(1,n)
+         j=mybc%itr%map(2,n)
+         k=mybc%itr%map(3,n)
+
+         ! Normal velocity
+         fs%U(i,j,k)=0.0_WP
+
+         ! Tangential velocities
+         fs%V(i+stag,j:j+1,k) = &
+            -fs%V(i-mybc%dir+stag,j:j+1,k)
+
+         fs%W(i+stag,j,k:k+1) = &
+            -fs%W(i-mybc%dir+stag,j,k:k+1)
+      end do
+
+      ! ============================================================
+      ! Y+ boundary
+      ! ============================================================
+      call fs%get_bcond('bc_yp',mybc)
+      stag=min(mybc%dir,0)
+
+      do n=1,mybc%itr%n_
+         i=mybc%itr%map(1,n)
+         j=mybc%itr%map(2,n)
+         k=mybc%itr%map(3,n)
+
+         ! Normal velocity
+         fs%V(i,j,k)=0.0_WP
+
+         ! Tangential velocities
+         fs%U(i:i+1,j+stag,k) = &
+            -fs%U(i:i+1,j-mybc%dir+stag,k)
+
+         fs%W(i,j+stag,k:k+1) = &
+            -fs%W(i,j-mybc%dir+stag,k:k+1)
+      end do
+
+      ! ============================================================
+      ! Y- boundary
+      ! ============================================================
+      call fs%get_bcond('bc_ym',mybc)
+      stag=min(mybc%dir,0)
+
+      do n=1,mybc%itr%n_
+         i=mybc%itr%map(1,n)
+         j=mybc%itr%map(2,n)
+         k=mybc%itr%map(3,n)
+
+         ! Normal velocity
+         fs%V(i,j,k)=0.0_WP
+
+         ! Tangential velocities
+         fs%U(i:i+1,j+stag,k) = &
+            -fs%U(i:i+1,j-mybc%dir+stag,k)
+
+         fs%W(i,j+stag,k:k+1) = &
+            -fs%W(i,j-mybc%dir+stag,k:k+1)
+      end do
+
+      ! ============================================================
+      ! Z+ boundary
+      ! ============================================================
+      call fs%get_bcond('bc_zp',mybc)
+      stag=min(mybc%dir,0)
+
+      do n=1,mybc%itr%n_
+         i=mybc%itr%map(1,n)
+         j=mybc%itr%map(2,n)
+         k=mybc%itr%map(3,n)
+
+         ! Normal velocity
+         fs%W(i,j,k)=0.0_WP
+
+         ! Tangential velocities
+         fs%U(i:i+1,j,k+stag) = &
+            -fs%U(i:i+1,j,k-mybc%dir+stag)
+
+         fs%V(i,j:j+1,k+stag) = &
+            -fs%V(i,j:j+1,k-mybc%dir+stag)
+      end do
+
+      ! ============================================================
+      ! Z- boundary
+      ! ============================================================
+      call fs%get_bcond('bc_zm',mybc)
+      stag=min(mybc%dir,0)
+
+      do n=1,mybc%itr%n_
+         i=mybc%itr%map(1,n)
+         j=mybc%itr%map(2,n)
+         k=mybc%itr%map(3,n)
+
+         ! Normal velocity
+         fs%W(i,j,k)=0.0_WP
+
+         ! Tangential velocities
+         fs%U(i:i+1,j,k+stag) = &
+            -fs%U(i:i+1,j,k-mybc%dir+stag)
+
+         fs%V(i,j:j+1,k+stag) = &
+            -fs%V(i,j:j+1,k-mybc%dir+stag)
+      end do
+
+      ! ============================================================
+      ! Synchronize velocity fields
+      ! ============================================================
+      call fs%cfg%sync(fs%U)
+      call fs%cfg%sync(fs%V)
+      call fs%cfg%sync(fs%W)
+
+   end subroutine set_wall_velocity
 
    !> Function that defines a level set function for a rising bubble problem
    function levelset_rising_bubble(xyz,t) result(G)
@@ -117,30 +325,6 @@ contains
       G=radius-sqrt((xyz(1)-center(1))**2+(xyz(2)-center(2))**2)
    end function levelset_cylinder
 
-   !> Function that localizes the y+ side of the domain
-   function yp_locator(pg,i,j,k) result(isIn)
-      use pgrid_class, only: pgrid
-      implicit none
-      class(pgrid), intent(in) :: pg
-      integer, intent(in) :: i,j,k
-      logical :: isIn
-      isIn=.false.
-      if (j.eq.pg%jmax+1) isIn=.true.
-   end function yp_locator
-   
-   
-   !> Function that localizes the y- side of the domain
-   function ym_locator(pg,i,j,k) result(isIn)
-      use pgrid_class, only: pgrid
-      implicit none
-      class(pgrid), intent(in) :: pg
-      integer, intent(in) :: i,j,k
-      logical :: isIn
-      isIn=.false.
-      if (j.eq.pg%jmin) isIn=.true.
-   end function ym_locator
-   
-   
    !> Routine that computes rise velocity
    subroutine rise_vel()
       use mpi_f08,  only: MPI_ALLREDUCE,MPI_SUM
@@ -341,7 +525,7 @@ contains
       ! Create a two-phase flow solver without bconds
       create_and_initialize_flow_solver: block
          use hypre_str_class, only: pcg_pfmg2
-         use tpns_class,      only: clipped_neumann,dirichlet
+         use tpns_class,      only: clipped_neumann,dirichlet,wall
          integer :: i,j,k
          real(WP),dimension(3) :: xyz
          real(WP) :: Re,La,U,delta,dtCap,minTc,minTv,nx,time_scale_factor,Tv,Tc
@@ -367,7 +551,19 @@ contains
          fs%U = U1(1)
          fs%V = U1(2)
          fs%W = U1(3)
+         ! X boundaries
+         ! call fs%add_bcond(name='bc_xp',type=dirichlet,face='x',dir=+1,canCorrect=.false.,locator=xp_locator)
+         ! call fs%add_bcond(name='bc_xm',type=dirichlet,face='x',dir=-1,canCorrect=.false.,locator=xm_locator)
 
+         ! ! Y boundaries
+         ! call fs%add_bcond(name='bc_yp',type=dirichlet,face='y',dir=+1,canCorrect=.false.,locator=yp_locator)
+         ! call fs%add_bcond(name='bc_ym',type=dirichlet,face='y',dir=-1,canCorrect=.false.,locator=ym_locator)
+
+         ! ! Z boundaries
+         ! call fs%add_bcond(name='bc_zp',type=dirichlet,face='z',dir=+1,canCorrect=.false.,locator=zp_locator)
+         ! call fs%add_bcond(name='bc_zm',type=dirichlet,face='z',dir=-1,canCorrect=.false.,locator=zm_locator)
+
+         ! call set_wall_velocity()
          ! Surface Tension
          call param_read('Surface tension coefficient',fs%sigma)
          call param_read('Laplace Number',La)
@@ -506,7 +702,7 @@ contains
          call ens_out%add_scalar('VOF',vf%VF)
          call ens_out%add_scalar('pressure',fs%P)
          call ens_out%add_scalar('curvature',vf%curv)
-         ! call ens_out%add_surface('plic',smesh)
+         call ens_out%add_surface('plic',smesh)
          call ens_out%add_vector('sigma_3d_x',cst%sigma_3D(:,:,:,1,1),cst%sigma_3D(:,:,:,1,2),cst%sigma_3D(:,:,:,1,3))
          call ens_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
          call ens_out%add_vector('sigma_3d_z',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
@@ -649,6 +845,7 @@ contains
             fs%V=2.0_WP*fs%V-fs%Vold+resV
             fs%W=2.0_WP*fs%W-fs%Wold+resW
             
+            ! call set_wall_velocity()
             ! Apply other boundary conditions
             call fs%apply_bcond(time%t,time%dt)
             

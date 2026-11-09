@@ -2,11 +2,13 @@ CASES=(
     # ========================================
     # D8
     # ========================================
+    
+    # Basak_input_PCST_D8_P_NoMatching_SingleFluid
+    # Basak_input_PCST_D8_P_Matching_SingleFluid
     Basak_input_CSF_D8_SingleFluid
-    Basak_input_PCST_D8_NoP_NoMatching_SingleFluid
-    Basak_input_PCST_D8_NoP_Matching_SingleFluid
-    Basak_input_PCST_D8_P_NoMatching_SingleFluid
-    Basak_input_PCST_D8_P_Matching_SingleFluid
+    # Basak_input_PCST_D8_NoP_NoMatching_SingleFluid
+    # Basak_input_PCST_D8_NoP_Matching_SingleFluid
+    
 
     # Basak_input_CSF_D8_DiffFluid
     # Basak_input_PCST_D8_NoP_NoMatching_DiffFluid
@@ -17,11 +19,11 @@ CASES=(
     # ========================================
     # D16
     # ========================================
-    Basak_input_CSF_D16_SingleFluid
-    Basak_input_PCST_D16_NoP_NoMatching_SingleFluid
-    Basak_input_PCST_D16_NoP_Matching_SingleFluid
-    Basak_input_PCST_D16_P_NoMatching_SingleFluid
-    Basak_input_PCST_D16_P_Matching_SingleFluid
+    # Basak_input_CSF_D16_SingleFluid
+    # Basak_input_PCST_D16_NoP_NoMatching_SingleFluid
+    # Basak_input_PCST_D16_NoP_Matching_SingleFluid
+    # Basak_input_PCST_D16_P_NoMatching_SingleFluid
+    # Basak_input_PCST_D16_P_Matching_SingleFluid
 
     # Basak_input_CSF_D16_DiffFluid
     # Basak_input_PCST_D16_NoP_NoMatching_DiffFluid
@@ -32,11 +34,11 @@ CASES=(
     # ========================================
     # D32
     # ========================================
-    Basak_input_CSF_D32_SingleFluid
-    Basak_input_PCST_D32_NoP_NoMatching_SingleFluid
-    Basak_input_PCST_D32_NoP_Matching_SingleFluid
-    Basak_input_PCST_D32_P_NoMatching_SingleFluid
-    Basak_input_PCST_D32_P_Matching_SingleFluid
+    # Basak_input_CSF_D32_SingleFluid
+    # Basak_input_PCST_D32_NoP_NoMatching_SingleFluid
+    # Basak_input_PCST_D32_NoP_Matching_SingleFluid
+    # Basak_input_PCST_D32_P_NoMatching_SingleFluid
+    # Basak_input_PCST_D32_P_Matching_SingleFluid
 
     # Basak_input_CSF_D32_DiffFluid
     # Basak_input_PCST_D32_NoP_NoMatching_DiffFluid
@@ -64,7 +66,8 @@ for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#Basak_input_}"
-    DIR="./Basak_Jibben/StaticDrop_${CASE}"
+    DIR="./Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceSqWeight_${CASE}"
+    # DIR="./Debugging/StaticDrop_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"
@@ -82,7 +85,7 @@ for INPUT in "${CASES[@]}"; do
     echo "Saving monitor data"
     mkdir -p "$DIR"
     cp -r ./monitor "$DIR/"
-    cp -r ./vtk "$DIR/"
+    # cp -r ./vtk "$DIR/"
 
     echo "Case $CASE complete"
     echo

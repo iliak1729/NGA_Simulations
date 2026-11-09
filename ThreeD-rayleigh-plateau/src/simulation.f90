@@ -687,8 +687,19 @@ end subroutine compute_rp_stats
          call mfile%add_column(loc3,'VFint Loc 3')
          call mfile%add_column(loc4,'VFint Loc 4')
          call mfile%add_column(loc5,'VFint Loc 5')
-
          call mfile%write()         
+         ! Create CFL monitor
+         cflfile=monitor(fs%cfg%amRoot,'cfl')
+         call cflfile%add_column(time%n,'Timestep number')
+         call cflfile%add_column(time%t,'Time')
+         call cflfile%add_column(fs%CFLst,'STension CFL')
+         call cflfile%add_column(fs%CFLc_x,'Convective xCFL')
+         call cflfile%add_column(fs%CFLc_y,'Convective yCFL')
+         call cflfile%add_column(fs%CFLc_z,'Convective zCFL')
+         call cflfile%add_column(fs%CFLv_x,'Viscous xCFL')
+         call cflfile%add_column(fs%CFLv_y,'Viscous yCFL')
+         call cflfile%add_column(fs%CFLv_z,'Viscous zCFL')
+         call cflfile%write()
       end block create_monitor
 
    end subroutine simulation_init
@@ -815,7 +826,8 @@ end subroutine compute_rp_stats
          call fs%get_div()
          call compute_rp_stats(vf)
          call fs%get_max()
-         call mfile%write()         
+         call mfile%write()    
+         call cflfile%write()     
          ! Output to vtk
          if (vtk_evt%occurs()) then
             ! Update surfmesh object
