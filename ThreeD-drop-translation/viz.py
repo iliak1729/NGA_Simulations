@@ -267,50 +267,203 @@ sim_cases = [
     # D8 Cases - Translation Drop - Normal Weighting Comparison
     # Solid = No Matching | Dashed = Matching
     # ============================================================
-    (
-        "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceWeight_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
-        "Distance Weight, No Matching",
-        "xkcd:orange",
-        "-"
-    ),
-    (
-        "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceSqWeight_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
-        "Distance Squared Weight, No Matching",
-        "xkcd:blue",
-        "-"
-    ),
-    (
-        "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_NoWeight_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
-        "No Weight, No Matching",
-        "xkcd:charcoal",
-        "-"
-    ),
-    (
-        "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceWeight_PCST_D8_P_Matching_SingleFluid/monitor/simulation",
-        "Distance Weight, Matching",
-        "xkcd:orange",
-        "--"
-    ),
-    (
-        "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceSqWeight_PCST_D8_P_Matching_SingleFluid/monitor/simulation",
-        "Distance Squared Weight, Matching",
-        "xkcd:blue",
-        "--"
-    ),
-    (
-        "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_NoWeight_PCST_D8_P_Matching_SingleFluid/monitor/simulation",
-        "No Weight, Matching",
-        "xkcd:charcoal",
-        "--"
-    ),
+    # (
+    #     "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceWeight_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "Distance Weight, No Matching",
+    #     "xkcd:orange",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceSqWeight_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "Distance Squared Weight, No Matching",
+    #     "xkcd:blue",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_NoWeight_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "No Weight, No Matching",
+    #     "xkcd:charcoal",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceWeight_PCST_D8_P_Matching_SingleFluid/monitor/simulation",
+    #     "Distance Weight, Matching",
+    #     "xkcd:orange",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceSqWeight_PCST_D8_P_Matching_SingleFluid/monitor/simulation",
+    #     "Distance Squared Weight, Matching",
+    #     "xkcd:blue",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_NoWeight_PCST_D8_P_Matching_SingleFluid/monitor/simulation",
+    #     "No Weight, Matching",
+    #     "xkcd:charcoal",
+    #     "--"
+    # ),
     # ============================================================
     # D8 Case - Translation Drop - CSF
     # ============================================================
+#     (
+#         "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceSqWeight_CSF_D8_SingleFluid/monitor/simulation",
+#         "CSF, D8",
+#         "xkcd:red",
+#         "-"
+#     ),
+    # ============================================================
+    # D8 Cases - Original (Solid)
+    # ============================================================
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_OneFluid_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "One Fluid,Static",
+    #     "xkcd:charcoal",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/Ratio_Testing/StaticDrop_DensRatio1000_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "Density Only,Static",
+    #     "xkcd:azure",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/Ratio_Testing/StaticDrop_ViscRatio1000_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "Viscosity Only,Static",
+    #     "xkcd:burnt orange",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/Ratio_Testing/TranslatingDrop_OneFluid_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "One Fluid,Translating",
+    #     "xkcd:charcoal",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/Ratio_Testing/TranslatingDrop_DensRatio1000_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "Density Only,Translating",
+    #     "xkcd:azure",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/Ratio_Testing/TranslatingDrop_ViscRatio1000_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "Viscosity Only,Translating",
+    #     "xkcd:burnt orange",
+    #     "--"
+    # ),
+    # ============================================================
+    # D8 Cases - UpdatedSign - Static Drop
+    # ===========================================================
+    # ============================================================
+    # Jibben (Solid)
+    # ============================================================
     (
-        "ThreeD-drop-translation/Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceSqWeight_CSF_D8_SingleFluid/monitor/simulation",
-        "CSF, D8",
+        "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+        "Both Ratio,Jibben",
         "xkcd:red",
         "-"
+    ),
+    (
+        "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
+        "Density Ratio,Jibben",
+        "xkcd:azure",
+        "-"
+    ),
+    (
+        "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
+        "Viscosity Ratio,Jibben",
+        "xkcd:burnt orange",
+        "-"
+    ),
+    (
+        "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+        "One Fluid,Jibben",
+        "xkcd:charcoal",
+        "-"
+    ),
+
+    # ============================================================
+    # PLICNET (Dashed)
+    # ============================================================
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_PLICNET_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+    #     "Both Ratio,PLICNET",
+    #     "xkcd:red",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_PLICNET_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
+    #     "Density Ratio,PLICNET",
+    #     "xkcd:azure",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_PLICNET_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
+    #     "Viscosity Ratio,PLICNET",
+    #     "xkcd:burnt orange",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_PLICNET_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "One Fluid,PLICNET",
+    #     "xkcd:charcoal",
+    #     "-"
+    # ),
+
+    # ============================================================
+    # PULvira (Dotted)
+    # ============================================================
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_PULvira_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+    #     "Both Ratio,PULvira",
+    #     "xkcd:red",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_PULvira_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
+    #     "Density Ratio,PULvira",
+    #     "xkcd:azure",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_PULvira_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
+    #     "Viscosity Ratio,PULvira",
+    #     "xkcd:burnt orange",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_PULvira_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "One Fluid,PULvira",
+    #     "xkcd:charcoal",
+    #     "-"
+    # ),
+
+    # ============================================================
+    # ParaboloidLvira (Dash-Dot)
+    # ============================================================
+    (
+        "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+        "Both Ratio,ParaboloidLvira",
+        "xkcd:red",
+        "--"
+    ),
+    (
+        "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
+        "Density Ratio,ParaboloidLvira",
+        "xkcd:azure",
+        "--"
+    ),
+    (
+        "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
+        "Viscosity Ratio,ParaboloidLvira",
+        "xkcd:burnt orange",
+        "--"
+    ),
+    (
+        "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+        "One Fluid,ParaboloidLvira",
+        "xkcd:charcoal",
+        "--"
     ),
 ]
 
@@ -427,7 +580,7 @@ plt.grid(
     linewidth=0.5,
     alpha=0.4
 )
-plt.xlim(0,1)
+plt.xlim(0,0.5)
 # Get existing legend entries
 handles, labels = plt.gca().get_legend_handles_labels()
 
@@ -523,7 +676,7 @@ plt.grid(
     alpha=0.4
 )
 
-plt.xlim(0, 1)
+plt.xlim(0, 0.5)
 
 # Get existing legend entries
 handles, labels = plt.gca().get_legend_handles_labels()

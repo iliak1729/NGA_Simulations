@@ -16,6 +16,7 @@ Two Dimensional : .false.
 Gravity :                     0 0 0
 Liquid density :              1 
 Gas density :                 1
+Viscosity Ratio :             1
 Surface tension coefficient : 1
 
 # Options

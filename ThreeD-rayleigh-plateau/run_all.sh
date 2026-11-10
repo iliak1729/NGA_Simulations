@@ -1,57 +1,19 @@
 
 CASES=(
-    # CSF Cases
-    "Basak_input_CSF_LVIRA"
-    "Basak_input_CSF_PLICNET"
 
-    # PCST - No Pressure, Matching
-    "Basak_input_PCST_NoP_M_LVIRA"
-    "Basak_input_PCST_NoP_M_PLICNET"
+    # "Basak_input_PCST_P_NoM"
 
-    # PCST - No Pressure, No Matching
-    "Basak_input_PCST_NoP_NoM_LVIRA"
-    "Basak_input_PCST_NoP_NoM_PLICNET"
-
-    # PCST - Pressure, Matching
-    "Basak_input_PCST_P_M_LVIRA"
-    "Basak_input_PCST_P_M_PLICNET"
-
-    # PCST - Pressure, No Matching
-    "Basak_input_PCST_P_NoM_LVIRA"
-    "Basak_input_PCST_P_NoM_PLICNET"
-
-    # Jibben Cases
-    "Basak_input_CSF_Jibben"
-    "Basak_input_PCST_NoP_M_Jibben"
-    "Basak_input_PCST_NoP_NoM_Jibben"
-    "Basak_input_PCST_P_M_Jibben"
-    "Basak_input_PCST_P_NoM_Jibben"
-
-    # "input_PCST_P_Matching"
-    # "input_PCST_NoP_Matching"
-    # "input_PCST_NoP_NoMatching"
-    # "input_PCST_P_NoMatching"
-    # "input_PCST_P_NoMatching_LVIRA"
-    # "input_PCST_P_NoMatching_PLICNET"
-    # "input_PCST_P_NoMatching_Jibben"
-    # "input_CSF_PLICNET"
-    # "input_CSF_LVIRA"
-    # "input_CSF_Jibben"
-    # "input_PCST_P_Matching_Jibben"
-    # "input_PCST_P_Matching_LVIRA"
-    # "input_PCST_P_Matching_PLICNET"
-    # "input_CSF"
-    # "input_PCST_NoP_Matching_Laplacian"
-    # "input_PCST_NoP_NoMatching_Laplacian"
-    # "input_PCST_P_NoMatching_Laplacian"
-    # "input_PCST_P_Matching_Laplacian"
+    "input_PCST_P_NoMatching_OneFluid"
+    "input_PCST_P_NoMatching_ViscRatio"
+    "input_PCST_P_NoMatching_DensRatio"
+    "input_PCST_P_NoMatching_BothRatio"
 )
 make -j 10
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./Basak/First_${CASE}"
+    DIR="./Debugging_NewSign/Jibben_ShortTime_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"

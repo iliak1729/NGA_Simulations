@@ -846,7 +846,7 @@ subroutine add_conservative_surface_tension_jump(this,dt,div,contact_model)
             ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
             !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
             ! endif
-            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)+this%SurfaceTensionDiv(i,j,k)
         end do
         end do
     end do
@@ -959,7 +959,7 @@ subroutine add_3D_surface_tension_jump(this,dt,div,contact_model)
             ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
             !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
             ! endif
-            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)+this%SurfaceTensionDiv(i,j,k)
         end do
         end do
     end do
@@ -1070,7 +1070,7 @@ subroutine add_3D_surface_tension_jump_face_paraboloids(this,dt,div,contact_mode
             ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
             !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
             ! endif
-            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)+this%SurfaceTensionDiv(i,j,k)
         end do
         end do
     end do
@@ -1214,7 +1214,7 @@ subroutine add_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
             ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
             !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%fs%rho_U(i,j,k),div(i,j,k)
             ! endif
-            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)+this%SurfaceTensionDiv(i,j,k)
         end do
         end do
     end do
@@ -1355,7 +1355,7 @@ subroutine add_3D_CSF_Shift_surface_tension_jump(this,dt,div,contact_model)
             ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
             !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%fs%rho_U(i,j,k),div(i,j,k)
             ! endif
-            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)+this%SurfaceTensionDiv(i,j,k)
         end do
         end do
     end do
@@ -1564,7 +1564,7 @@ subroutine add_Seric_surface_tension_jump(this,dt,div,contact_model)
             ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
             !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
             ! endif
-            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)+this%SurfaceTensionDiv(i,j,k)
         end do
         end do
     end do
@@ -2295,16 +2295,16 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! endif 
                         !Distance Weights
                         ! Calculate interface centroid
-                        cen = calculateCentroid( &
-                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
-                        ! Distance from momentum face center to interface centroid
-                        distance = sqrt(sum((face_center - cen)**2))
-                        ! Characteristic length scale
-                        length_scale = 0.5_WP * minval(dvec)
-                        ! Inverse-distance-squared weighting (bounded)
-                        weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
+                        ! cen = calculateCentroid( &
+                        !     this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        ! ! Distance from momentum face center to interface centroid
+                        ! distance = sqrt(sum((face_center - cen)**2))
+                        ! ! Characteristic length scale
+                        ! length_scale = 0.5_WP * minval(dvec)
+                        ! ! Inverse-distance-squared weighting (bounded)
+                        ! weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
                         ! No Weight
-                        ! weight = 1.0_WP
+                        weight = 1.0_WP
                         normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
@@ -2354,16 +2354,16 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! endif 
                         !Distance Weights
                         ! Calculate interface centroid
-                        cen = calculateCentroid( &
-                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
-                        ! Distance from momentum face center to interface centroid
-                        distance = sqrt(sum((face_center - cen)**2))
-                        ! Characteristic length scale
-                        length_scale = 0.5_WP * minval(dvec)
-                        ! Inverse-distance-squared weighting (bounded)
-                        weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
+                        ! cen = calculateCentroid( &
+                        !     this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        ! ! Distance from momentum face center to interface centroid
+                        ! distance = sqrt(sum((face_center - cen)**2))
+                        ! ! Characteristic length scale
+                        ! length_scale = 0.5_WP * minval(dvec)
+                        ! ! Inverse-distance-squared weighting (bounded)
+                        ! weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
                         ! No Weight
-                        ! weight = 1.0_WP
+                        weight = 1.0_WP
                         normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
@@ -2413,16 +2413,16 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! endif 
                         !Distance Weights
                         ! Calculate interface centroid
-                        cen = calculateCentroid( &
-                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
-                        ! Distance from momentum face center to interface centroid
-                        distance = sqrt(sum((face_center - cen)**2))
-                        ! Characteristic length scale
-                        length_scale = 0.5_WP * minval(dvec)
-                        ! Inverse-distance-squared weighting (bounded)
-                        weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
+                        ! cen = calculateCentroid( &
+                        !     this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        ! ! Distance from momentum face center to interface centroid
+                        ! distance = sqrt(sum((face_center - cen)**2))
+                        ! ! Characteristic length scale
+                        ! length_scale = 0.5_WP * minval(dvec)
+                        ! ! Inverse-distance-squared weighting (bounded)
+                        ! weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
                         ! No Weight
-                        ! weight = 1.0_WP
+                        weight = 1.0_WP
                         normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
@@ -2472,16 +2472,16 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! endif 
                         !Distance Weights
                         ! Calculate interface centroid
-                        cen = calculateCentroid( &
-                            this%vf%interface_polygon(1,index(1),index(2),index(3)))
-                        ! Distance from momentum face center to interface centroid
-                        distance = sqrt(sum((face_center - cen)**2))
-                        ! Characteristic length scale
-                        length_scale = 0.5_WP * minval(dvec)
-                        ! Inverse-distance-squared weighting (bounded)
-                        weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
+                        ! cen = calculateCentroid( &
+                        !     this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        ! ! Distance from momentum face center to interface centroid
+                        ! distance = sqrt(sum((face_center - cen)**2))
+                        ! ! Characteristic length scale
+                        ! length_scale = 0.5_WP * minval(dvec)
+                        ! ! Inverse-distance-squared weighting (bounded)
+                        ! weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
                         ! No Weight
-                        ! weight = 1.0_WP
+                        weight = 1.0_WP
                         normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
@@ -4052,7 +4052,7 @@ subroutine add_Saud_surface_tension_jump(this,dt,div,contact_model) ! Need to Up
             ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
             !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
             ! endif
-            this%fs%div(i,j,k)=this%fs%div(i,j,k)-this%SurfaceTensionDiv(i,j,k)
+            this%fs%div(i,j,k)=this%fs%div(i,j,k)+this%SurfaceTensionDiv(i,j,k)
         end do
         end do
     end do

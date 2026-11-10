@@ -15,7 +15,7 @@ Two Dimensional : .false.
 # Fluid properties
 Gravity :                     0 0 0
 Liquid density :              1 
-Density Ratio :                 1
+Density Ratio :               1000
 Viscosity Ratio :             1
 Surface tension coefficient : 1
 
@@ -29,16 +29,16 @@ Matching Option : 1
 Curvature Option : 1
 PU Spread : 2.0
 # 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
-Interface Type : 2
+Interface Type : 3
 
 # Simulation Parameters
 Droplet Radius : 0.5
-Droplet Velocity : 1 0 0 
+Droplet Velocity : 0 0 0 
 Laplace Number : 1200
 
 # Time integration
-Min Viscous Time :            1 # Changes Max Time
-Min Capillary Time :          1 # This will almost never matter, as the viscous time is so much longer, but it is fine
+Min Viscous Time :            0.5 # Changes Max Time
+Min Capillary Time :          0.5 # This will almost never matter, as the viscous time is so much longer, but it is fine
 
 # Time integration
 Max timestep size : 1e-2  # Default Values, Overriden
@@ -51,4 +51,4 @@ Pressure tolerance : 1e-12
 Pressure iteration : 100
 
 # Ensight output
-Ensight output period : 1e-1
+Ensight output period : 1e-12

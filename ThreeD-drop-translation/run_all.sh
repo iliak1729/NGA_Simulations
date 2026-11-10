@@ -2,10 +2,14 @@ CASES=(
     # ========================================
     # D8
     # ========================================
-    
+    Debugging_PCST_D8_P_NoMatching_SingleFluid
+    Debugging_PCST_D8_P_NoMatching_DensRatio
+    Debugging_PCST_D8_P_NoMatching_ViscRatio
+    Debugging_PCST_D8_P_NoMatching_BothRatio
+
     # Basak_input_PCST_D8_P_NoMatching_SingleFluid
     # Basak_input_PCST_D8_P_Matching_SingleFluid
-    Basak_input_CSF_D8_SingleFluid
+    # Basak_input_CSF_D8_SingleFluid
     # Basak_input_PCST_D8_NoP_NoMatching_SingleFluid
     # Basak_input_PCST_D8_NoP_Matching_SingleFluid
     
@@ -66,7 +70,7 @@ for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#Basak_input_}"
-    DIR="./Basak_Jibben_1200_DistanceWeightNormals/Translation_DistanceSqWeight_${CASE}"
+    DIR="./UpdatedSign/StaticDrop_ParaboloidLvira_${CASE}"
     # DIR="./Debugging/StaticDrop_${CASE}"
 
     echo "========================================"
@@ -85,7 +89,7 @@ for INPUT in "${CASES[@]}"; do
     echo "Saving monitor data"
     mkdir -p "$DIR"
     cp -r ./monitor "$DIR/"
-    # cp -r ./vtk "$DIR/"
+    cp -r ./vtk "$DIR/"
 
     echo "Case $CASE complete"
     echo

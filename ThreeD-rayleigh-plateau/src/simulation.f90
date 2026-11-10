@@ -611,6 +611,19 @@ end subroutine compute_rp_stats
          call param_read('Curvature Option',cst%CurvatureOption,default = 1)
          call param_read('PU Spread',cst%PU_spread,default = 2.0_WP)
          call param_read('Two Dimensional',cst%TwoD,default = .false.)
+         if(cfg%amRoot) then 
+            print *, "============== SURFACE TENSION INFO ================"
+            print *, "Marangoni Option = ",cst%MarangoniOption
+            print *, "Pressure Option = ",cst%PressureOption
+            print *, "Smoothing Option = ",cst%SmoothingOption
+            print *, "Surface Tension Option = ",cst%SurfaceTensionOption
+            print *, "Levelset Option = ",cst%LevelsetOption
+            print *, "Matching Option = ",cst%MatchingOption
+            print *, "Curvature Option = ",cst%CurvatureOption
+            print *, "PU Spread = ",cst%PU_spread
+            print *, "Two Dimensional = ",cst%TwoD
+            print *, "===================================================="
+         endif
       end block create_surface_tension_solver
 
       ! Create surfmesh object for interface polygon output
@@ -678,15 +691,15 @@ end subroutine compute_rp_stats
          call mfile%add_column(time_nd,'t/tc')
          call mfile%add_column(r_max,'Rmax')
          call mfile%add_column(r_min,'Rmin')
-         call mfile%add_column(Fx_sum,'Fx_sum')
-         call mfile%add_column(Fy_sum,'Fy_sum')
-         call mfile%add_column(Fz_sum,'Fz_sum')
-         call mfile%add_column(fs%divmax,'Max Div')
-         call mfile%add_column(loc1,'VFint Loc 1')
-         call mfile%add_column(loc2,'VFint Loc 2')
-         call mfile%add_column(loc3,'VFint Loc 3')
-         call mfile%add_column(loc4,'VFint Loc 4')
-         call mfile%add_column(loc5,'VFint Loc 5')
+         ! call mfile%add_column(Fx_sum,'Fx_sum')
+         ! call mfile%add_column(Fy_sum,'Fy_sum')
+         ! call mfile%add_column(Fz_sum,'Fz_sum')
+         ! call mfile%add_column(fs%divmax,'Max Div')
+         ! call mfile%add_column(loc1,'VFint Loc 1')
+         ! call mfile%add_column(loc2,'VFint Loc 2')
+         ! call mfile%add_column(loc3,'VFint Loc 3')
+         ! call mfile%add_column(loc4,'VFint Loc 4')
+         ! call mfile%add_column(loc5,'VFint Loc 5')
          call mfile%write()         
          ! Create CFL monitor
          cflfile=monitor(fs%cfg%amRoot,'cfl')
