@@ -19,7 +19,7 @@ color_blue = '#0072B2'
 color_red = '#D55E00'
 color_pink = '#CC79A7'
 # Data
-datafile = "ThreeD-marangoni-rise/OLD/N64-64-96-3D/monitor/bubble"
+datafile = "ThreeD-marangoni-rise/monitor/bubble"
 data1 = np.loadtxt(datafile, skiprows=2)
 
 datafile = "ThreeD-marangoni-rise/OLD/N64-64-96-2D/monitor/bubble"
@@ -74,15 +74,18 @@ print("Vygb =",Vygb)
 
 plt.figure()
 
+x = data5[:,1]
+y = data5[:,3]/Vygb
+plt.plot(x,y,label = "3D,OLD PU,N=64",linewidth=5,color = color_teal)
 
-x = data1[:,1]/tNorm
+x = data1[:,1]
 y = data1[:,3]/Vygb
-plt.plot(x,y,label = "3D,PCST-SHIFT,N=64",linewidth=5,color = color_red)
+plt.plot(x,y,label = "3D,Face Paraboloid,N=64",linewidth=5,color = color_red)
 
 
-x = data2[:,1]/tNorm
-y = data2[:,3]/Vygb
-plt.plot(x,y,label = "2D,PCST-SHIFT,N=64",linewidth=5,color = color_blue)
+# x = data2[:,1]/tNorm
+# y = data2[:,3]/Vygb
+# plt.plot(x,y,label = "2D,PCST-SHIFT,N=64",linewidth=5,color = color_blue)
 
 # x = data3[:,1]/tNorm
 # y = data3[:,3]/Vygb
@@ -92,9 +95,7 @@ plt.plot(x,y,label = "2D,PCST-SHIFT,N=64",linewidth=5,color = color_blue)
 # y = data4[:,3]/Vygb
 # plt.plot(x,y,label = "3D,PCST,N=128",linewidth=5,color = color_orange)
 
-x = data5[:,1]/tNorm
-y = data5[:,3]/Vygb
-plt.plot(x,y,label = "3D,PCST,N=64",linewidth=5,color = color_teal)
+
 plt.legend()
 
 plt.title("Marangoni Rise Case")

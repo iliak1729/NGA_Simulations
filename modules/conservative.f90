@@ -45,7 +45,7 @@ module conservative_st
         real(WP), dimension(:,:,:), allocatable :: sigma_xx,sigma_yy,sigma_xy,sigma_yx ! Used Stress Tensor components
         real(WP), dimension(:,:,:), allocatable :: sigma_xx_P,sigma_yy_P,sigma_xy_P,sigma_yx_P ! Pressure Component
         real(WP), dimension(:,:,:), allocatable :: sigma_xx_NoP,sigma_yy_NoP,sigma_xy_NoP,sigma_yx_NoP ! Tangent Component
-        real(WP), dimension(:,:,:,:,:), allocatable :: sigma_3D,sigma_3D_Exact,sigma_3D_OLD,dSigma
+        real(WP), dimension(:,:,:,:,:), allocatable :: sigma_3D,sigma_3D_Exact,sigma_3D_OLD,dSigma,sigma_3D_P,sigma_3D_NoP, sigma_3D_DP
         real(WP), dimension(:,:,:), allocatable :: force_potential_field,poisson_source ! Potential Field Tools
         real(WP), dimension(:,:,:), allocatable :: Fst_x,Fst_y,Fst_z,Fst_mag ! Forces sent to momentum equation
         real(WP), dimension(:,:,:), allocatable :: Fst_x_3D,Fst_y_3D,Fst_z_3D
@@ -269,6 +269,9 @@ subroutine init(this,fs_in,vf_in,time_in)
     allocate(this%dSigma(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
     allocate(this%sigma_3D_OLD(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
     allocate(this%sigma_3D_Exact(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
+    allocate(this%sigma_3D_P(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
+    allocate(this%sigma_3D_NoP(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
+    allocate(this%sigma_3D_DP(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_,1:3,1:3))
     
     allocate(this%phi(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
     allocate(this%phi_x(this%fs%cfg%imino_:this%fs%cfg%imaxo_,this%fs%cfg%jmino_:this%fs%cfg%jmaxo_,this%fs%cfg%kmino_:this%fs%cfg%kmaxo_))
@@ -1070,7 +1073,7 @@ subroutine add_3D_surface_tension_jump_face_paraboloids(this,dt,div,contact_mode
             ! if(abs(SurfaceTensionDiv(i,j,k)) .gt. 1e-12) then
             !    write(*,'(A,3F20.10)') "Surface Tension Div, rho_U,div: ", SurfaceTensionDiv(i,j,k),this%rho_U(i,j,k),div(i,j,k)
             ! endif
-            this%fs%div(i,j,k)=this%fs%div(i,j,k)+this%SurfaceTensionDiv(i,j,k)
+            div(i,j,k)=div(i,j,k)+this%SurfaceTensionDiv(i,j,k)
         end do
         end do
     end do
@@ -2126,6 +2129,8 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
     real(WP) :: gas_volume
     real(WP) :: liquid_fraction
     real(WP) :: gas_fraction
+    real(WP), dimension(1:3) :: N1,N2,N3,N4
+    real(WP) :: W1,W2,W3,W4,VF1,VF2,VF3,VF4
 
     dx = this%vf%cfg%dx(1)
     dy = this%vf%cfg%dy(1)
@@ -2223,10 +2228,18 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                 do jj=lower(2),upper(2)
                 do ii=lower(1),upper(1)
                     if(getNumberOfVertices(this%vf%interface_polygon(1,ii,jj,kk)) .gt. 0) then
-                        call addMember(jibben_neighborhood,this%vf%interface_polygon(1,ii,jj,kk),1.0_WP)
+                        vf_sample = this%VF%vf(ii,jj,kk)
+                        ! VF Weight
+                        weight = 1.0_WP 
+                        if(vf_sample .lt. 0.1_WP) then 
+                            weight = SIN(5.0_WP*Pi*vf_sample)**2
+                        endif 
+                        if(vf_sample .gt. 0.9_WP) then 
+                            weight = SIN(5.0_WP*Pi*(1.0_WP-vf_sample))**2
+                        endif 
+                        call addMember(jibben_neighborhood,this%vf%interface_polygon(1,ii,jj,kk),weight)
                         if(ii.eq.i.and.jj.eq.j.and.kk.eq.k) then 
                             icenter=ind
-                            found_interface=.true.
                             call setCenterOfStencil(jibben_neighborhood,icenter)
                         endif
                         ind = ind+1
@@ -2240,6 +2253,14 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                 normal = (/0.0_WP,0.0_WP,0.0_WP/)
                 found_interface = .false.
                 count = 0.0_WP
+                W1 = 0.0_WP 
+                W2 = 0.0_WP 
+                W3 = 0.0_WP 
+                W4 = 0.0_WP 
+                N1 = 0.0_WP 
+                N2 = 0.0_WP
+                N3 = 0.0_WP 
+                N4 = 0.0_WP
                 liquid_in_cell = 0.0_WP 
                 cell_volume = 0.0_WP 
                 vf_cell = 0.0_WP
@@ -2256,11 +2277,13 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         found_interface = .true. 
                     endif
                     count = 1.0_WP
+                    W1 = 1.0_WP 
                     ! print *, "Eq Branch"
                 else
                     ! ========================== First Pressure Cell
                     index = (/i,j,k/)
                     vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    VF1 = vf_sample
                     ! Construct quarter cell
                     ! Shift to quarter cell center
                     shift = 0.0_WP
@@ -2285,14 +2308,14 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! Weight
                         ! Surface Area Weight
                         ! weight = this%vf%SD(index(1),index(2),index(3))
-                        ! ! VF Weight
-                        ! weight = 1.0_WP 
-                        ! if(vf_sample .lt. 0.1_WP) then 
-                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*vf_sample)
-                        ! endif 
-                        ! if(vf_sample .gt. 0.9_WP) then 
-                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*(1.0_WP-vf_sample))
-                        ! endif 
+                        ! VF Weight
+                        weight = 1.0_WP 
+                        if(vf_sample .lt. 0.1_WP) then 
+                            weight = SIN(5.0_WP*Pi*vf_sample)**2
+                        endif 
+                        if(vf_sample .gt. 0.9_WP) then 
+                            weight = SIN(5.0_WP*Pi*(1.0_WP-vf_sample))**2
+                        endif 
                         !Distance Weights
                         ! Calculate interface centroid
                         ! cen = calculateCentroid( &
@@ -2304,7 +2327,9 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! ! Inverse-distance-squared weighting (bounded)
                         ! weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
                         ! No Weight
-                        weight = 1.0_WP
+                        ! weight = 1.0_WP
+                        N1 = calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        W1 = weight
                         normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
@@ -2319,6 +2344,7 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     index = (/i,j,k/)
                     index = index+shift_index_normal
                     vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    VF2 = vf_sample
                     ! Construct quarter cell
                     ! Shift to quarter cell center
                     shift = 0.0_WP
@@ -2344,14 +2370,14 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! Weight
                         ! Surface Area Weight
                         ! weight = this%vf%SD(index(1),index(2),index(3))
-                        ! ! VF Weight
-                        ! weight = 1.0_WP 
-                        ! if(vf_sample .lt. 0.1_WP) then 
-                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*vf_sample)
-                        ! endif 
-                        ! if(vf_sample .gt. 0.9_WP) then 
-                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*(1.0_WP-vf_sample))
-                        ! endif 
+                        ! VF Weight
+                        weight = 1.0_WP 
+                        if(vf_sample .lt. 0.1_WP) then 
+                            weight = SIN(5.0_WP*Pi*vf_sample)**2
+                        endif 
+                        if(vf_sample .gt. 0.9_WP) then 
+                            weight = SIN(5.0_WP*Pi*(1.0_WP-vf_sample))**2
+                        endif 
                         !Distance Weights
                         ! Calculate interface centroid
                         ! cen = calculateCentroid( &
@@ -2363,7 +2389,9 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! ! Inverse-distance-squared weighting (bounded)
                         ! weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
                         ! No Weight
-                        weight = 1.0_WP
+                        ! weight = 1.0_WP
+                        N2 = calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        W2 = weight
                         normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
@@ -2378,6 +2406,7 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     index = (/i,j,k/)
                     index = index + shift_index_normal - shift_index_momentum 
                     vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    VF3 = vf_sample
                     ! Construct quarter cell
                     ! Shift to quarter cell center
                     shift = 0.0_WP
@@ -2403,14 +2432,14 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! Weight
                         ! Surface Area Weight
                         ! weight = this%vf%SD(index(1),index(2),index(3))
-                        ! ! VF Weight
-                        ! weight = 1.0_WP 
-                        ! if(vf_sample .lt. 0.1_WP) then 
-                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*vf_sample)
-                        ! endif 
-                        ! if(vf_sample .gt. 0.9_WP) then 
-                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*(1.0_WP-vf_sample))
-                        ! endif 
+                        ! VF Weight
+                        weight = 1.0_WP 
+                        if(vf_sample .lt. 0.1_WP) then 
+                            weight = SIN(5.0_WP*Pi*vf_sample)**2
+                        endif 
+                        if(vf_sample .gt. 0.9_WP) then 
+                            weight = SIN(5.0_WP*Pi*(1.0_WP-vf_sample))**2
+                        endif 
                         !Distance Weights
                         ! Calculate interface centroid
                         ! cen = calculateCentroid( &
@@ -2422,7 +2451,9 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! ! Inverse-distance-squared weighting (bounded)
                         ! weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
                         ! No Weight
-                        weight = 1.0_WP
+                        ! weight = 1.0_WP
+                        N3 = calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        W3 = weight
                         normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
@@ -2437,6 +2468,7 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     index = (/i,j,k/)
                     index = index - shift_index_momentum 
                     vf_sample = this%VF%vf(index(1),index(2),index(3))
+                    VF4 = vf_sample
                     ! Construct quarter cell
                     ! Shift to quarter cell center
                     shift = 0.0_WP
@@ -2462,14 +2494,14 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! Weight
                         ! Surface Area Weight
                         ! weight = this%vf%SD(index(1),index(2),index(3))
-                        ! ! VF Weight
-                        ! weight = 1.0_WP 
-                        ! if(vf_sample .lt. 0.1_WP) then 
-                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*vf_sample)
-                        ! endif 
-                        ! if(vf_sample .gt. 0.9_WP) then 
-                        !     weight = 0.5_WP - 0.5_WP * COS(10.0_WP*Pi*(1.0_WP-vf_sample))
-                        ! endif 
+                        ! VF Weight
+                        weight = 1.0_WP 
+                        if(vf_sample .lt. 0.1_WP) then 
+                            weight = SIN(5.0_WP*Pi*vf_sample)**2
+                        endif 
+                        if(vf_sample .gt. 0.9_WP) then 
+                            weight = SIN(5.0_WP*Pi*(1.0_WP-vf_sample))**2
+                        endif 
                         !Distance Weights
                         ! Calculate interface centroid
                         ! cen = calculateCentroid( &
@@ -2481,7 +2513,9 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         ! ! Inverse-distance-squared weighting (bounded)
                         ! weight = 1.0_WP / (1.0_WP + (distance/length_scale)**2)
                         ! No Weight
-                        weight = 1.0_WP
+                        ! weight = 1.0_WP
+                        N4 = calculateNormal(this%vf%interface_polygon(1,index(1),index(2),index(3)))
+                        W4 = weight
                         normal = normal + weight*calculateNormal( &
                             this%vf%interface_polygon(1,index(1),index(2),index(3)))
                         call getNormMoments(cell, &
@@ -2501,15 +2535,43 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                     endif
                     ! print *, "Not EQ Branch" 
                 endif
-                vf_cell = min(vf_cell,1.0_WP)
-                vf_cell = max(vf_cell,0.0_WP)
+                if (.not.ieee_is_finite(vf_cell)) then
+                    print *, "ERROR: Nonfinite momentum VF"
+                    print *, "Cell:",i,j,k
+                    print *, "Directions:",i_in,j_in
+                    error stop
+                endif
 
+                if (vf_cell.lt.-1e-8_WP.or.vf_cell.gt.1.0_WP+1e-8_WP) then
+                    print *, "ERROR: Momentum VF outside [0,1]"
+                    print *, "Cell:",i,j,k
+                    print *, "Directions:",i_in,j_in
+                    print *, "VF:",vf_cell
+                    print *, "Liquid volume:",liquid_in_cell
+                    print *, "Total volume:",cell_volume_total
+                    error stop
+                endif
+
+                vf_cell = min(max(vf_cell,0.0_WP),1.0_WP)
+                ! count = W1 + W2 + W3 + W4
+                if(count .lt. 0.0) then 
+                    count = -count
+                endif
                 if(found_interface) then 
-                    normal = normal/count
+                    normal = normal/count 
                     normal_mag = sqrt(sum(normal**2))
                     if(normal_mag .gt. 1e-12) then 
                         normal = normal/normal_mag 
                     else 
+                        print *, "====================" 
+                        print *, "SMALL NORMAL MAG"
+                        print *, "N1,W1 = ",N1,W1,VF1
+                        print *, "N2,W2 = ",N2,W2,VF2
+                        print *, "N3,W3 = ",N3,W3,VF3
+                        print *, "N4,W4 = ",N4,W4,VF4
+                        print *, "Normal = ",normal
+                        print *, "Count = ", count
+                        print *, "===================="
                         normal = 0.0_WP
                     endif
                 else
@@ -2523,7 +2585,7 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         face_center - 0.5_WP*dvec, &
                         face_center + 0.5_WP*dvec)
 
-                if(found_interface) then 
+                if(found_interface .and. vf_cell .gt. 1e-12 .and. vf_cell .lt. 1.0_WP - 1e-12) then 
                     ! Localize Jibben neighborhood
                     call setDelta(jibben_neighborhood, 2.5_WP*this%vf%cfg%meshsize(i,j,k))
 
@@ -2533,6 +2595,9 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
 
                     ! We now have VF cell and
                     ! print *,"VF Cell=",vf_cell 
+                    if(vf_cell .lt. 1e-12) then 
+                        print *, "SMALL VF IN INTERFACE CELL"
+                    endif
                     SELECT CASE(this%MatchingOption)
                         CASE(2)
                             ! print *,"MATCHING"
@@ -2540,10 +2605,24 @@ subroutine updateSurfaceTensionStresses3DFaceParaboloids(this)
                         CASE DEFAULT
                             ! print *,"NOT MATCHING"
                     END SELECT
-
+    
                     call emptyNeighborhood(jibben_neighborhood)
+                    ! Montiors
+                    ! P
+                    call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3, interface_component,1.0_WP,this%MarangoniOption,force)
+                    this%sigma_3D_P(i,j,k,i_in,j_in) = force(i_in)
+                    ! No P
+                    call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3, interface_component,0.0_WP,this%MarangoniOption,force)
+                    this%sigma_3D_NoP(i,j,k,i_in,j_in) = force(i_in)
+
+                    this%sigma_3D_DP(i,j,k,i_in,j_in) = this%sigma_3D_P(i,j,k,i_in,j_in) - this%sigma_3D_NoP(i,j,k,i_in,j_in)
+                    ! Real
                     call solveFaceParaboloid(solver,this%fs%sigma,P0,P1,P2,P3, interface_component,this%PressureOption,this%MarangoniOption,force)
                 endif
+                ! if(sum(force * face_normal) .lt. 0.0_WP) then 
+                !     force = -force
+                !     print *, "FLIPPING FORCE IN NGA"
+                ! endif
                 ! print *,"Force DOne"   
                 this%sigma_3D(i,j,k,i_in,j_in) = force(i_in)
                 if (ieee_is_nan(force(i_in))) then 
@@ -2897,32 +2976,71 @@ end subroutine updateSurfaceTensionForces
 
 ! ####################################################### SMOOTHING FUNCTIONS ################################################
 subroutine applyLaplacianSmoothing(this)
-    use irl_fortran_interface
-    use f_PUNeigh_RectCub_class
-    use f_SeparatorVariant_class
-    use f_PUST_RectCub_class
-
     implicit none
-    class(conservative_st_type), intent(inout) :: this
-    integer :: i,j,k 
-    
-    this%Fst_x = 0.0_WP;
-    this%Fst_y = 0.0_WP;
-    this%Fst_z = 0.0_WP;
 
-    ! Smoothing
+    class(conservative_st_type), intent(inout) :: this
+
+    integer :: i,j,k
+    real(WP), parameter :: alpha = 0.5_WP
+
+    ! Temporary arrays
+    this%Fst_x = this%fs%Pjx
+    this%Fst_y = this%fs%Pjy
+    this%Fst_z = this%fs%Pjz
+
+    ! ============================================================
+    ! 3D Laplacian smoothing
+    ! ============================================================
+
     do k=this%fs%cfg%kmin_,this%fs%cfg%kmax_
         do j=this%fs%cfg%jmin_,this%fs%cfg%jmax_
-        do i=this%fs%cfg%imin_,this%fs%cfg%imax_
-            this%Fst_x(i,j,k) = 0.125*(this%fs%Pjx(i+1,j,k)+this%fs%Pjx(i-1,j,k) + this%fs%Pjx(i,j+1,k) + this%fs%Pjx(i,j-1,k)) + 0.5*this%fs%Pjx(i,j,k)
-            this%Fst_y(i,j,k) = 0.125*(this%fs%Pjy(i+1,j,k)+this%fs%Pjy(i-1,j,k) + this%fs%Pjy(i,j+1,k) + this%fs%Pjy(i,j-1,k)) + 0.5*this%fs%Pjy(i,j,k)
-        end do
+            do i=this%fs%cfg%imin_,this%fs%cfg%imax_
+
+                ! X component
+                this%Fst_x(i,j,k) = &
+                    (1.0_WP-alpha)*this%fs%Pjx(i,j,k) + &
+                    (alpha/6.0_WP)*( &
+                        this%fs%Pjx(i+1,j,k) + &
+                        this%fs%Pjx(i-1,j,k) + &
+                        this%fs%Pjx(i,j+1,k) + &
+                        this%fs%Pjx(i,j-1,k) + &
+                        this%fs%Pjx(i,j,k+1) + &
+                        this%fs%Pjx(i,j,k-1))
+
+                ! Y component
+                this%Fst_y(i,j,k) = &
+                    (1.0_WP-alpha)*this%fs%Pjy(i,j,k) + &
+                    (alpha/6.0_WP)*( &
+                        this%fs%Pjy(i+1,j,k) + &
+                        this%fs%Pjy(i-1,j,k) + &
+                        this%fs%Pjy(i,j+1,k) + &
+                        this%fs%Pjy(i,j-1,k) + &
+                        this%fs%Pjy(i,j,k+1) + &
+                        this%fs%Pjy(i,j,k-1))
+
+                ! Z component
+                this%Fst_z(i,j,k) = &
+                    (1.0_WP-alpha)*this%fs%Pjz(i,j,k) + &
+                    (alpha/6.0_WP)*( &
+                        this%fs%Pjz(i+1,j,k) + &
+                        this%fs%Pjz(i-1,j,k) + &
+                        this%fs%Pjz(i,j+1,k) + &
+                        this%fs%Pjz(i,j-1,k) + &
+                        this%fs%Pjz(i,j,k+1) + &
+                        this%fs%Pjz(i,j,k-1))
+
+            end do
         end do
     end do
 
-    this%fs%Pjx = this%Fst_x 
+    ! ============================================================
+    ! Update surface tension arrays
+    ! ============================================================
+
+    this%fs%Pjx = this%Fst_x
     this%fs%Pjy = this%Fst_y
     this%fs%Pjz = this%Fst_z
+
 end subroutine applyLaplacianSmoothing
 
 subroutine applyGradientSmoothing(this)

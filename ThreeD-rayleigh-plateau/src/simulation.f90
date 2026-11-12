@@ -798,7 +798,7 @@ end subroutine compute_rp_stats
             fs%V=2.0_WP*fs%V-fs%Vold+resV
             fs%W=2.0_WP*fs%W-fs%Wold+resW
 
-            ! Apply other boundary conditions
+            ! Apply other boundary conditions 
             call fs%apply_bcond(time%t,time%dt)
 
             ! Solve Poisson equation
@@ -893,7 +893,7 @@ end subroutine compute_rp_stats
       ! print *,"Fill Arrays"
       if ((smesh%nPoly+smesh%nBezierTri).gt.0) then
          np=0; nbt = 0
-         ! Start with quadratic surfaces
+         ! Start with quadratic surfaces 
          do k=vf_local%cfg%kmin_,vf_local%cfg%kmax_
             do j=vf_local%cfg%jmin_,vf_local%cfg%jmax_
                do i=vf_local%cfg%imin_,vf_local%cfg%imax_
@@ -903,12 +903,12 @@ end subroutine compute_rp_stats
                         nbt=nbt+1
                         smesh%trivar(var_index,nbt)=A(i,j,k)
                      end do
-                  end if
+                  end if 
                end do
             end do
          end do
          ! Then do planes
-         ! print *,"Fill Planes"
+         ! print *,"Fill Planes"  
          do k=vf_local%cfg%kmin_,vf_local%cfg%kmax_
             do j=vf_local%cfg%jmin_,vf_local%cfg%jmax_
                do i=vf_local%cfg%imin_,vf_local%cfg%imax_
@@ -917,8 +917,8 @@ end subroutine compute_rp_stats
                      if (shape.gt.0) then
                         ! Increment polygon counter
                         np=np+1
-                        ! Set nplane variable
-                        smesh%polyvar(var_index,nbt+np)=A(i,j,k)
+                        ! Set nplane variable 
+                        smesh%polyvar(var_index,np)=A(i,j,k)
                      end if
                   end do
                end do

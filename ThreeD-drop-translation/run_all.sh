@@ -2,10 +2,20 @@ CASES=(
     # ========================================
     # D8
     # ========================================
+    # Debugging_PCST_D8_P_NoMatching_BothRatio
+    # Debugging_PCST_D8_P_NoMatching_ViscRatio
+    # Debugging_PCST_D8_P_NoMatching_DensRatio
     Debugging_PCST_D8_P_NoMatching_SingleFluid
-    Debugging_PCST_D8_P_NoMatching_DensRatio
-    Debugging_PCST_D8_P_NoMatching_ViscRatio
-    Debugging_PCST_D8_P_NoMatching_BothRatio
+    
+   
+
+    # Debugging_PCST_D8_P_Matching_SingleFluid
+    # Debugging_PCST_D8_P_Matching_DensRatio
+    # Debugging_PCST_D8_P_Matching_ViscRatio
+
+
+    
+    # Debugging_PCST_D8_P_Matching_BothRatio
 
     # Basak_input_PCST_D8_P_NoMatching_SingleFluid
     # Basak_input_PCST_D8_P_Matching_SingleFluid
@@ -70,7 +80,7 @@ for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#Basak_input_}"
-    DIR="./UpdatedSign/StaticDrop_ParaboloidLvira_${CASE}"
+    DIR="./PressureBugs/StaticDrop_JibbenSq_VFWeights_CFL01_${CASE}"
     # DIR="./Debugging/StaticDrop_${CASE}"
 
     echo "========================================"

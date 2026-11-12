@@ -101,41 +101,50 @@ rmin_weber_norm = (r0 - rmin_weber) / (r0 * eps)
 sim_cases = [
     
     (
-        "ThreeD-rayleigh-plateau/Debugging_NewSign/Jibben_ShortTime_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
-        "Both Ratio,Jibben"
+        "ThreeD-rayleigh-plateau/Debugging_PostOvernight/JibbenSq_ShortTime_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
+        "Both Ratio,Jibben",
+        '-'
     ),
     (
-        "ThreeD-rayleigh-plateau/Debugging_NewSign/Jibben_ShortTime_PCST_P_NoMatching_DensRatio/monitor/rayleigh_plateau",
-        "Density Ratio,Jibben"
+        "ThreeD-rayleigh-plateau/SegFault/JibbenSq_ShortTime_PCST_P_NoMatching_DensRatio/monitor/rayleigh_plateau",
+        "Density Ratio,Jibben",
+        '-'
     ),
     (
-        "ThreeD-rayleigh-plateau/Debugging_NewSign/Jibben_ShortTime_PCST_P_NoMatching_ViscRatio/monitor/rayleigh_plateau",
-        "Viscosity Ratio,Jibben"
+        "ThreeD-rayleigh-plateau/Debugging_PostOvernight/JibbenSq_ShortTime_PCST_P_NoMatching_ViscRatio/monitor/rayleigh_plateau",
+        "Viscosity Ratio,Jibben",
+        '-'
     ),
     (
-        "ThreeD-rayleigh-plateau/Debugging_NewSign/Jibben_ShortTime_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
-        "One Fluid,Jibben"
+        "ThreeD-rayleigh-plateau/Debugging_PostOvernight/JibbenSq_ShortTime_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
+        "One Fluid,Jibben",
+        '-'
     ),
     # (
-    #     "ThreeD-rayleigh-plateau/Debugging_NewSign/PLICNET_LongerTime_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
-    #     "Both Ratio,PLICNET"
+    #     "ThreeD-rayleigh-plateau/Debugging_NewSign/Jibben_ShortTime_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
+    #     "Both Ratio,Jibben"
+    #     ,'--'
     # ),
     # (
-    #     "ThreeD-rayleigh-plateau/Debugging_NewSign/PLICNET_LongerTime_PCST_P_NoMatching_DensRatio/monitor/rayleigh_plateau",
-    #     "Density Ratio,PLICNET"
+    #     "ThreeD-rayleigh-plateau/Debugging_NewSign/Jibben_ShortTime_PCST_P_NoMatching_DensRatio/monitor/rayleigh_plateau",
+    #     "Density Ratio,Jibben"
+    #     ,'--'
     # ),
     # (
-    #     "ThreeD-rayleigh-plateau/Debugging_NewSign/PLICNET_LongerTime_PCST_P_NoMatching_ViscRatio/monitor/rayleigh_plateau",
-    #     "Viscosity Ratio,PLICNET"
+    #     "ThreeD-rayleigh-plateau/Debugging_NewSign/Jibben_ShortTime_PCST_P_NoMatching_ViscRatio/monitor/rayleigh_plateau",
+    #     "Viscosity Ratio,Jibben"
+    #     ,'--'
     # ),
     # (
-    #     "ThreeD-rayleigh-plateau/Debugging_NewSign/PLICNET_LongerTime_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
-    #     "One Fluid,PLICNET"
+    #     "ThreeD-rayleigh-plateau/Debugging_NewSign/Jibben_ShortTime_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
+    #     "One Fluid,Jibben"
+    #     ,'--'
     # ),
-    # (
-    #     "ThreeD-rayleigh-plateau/monitor/rayleigh_plateau",
-    #     "LIVE,RP"
-    # ),
+    (
+        "ThreeD-rayleigh-plateau/monitor/rayleigh_plateau",
+        "LIVE,RP",
+        '-'
+    ),
 
 ]
 
@@ -147,7 +156,7 @@ def safe_float(x):
     except ValueError:
         return np.nan
     
-for filename, label in sim_cases:
+for filename, label, linestyle in sim_cases:
 
     data = np.loadtxt(filename, skiprows=2, converters=safe_float)
 
@@ -170,6 +179,7 @@ for filename, label in sim_cases:
 
     sim_data.append({
         "label": label,
+        "linestyle": linestyle,
         "step": step_data,
         "tstar": tstar_data,
         "rmax": rmax_data_norm,
@@ -202,8 +212,8 @@ for case in sim_data:
     plt.plot(
         case["tstar"],
         case["rmax"],
-        "o-",
-        markersize=4,
+        case["linestyle"],
+        linewidth=4,
         label=case["label"]
     )
 
@@ -250,8 +260,8 @@ for case in sim_data:
     plt.plot(
         case["tstar"],
         case["rmin"],
-        "o",
-        markersize=4,
+        case["linestyle"],
+        linewidth=4,
         label=case["label"]
     )
 

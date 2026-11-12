@@ -1,5 +1,5 @@
 # Parallelization
-Partition : 2 2 4
+Partition : 2 2 2
 
 # Mesh definition
 Lx : 1.0
@@ -39,7 +39,7 @@ Matching Option : 1
 Curvature Option : 1
 PU Spread : 2.0
 # 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
-Interface Type : 2
+Interface Type : 5
 
 # Time integration
 Max time:               25

@@ -185,15 +185,31 @@ contains
       ! Initialize our VOF solver and field
       create_and_initialize_vof: block
          use mms_geom,  only: cube_refine_vol
-         use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage,lvira,jibben
+         use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage,lvira,jibben,jibbenPU,jibbenSq,jibbenPLIC
          use mathtools, only: Pi
-         integer :: i,j,k,n,si,sj,sk
+         integer :: i,j,k,n,si,sj,sk,InterfaceTypes
          real(WP), dimension(3,8) :: cube_vertex
          real(WP), dimension(3) :: v_cent,a_cent
          real(WP) :: vol,area
          integer, parameter :: amr_ref_lvl=4
          ! Create a VOF solver
-         call vf%initialize(cfg=cfg,reconstruction_method=plicnet,transport_method=flux_storage,name='VOF')
+         call param_read('Interface Type',InterfaceTypes,default=1)
+         SELECT CASE (InterfaceTypes)
+            case (1)
+               call vf%initialize(cfg=cfg,reconstruction_method=lvira,name='VOF')
+            case (2) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibben,name='VOF')
+            case (3) 
+               call vf%initialize(cfg=cfg,reconstruction_method=plicnet,name='VOF')
+            case (4) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibbenPU,name='VOF')
+            case (5) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibbenSq,name='VOF')
+            case (6) 
+               call vf%initialize(cfg=cfg,reconstruction_method=jibbenPLIC,name='VOF')
+            case default 
+               call vf%initialize(cfg=cfg,reconstruction_method=lvira,name='VOF')
+         END SELECT
          !vf%cons_correct=.false.
          !vf%thin_thld_max=1.5_WP
          !vf%twoplane_thld2=0.8_WP
@@ -290,13 +306,28 @@ contains
       ! Create Surface Tension Object
       create_surface_tension_solver : block
          call cst%init(fs,vf,time)
-         call param_read('Marangoni',cst%MarangoniOption)
-         call param_read('Pressure',cst%PressureOption)
-         call param_read('Smoothing Option',cst%SmoothingOption)
-         call param_read('Surface Tension Option',cst%SurfaceTensionOption)
-         call param_read('Curvature Option',cst%CurvatureOption)
-         call param_read('PU Spread',cst%PU_spread)
-         call cst%temp()
+         call param_read('Marangoni',cst%MarangoniOption,default = [0.0_WP,0.0_WP,0.0_WP])
+         call param_read('Pressure',cst%PressureOption,default = 0.0_WP)
+         call param_read('Smoothing Option',cst%SmoothingOption,default = 1)
+         call param_read('Surface Tension Option',cst%SurfaceTensionOption,default = 8)
+         call param_read('Levelset Option',cst%LevelsetOption,default = 2)
+         call param_read('Matching Option',cst%MatchingOption,default = 1)
+         call param_read('Curvature Option',cst%CurvatureOption,default = 1)
+         call param_read('PU Spread',cst%PU_spread,default = 2.0_WP)
+         call param_read('Two Dimensional',cst%TwoD,default = .false.)
+         if(cfg%amRoot) then 
+            print *, "============== SURFACE TENSION INFO ================"
+            print *, "Marangoni Option = ",cst%MarangoniOption
+            print *, "Pressure Option = ",cst%PressureOption
+            print *, "Smoothing Option = ",cst%SmoothingOption
+            print *, "Surface Tension Option = ",cst%SurfaceTensionOption
+            print *, "Levelset Option = ",cst%LevelsetOption
+            print *, "Matching Option = ",cst%MatchingOption
+            print *, "Curvature Option = ",cst%CurvatureOption
+            print *, "PU Spread = ",cst%PU_spread
+            print *, "Two Dimensional = ",cst%TwoD
+            print *, "===================================================="
+         endif
       end block create_surface_tension_solver
       
       ! Temperature Solver
@@ -365,6 +396,18 @@ contains
          call ens_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
          call ens_out%add_vector('sigma_3d_z',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
 
+         call ens_out%add_vector('sigma_3d_P_x',cst%sigma_3D_P(:,:,:,1,1),cst%sigma_3D_P(:,:,:,1,2),cst%sigma_3D_P(:,:,:,1,3))
+         call ens_out%add_vector('sigma_3d_P_y',cst%sigma_3D_P(:,:,:,2,1),cst%sigma_3D_P(:,:,:,2,2),cst%sigma_3D_P(:,:,:,2,3))
+         call ens_out%add_vector('sigma_3d_P_z',cst%sigma_3D_P(:,:,:,3,1),cst%sigma_3D_P(:,:,:,3,2),cst%sigma_3D_P(:,:,:,3,3))
+
+         call ens_out%add_vector('sigma_3d_NoP_x',cst%sigma_3D_NoP(:,:,:,1,1),cst%sigma_3D_NoP(:,:,:,1,2),cst%sigma_3D_NoP(:,:,:,1,3))
+         call ens_out%add_vector('sigma_3d_NoP_y',cst%sigma_3D_NoP(:,:,:,2,1),cst%sigma_3D_NoP(:,:,:,2,2),cst%sigma_3D_NoP(:,:,:,2,3))
+         call ens_out%add_vector('sigma_3d_NoP_z',cst%sigma_3D_NoP(:,:,:,3,1),cst%sigma_3D_NoP(:,:,:,3,2),cst%sigma_3D_NoP(:,:,:,3,3))
+
+         call ens_out%add_vector('sigma_3d_DP_x',cst%sigma_3D_DP(:,:,:,1,1),cst%sigma_3D_DP(:,:,:,1,2),cst%sigma_3D_DP(:,:,:,1,3))
+         call ens_out%add_vector('sigma_3d_DP_y',cst%sigma_3D_DP(:,:,:,2,1),cst%sigma_3D_DP(:,:,:,2,2),cst%sigma_3D_DP(:,:,:,2,3))
+         call ens_out%add_vector('sigma_3d_DP_z',cst%sigma_3D_DP(:,:,:,3,1),cst%sigma_3D_DP(:,:,:,3,2),cst%sigma_3D_DP(:,:,:,3,3))
+
          call ens_out%add_scalar('sigma_xx_NoP',cst%sigma_xx_NoP)
          call ens_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
          call ens_out%add_scalar('sigma_yx_NoP',cst%sigma_yx_NoP)
@@ -377,7 +420,8 @@ contains
          call ens_out%add_vector('Extrapolated Temperatures',ts%TPmix,ts%TGExtrap,ts%TLExtrap)
          call ens_out%add_vector('Palmore Temperatures',ts%TPmix,ts%TGExtrapPalmore,ts%TLExtrapPalmore)
 
-         
+         call ens_out%add_vector('ST Force',fs%Pjx,fs%Pjy,fs%Pjz)
+         call ens_out%add_vector('CSF Force',cst%PjxD,cst%PjyD,cst%PjzD)
          ! Output to ensight
          if (ens_evt%occurs()) call ens_out%write_data(time%t)
       end block create_ensight

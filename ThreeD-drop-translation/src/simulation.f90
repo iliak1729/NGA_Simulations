@@ -55,6 +55,7 @@ module simulation
    real(WP) :: Fx_sum,Fy_sum,Fz_sum
    logical :: twoD
 
+   real(WP) :: loc1,loc2,loc3,loc4,loc5
 contains
    ! Locator Functions
    !> Function that localizes the left (x-) of the domain
@@ -457,7 +458,7 @@ contains
             case (5) 
                call vf%initialize(cfg=cfg,reconstruction_method=jibbenSq,name='VOF')
             case (6) 
-               call vf%initialize(cfg=cfg,reconstruction_method=jibbenPU,name='VOF')
+               call vf%initialize(cfg=cfg,reconstruction_method=jibbenPLIC,name='VOF')
             case default 
                call vf%initialize(cfg=cfg,reconstruction_method=lvira,name='VOF')
          END SELECT
@@ -741,6 +742,12 @@ contains
          call mfile%add_column(time%dt,'Timestep size')
          call mfile%add_column(RootMeanSquareVelocity,'RMS Velocity')
          call mfile%add_column(MaxVelocity,'Max Velocity')
+         call mfile%add_column(fs%divmax,'Max Div')
+         call mfile%add_column(loc1,'VFint Loc 1')
+         call mfile%add_column(loc2,'VFint Loc 2')
+         call mfile%add_column(loc3,'VFint Loc 3')
+         call mfile%add_column(loc4,'VFint Loc 4')
+         call mfile%add_column(loc5,'VFint Loc 5')
          call mfile%write()
          ! Create CFL monitor
          cflfile=monitor(fs%cfg%amRoot,'cfl')
@@ -770,169 +777,270 @@ contains
    !> Perform an NGA2 simulation
    subroutine simulation_run
       use tpns_class, only: harmonic_visc
+      use mpi_f08, only: MPI_COMM_WORLD, MPI_Comm_rank
+      use iso_fortran_env, only: error_unit
       implicit none
+
       integer :: i,j,k
+      integer :: myrank, ierr
+
+      call MPI_Comm_rank(MPI_COMM_WORLD, myrank, ierr)
       ! Perform time integration
+      ! ============================================================
+      ! Main time integration loop
+      ! ============================================================  
       do while (.not.time%done())
-         ! print *,"Time = ",time%t,"/",time%tmax
-         ! print *,"dt = ",time%dt
-         ! Increment time
-         ! if (cfg%amRoot) print *, "START TIMESTEP",time%n+1
 
+         ! call debug_print('START TIMESTEP')
+
+         ! ----------------------------------------------------------
+         ! Time integration
+         ! ----------------------------------------------------------
+         ! call debug_print('START get_cfl')
          call fs%get_cfl(time%dt,time%cfl)
-         call time%adjust_dt()
-         call time%increment()
+         ! call debug_print('END get_cfl')
 
-         ! if (cfg%amRoot) print *, "TIME INCREMENT COMPLETE"
-      
-         ! Remember old VOF
+         ! call debug_print('START adjust_dt')
+         call time%adjust_dt()
+         ! call debug_print('END adjust_dt')
+
+         ! call debug_print('START increment')
+         call time%increment()
+         ! call debug_print('END increment')
+
+         ! ----------------------------------------------------------
+         ! Save previous timestep
+         ! ----------------------------------------------------------
+         ! call debug_print('START save old fields')
+
          vf%VFold=vf%VF
-         
-         ! Remember old velocity
+
          fs%Uold=fs%U
          fs%Vold=fs%V
          fs%Wold=fs%W
-         
-         ! ! Remember old scalar
-         ! ts%Hold=ts%H
-         ! call ts%populate_temperature()
-         ! ts%Told = ts%T
-         ! ts%TGold = ts%TG
-         ! ts%TLold = ts%TL
+         call vf%get_max()
+         loc1 = vf%VFint
+         ! call debug_print('END save old fields')
 
-         ! Prepare old staggered density (at n)
+         ! ----------------------------------------------------------
+         ! Density
+         ! ----------------------------------------------------------
+         ! call debug_print('START get_olddensity')
          call fs%get_olddensity(vf=vf)
-         
-         ! VOF solver step
-         ! if (cfg%amRoot) print *, "START VOF ADVANCE"
+         ! call debug_print('END get_olddensity')
 
+         ! ----------------------------------------------------------
+         ! VOF advection
+         ! ----------------------------------------------------------
+         ! call debug_print('START vf advance')
          call vf%advance(dt=time%dt,U=fs%U,V=fs%V,W=fs%W)
-
-         ! if (cfg%amRoot) print *, "END VOF ADVANCE"
-         ! Prepare new staggered viscosity (at n+1)
+         ! call debug_print('END vf advance')
+         call vf%get_max()
+         loc2 = vf%VFint
+         ! ----------------------------------------------------------
+         ! Viscosity
+         ! ----------------------------------------------------------
+         ! call debug_print('START get_viscosity')
          call fs%get_viscosity(vf=vf,strat=harmonic_visc)
-         
-         ! Perform sub-iterations
+         ! call debug_print('END get_viscosity')
+
+         ! ==========================================================
+         ! Sub-iterations
+         ! ==========================================================
          do while (time%it.le.time%itmax)
-            ! Build mid-time velocity
+
+            ! call debug_print('START SUBITERATION')
+
+            ! Mid-time velocity
+            ! call debug_print('START mid-time velocity')
+
             fs%U=0.5_WP*(fs%U+fs%Uold)
             fs%V=0.5_WP*(fs%V+fs%Vold)
             fs%W=0.5_WP*(fs%W+fs%Wold)
 
-            ! Preliminary mass and momentum transport step at the interface
+            ! call debug_print('END mid-time velocity')
+
+            ! Advection
+            ! call debug_print('START prepare_advection_upwind')
             call fs%prepare_advection_upwind(dt=time%dt)
-            
-            ! Explicit calculation of drho*u/dt from NS
+            ! call debug_print('END prepare_advection_upwind')
+
+            ! Surface tension
+            ! call debug_print('START get_dmomdt')
             call cst%get_dmomdt(resU,resV,resW)
-            
-            ! Add momentum source terms - adjust gravity if accelerating frame of reference
-            call fs%addsrc_gravity(resU,resV,resW)
-            
-            ! Assemble explicit residual
+            call vf%get_max()
+            loc3 = vf%VFint
+            ! call debug_print('END get_dmomdt')
+
+            ! Gravity
+            ! call debug_print('START addsrc_gravity')
+            ! call fs%addsrc_gravity(resU,resV,resW)
+            ! call debug_print('END addsrc_gravity')
+
+            ! Explicit residual
+            ! call debug_print('START explicit residual')
+
             resU=-2.0_WP*fs%rho_U*fs%U+(fs%rho_Uold+fs%rho_U)*fs%Uold+time%dt*resU
             resV=-2.0_WP*fs%rho_V*fs%V+(fs%rho_Vold+fs%rho_V)*fs%Vold+time%dt*resV
             resW=-2.0_WP*fs%rho_W*fs%W+(fs%rho_Wold+fs%rho_W)*fs%Wold+time%dt*resW
-            
-            ! Form implicit residuals
-            ! if (cfg%amRoot) print *, "START IMPLICIT SOLVE"
 
+            ! call debug_print('END explicit residual')
+
+            ! Implicit solve
+            ! call debug_print('START solve_implicit')
             call fs%solve_implicit(time%dt,resU,resV,resW)
+            ! call debug_print('END solve_implicit')
 
-            ! if (cfg%amRoot) print *, "END IMPLICIT SOLVE"
-            
-            ! Apply these residuals
+            ! Apply residuals
+            ! call debug_print('START apply residuals')
+
             fs%U=2.0_WP*fs%U-fs%Uold+resU
             fs%V=2.0_WP*fs%V-fs%Vold+resV
             fs%W=2.0_WP*fs%W-fs%Wold+resW
-            
-            ! call set_wall_velocity()
-            ! Apply other boundary conditions
+
+            ! call debug_print('END apply residuals')
+
+            ! Boundary conditions
+            ! call debug_print('START apply_bcond')
             call fs%apply_bcond(time%t,time%dt)
-            
-            ! Solve Poisson equation
+            ! call debug_print('END apply_bcond')
+
+            ! Laplacian
+            ! call debug_print('START update_laplacian')
             call fs%update_laplacian()
+            ! call debug_print('END update_laplacian')
+
+            ! Mass flux
+            ! call debug_print('START correct_mfr')
             call fs%correct_mfr()
+            ! call debug_print('END correct_mfr')
+
+            ! Divergence
+            ! call debug_print('START get_div')
             call fs%get_div()
-            ! if (cfg%amRoot) print *, "START SURFACE TENSION JUMP"
-
+            ! call debug_print('END get_div')
+            call vf%get_max()
+            loc4 = vf%VFint
+            ! Surface tension jump
+            ! call debug_print('START add_surface_tension_jump')
             call cst%add_surface_tension_jump()
+            call vf%get_max()
+            loc5 = vf%VFint
+            ! call debug_print('END add_surface_tension_jump')
 
-            ! if (cfg%amRoot) print *, "END SURFACE TENSION JUMP"
-            !call fs%add_surface_tension_jump_thin(dt=time%dt,div=fs%div,vf=vf)
+            ! Pressure RHS
+            ! call debug_print('START pressure RHS')
+
             fs%psolv%rhs=-fs%cfg%vol*fs%div/time%dt
             fs%psolv%sol=0.0_WP
-            ! if (cfg%amRoot) print *, "START PRESSURE SOLVE"
 
+            ! call debug_print('END pressure RHS')
+
+            ! Pressure solve
+            ! call debug_print('START pressure solve')
             call fs%psolv%solve()
+            ! call debug_print('END pressure solve')
 
-            ! if (cfg%amRoot) print *, "END PRESSURE SOLVE"
+            ! Pressure shift
+            ! call debug_print('START shift_p')
             call fs%shift_p(fs%psolv%sol)
-            
-            ! Correct velocity
+            ! call debug_print('END shift_p')
+
+            ! Pressure gradient
+            ! call debug_print('START get_pgrad')
             call fs%get_pgrad(fs%psolv%sol,resU,resV,resW)
+            ! call debug_print('END get_pgrad')
+
+            ! Velocity correction
+            ! call debug_print('START velocity correction')
+
             fs%P=fs%P+fs%psolv%sol
             fs%U=fs%U-time%dt*resU/fs%rho_U
             fs%V=fs%V-time%dt*resV/fs%rho_V
             fs%W=fs%W-time%dt*resW/fs%rho_W
-            
-            ! Increment sub-iteration counter
+
+            ! call debug_print('END velocity correction')
+
             time%it=time%it+1
-            
+
+            ! call debug_print('END SUBITERATION')
+
          end do
-         
-         ! Recompute interpolated velocity and divergence
-         ! Recompute interpolated velocity and divergence
-         ! if (cfg%amRoot) print *, "START INTERP VEL"
+
+         ! ==========================================================
+         ! Postprocessing
+         ! ==========================================================
+
+         ! call debug_print('START interp_vel')
          call fs%interp_vel(Ui,Vi,Wi)
-         ! if (cfg%amRoot) print *, "END INTERP VEL"
+         ! call debug_print('END interp_vel')
 
-         ! if (cfg%amRoot) print *, "START GET DIV"
+         ! call debug_print('START final get_div')
          call fs%get_div()
-         ! if (cfg%amRoot) print *, "END GET DIV"
+         ! call debug_print('END final get_div')
 
-         ! Output to Ensight
+         ! ----------------------------------------------------------
+         ! Ensight output
+         ! ----------------------------------------------------------
          if (ens_evt%occurs()) then
 
-            ! if (cfg%amRoot) print *, "START UPDATE SURFMESH"
+            ! call debug_print('START update_surfmesh')
             call vf%update_surfmesh(smesh)
-            ! if (cfg%amRoot) print *, "END UPDATE SURFMESH"
-            call add_surfgrid_variable(smesh,1,vf%curv,vf)   
-            call add_surfgrid_variable(smesh,2,vf%interface_type,vf)   
-            ! if (cfg%amRoot) print *, "START WRITE DATA"
+            ! call debug_print('END update_surfmesh')
+
+            ! ! call debug_print('START add_surfgrid_variable 1')
+            ! call add_surfgrid_variable(smesh,1,vf%curv,vf)
+            ! ! call debug_print('END add_surfgrid_variable 1')
+
+            ! ! call debug_print('START add_surfgrid_variable 2')
+            ! call add_surfgrid_variable(smesh,2,vf%interface_type,vf)
+            ! ! call debug_print('END add_surfgrid_variable 2')
+
+            ! call debug_print('START ens_out write_data')
             call ens_out%write_data(time%t)
-            ! if (cfg%amRoot) print *, "END WRITE DATA"
+            ! call debug_print('END ens_out write_data') 
 
          endif
 
-         ! Perform and output monitoring
-         ! if (cfg%amRoot) print *, "START FS GET MAX"
+         ! ----------------------------------------------------------
+         ! Monitoring        
+         ! ----------------------------------------------------------
+         ! call debug_print('START fs get_max')
          call fs%get_max()
-         ! if (cfg%amRoot) print *, "END FS GET MAX"
+         ! call debug_print('END fs get_max') 
 
-         ! if (cfg%amRoot) print *, "START VF GET MAX"
+         ! call debug_print('START vf get_max')
          call vf%get_max()
-         ! if (cfg%amRoot) print *, "END VF GET MAX"
+         ! call debug_print('END vf get_max')
 
-         ! if (cfg%amRoot) print *, "START RMS VELOCITY"
-         RootMeanSquareVelocity = Calc_RMS_Velocity()
-         ! if (cfg%amRoot) print *, "END RMS VELOCITY"
+         ! call debug_print('START RMS velocity')
+         RootMeanSquareVelocity=Calc_RMS_Velocity()
+         ! call debug_print('END RMS velocity')
 
-         ! if (cfg%amRoot) print *, "START MONITOR WRITE"
+         ! call debug_print('START monitor writes')
+
          call mfile%write()
          call cflfile%write()
          call bubblefile%write()
-         ! if (cfg%amRoot) print *, "END MONITOR WRITE"
-         if (cfg%amRoot) then
-            ! print *, "======================================="
-            ! print *, "Timestep = ",time%n
-            ! print *, "Current Time = ",time%t
-            ! print *, "Maximum Time = ",time%tmax
-            ! print *, "dt = ",time%dt
-            ! print *, "Time Done = ",time%done()
-            ! print *, "======================================="
-         endif
+
+         ! call debug_print('END monitor writes')
+
+         ! call debug_print('END TIMESTEP')
+
       end do
-      
+            
+      contains
+
+      subroutine debug_print(message)
+         character(len=*), intent(in) :: message
+
+         write(error_unit,'(A,I4,A,I8,A,I4,A,A)') &
+            '[Rank ',myrank,'] Step ',time%n, &
+            ' Iter ',time%it,': ',trim(message)
+
+         flush(error_unit)
+      end subroutine debug_print
+
    end subroutine simulation_run
    
    
@@ -993,7 +1101,7 @@ contains
                         ! Increment polygon counter
                         np=np+1
                         ! Set nplane variable
-                        smesh%polyvar(var_index,nbt+np)=A(i,j,k)
+                        smesh%polyvar(var_index,np)=A(i,j,k)
                      end if
                   end do
                end do

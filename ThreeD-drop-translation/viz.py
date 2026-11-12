@@ -27,7 +27,6 @@ La = 1200
 mu = np.sqrt(sigma * rho * D / La)
 
 Usigma = sigma / mu
-Usigma = 1
 Tmu = rho * D**2 / mu
 print("mu = ", mu)
 print("Usigma = ", Usigma)
@@ -357,30 +356,30 @@ sim_cases = [
     # ============================================================
     # Jibben (Solid)
     # ============================================================
-    (
-        "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
-        "Both Ratio,Jibben",
-        "xkcd:red",
-        "-"
-    ),
-    (
-        "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
-        "Density Ratio,Jibben",
-        "xkcd:azure",
-        "-"
-    ),
-    (
-        "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
-        "Viscosity Ratio,Jibben",
-        "xkcd:burnt orange",
-        "-"
-    ),
-    (
-        "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
-        "One Fluid,Jibben",
-        "xkcd:charcoal",
-        "-"
-    ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+    #     "Both Ratio,Jibben",
+    #     "xkcd:red",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
+    #     "Density Ratio,Jibben",
+    #     "xkcd:azure",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
+    #     "Viscosity Ratio,Jibben",
+    #     "xkcd:burnt orange",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_Jibben_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "One Fluid,Jibben",
+    #     "xkcd:charcoal",
+    #     "-"
+    # ),
 
     # ============================================================
     # PLICNET (Dashed)
@@ -441,30 +440,90 @@ sim_cases = [
     # ============================================================
     # ParaboloidLvira (Dash-Dot)
     # ============================================================
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+    #     "Both Ratio,ParaboloidLvira",
+    #     "xkcd:red",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
+    #     "Density Ratio,ParaboloidLvira",
+    #     "xkcd:azure",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
+    #     "Viscosity Ratio,ParaboloidLvira",
+    #     "xkcd:burnt orange",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "One Fluid,ParaboloidLvira",
+    #     "xkcd:charcoal",
+    #     "--"
+    # ),
+    # ============================================================
+    # Overnight No Matching
+    # ============================================================
     (
-        "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
-        "Both Ratio,ParaboloidLvira",
+        "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+        "Both Ratio",
         "xkcd:red",
-        "--"
+        "-"
     ),
     (
-        "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
-        "Density Ratio,ParaboloidLvira",
+        "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
+        "Density Ratio",
         "xkcd:azure",
-        "--"
+        "-"
     ),
     (
-        "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
-        "Viscosity Ratio,ParaboloidLvira",
+        "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
+        "Viscosity Ratio",
         "xkcd:burnt orange",
-        "--"
+        "-"
     ),
     (
-        "ThreeD-drop-translation/UpdatedSign/StaticDrop_ParaboloidLvira_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
-        "One Fluid,ParaboloidLvira",
+        "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+        "One Fluid",
         "xkcd:charcoal",
-        "--"
+        "-"
     ),
+    (
+        "ThreeD-drop-translation/monitor/simulation",
+        "LIVE",
+        "xkcd:green",
+        "-"
+    ),
+    # ============================================================
+    # Overnight Matching
+    # ============================================================
+    # (
+    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_Matching_BothRatio/monitor/simulation",
+    #     "Both Ratio",
+    #     "xkcd:red",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_Matching_DensRatio/monitor/simulation",
+    #     "Density Ratio",
+    #     "xkcd:azure",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_Matching_ViscRatio/monitor/simulation",
+    #     "Viscosity Ratio",
+    #     "xkcd:burnt orange",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_Matching_SingleFluid/monitor/simulation",
+    #     "One Fluid",
+    #     "xkcd:charcoal",
+        # "--"
+    # ),
 ]
 
 

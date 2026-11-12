@@ -8,9 +8,8 @@ time mpiexec -n 8 ./nga.dp.gnu.opt.mpi.exe -i input64 -v 2
 echo "Complete"
 
 echo "Copying DATA to OLD file"
-
-cp -r ./vtk ./OLD/N64-64-96-3D-NOSHIFT/
-cp -r ./monitor ./OLD/N64-64-96-3D-NOSHIFT/
+cp -r ./monitor ./FaceParaboloid/P_Matching_Jibben/
+cp -r ./vtk ./FaceParaboloid/P_Matching_Jibben/
 
 echo "COPY COMPLETE"
 

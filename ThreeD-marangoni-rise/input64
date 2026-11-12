@@ -31,9 +31,13 @@ cp2 : 0.1 #Gas
 Marangoni :  0 0.133 -0.1
 Pressure : 1
 Smoothing Option : 1
-Surface Tension Option : 8
+Surface Tension Option : 9
+Levelset Option : 1
+Matching Option : 2
 Curvature Option : 1
 PU Spread : 2.0
+# 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
+Interface Type : 2
 
 
 # Definition of single bubble (Weber)
@@ -42,12 +46,12 @@ Bubble position :  0 -2.25 0
 
 # Time integration
 Max timestep size : 1e-3
-Max cfl number :    1.2
-Max time :          2.4
+Max cfl number :    0.5
+Max time :          1.0 ! 2.4
 
 # Pressure solver
-Pressure tolerance : 1e-4
+Pressure tolerance : 1e-6
 Pressure iteration : 100
 
 # Ensight output
-Ensight output period : 12e-3
+Ensight output period : 12e-12
