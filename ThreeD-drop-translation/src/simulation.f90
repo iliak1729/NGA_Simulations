@@ -568,17 +568,17 @@ contains
          ! Surface Tension
          call param_read('Surface tension coefficient',fs%sigma)
          call param_read('Laplace Number',La)
-         fs%visc_l = sqrt(fs%rho_l*fs%sigma*2*radius/La)
-         call param_read('Viscosity Ratio',fs%visc_g); fs%visc_g = fs%visc_l/fs%visc_g
+         fs%visc_g = sqrt(fs%rho_g*fs%sigma*2*radius/La)
+         call param_read('Viscosity Ratio',fs%visc_l); fs%visc_l = fs%visc_g*fs%visc_l
 
          call param_read('Min Viscous Time',minTv)
          call param_read('Min Capillary Time', minTc)
          call param_read('Lx',Lx)
          call param_read('nx',nx)
-         Tv = 4*radius*radius*fs%rho_l/fs%visc_l
-         Tc = sqrt(fs%rho_l*8*radius*radius*radius/fs%sigma)
+         Tv = 4*radius*radius*fs%rho_g/fs%visc_g
+         Tc = sqrt(fs%rho_g*8*radius*radius*radius/fs%sigma)
          delta = Lx/nx
-         dtCap = sqrt(fs%rho_l*delta*delta*delta/(Pi*fs%sigma))
+         dtCap = sqrt(fs%rho_g*delta*delta*delta/(Pi*fs%sigma))
 
          call param_read('Timestep factor',time_scale_factor)
          time%dtmax = min(time_scale_factor*dtCap,time%dtmax)

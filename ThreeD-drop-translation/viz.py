@@ -473,57 +473,59 @@ sim_cases = [
         "xkcd:red",
         "-"
     ),
-    (
-        "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
-        "Density Ratio",
-        "xkcd:azure",
-        "-"
-    ),
-    (
-        "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
-        "Viscosity Ratio",
-        "xkcd:burnt orange",
-        "-"
-    ),
+    # (
+    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
+    #     "Density Ratio",
+    #     "xkcd:azure",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
+    #     "Viscosity Ratio",
+    #     "xkcd:burnt orange",
+    #     "-"
+    # ),
     (
         "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
         "One Fluid",
         "xkcd:charcoal",
         "-"
     ),
+    # ============================================================
+    # Flipped Laplace No Matching 
+    # ============================================================
     (
-        "ThreeD-drop-translation/monitor/simulation",
-        "LIVE",
-        "xkcd:green",
-        "-"
+        "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+        "Both Ratio",
+        "xkcd:red",
+        "--"
     ),
-    # ============================================================
-    # Overnight Matching
-    # ============================================================
     # (
-    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_Matching_BothRatio/monitor/simulation",
-    #     "Both Ratio",
-    #     "xkcd:red",
-    #     "--"
-    # ),
-    # (
-    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_Matching_DensRatio/monitor/simulation",
+    #     "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
     #     "Density Ratio",
     #     "xkcd:azure",
     #     "--"
     # ),
     # (
-    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_Matching_ViscRatio/monitor/simulation",
+    #     "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
     #     "Viscosity Ratio",
     #     "xkcd:burnt orange",
     #     "--"
     # ),
-    # (
-    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_Matching_SingleFluid/monitor/simulation",
-    #     "One Fluid",
-    #     "xkcd:charcoal",
-        # "--"
-    # ),
+    (
+        "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+        "One Fluid",
+        "xkcd:charcoal",
+        "--"
+    ),
+
+    (
+        "ThreeD-drop-translation/monitor/simulation",
+        "Live",
+        "xkcd:green",
+        "-"
+    ),
+    
 ]
 
 
@@ -594,6 +596,18 @@ basak_max = np.loadtxt(
     skiprows=1
 )
 
+basak_rms_ratio = np.loadtxt(
+    "ThreeD-drop-translation/Basak_Jibben_1200/BasakRatio_D8_RMS.csv",
+    delimiter=",",
+    skiprows=1
+)
+
+basak_max_ratio = np.loadtxt(
+    "ThreeD-drop-translation/Basak_Jibben_1200/BasakRatio_D8_MAX.csv",
+    delimiter=",",
+    skiprows=1
+)
+
 
 # ============================================================
 # RMS Velocity
@@ -611,14 +625,23 @@ for case in sim_data:
         linestyle=case["linestyle"]
     )
 # Basak reference RMS velocity
-# plt.semilogy(
-#     basak_rms[:, 0],
-#     basak_rms[:, 1],
-#     label="Basak Reference",
-#     linewidth=4,
-#     color="xkcd:dark grey",
-#     linestyle=":"
-# )
+plt.semilogy(
+    basak_rms[:, 0],
+    basak_rms[:, 1],
+    label="Basak Reference - One Fluid",
+    linewidth=4,
+    color="xkcd:dark grey",
+    linestyle=":"
+)
+
+plt.semilogy(
+    basak_rms_ratio[:, 0],
+    basak_rms_ratio[:, 1],
+    label="Basak Reference - Two Fluid",
+    linewidth=4,
+    color="xkcd:dark grey",
+    linestyle="-."
+)
 plt.title("Laplace Eq")
 
 plt.xlabel(r"$t/T_\mu$")
@@ -639,7 +662,7 @@ plt.grid(
     linewidth=0.5,
     alpha=0.4
 )
-plt.xlim(0,0.5)
+plt.xlim(0,1)
 # Get existing legend entries
 handles, labels = plt.gca().get_legend_handles_labels()
 
@@ -706,14 +729,22 @@ for filename, label, color, linestyle in sim_cases:
         linestyle=linestyle
     )
 # Basak reference maximum velocity
-# plt.semilogy(
-#     basak_max[:, 0],
-#     basak_max[:, 1],
-#     label="Basak Reference",
-#     linewidth=4,
-#     color="xkcd:dark grey",
-#     linestyle=":"
-# )
+plt.semilogy(
+    basak_max[:, 0],
+    basak_max[:, 1],
+    label="Basak Reference - One Fluid",
+    linewidth=4,
+    color="xkcd:dark grey",
+    linestyle=":"
+)
+plt.semilogy(
+    basak_max_ratio[:, 0],
+    basak_max_ratio[:, 1],
+    label="Basak Reference - Two Fluid",
+    linewidth=4,
+    color="xkcd:dark grey",
+    linestyle="-."
+)
 plt.title("Laplace Eq")
 
 plt.xlabel(r"$t/T_\mu$")
@@ -735,7 +766,7 @@ plt.grid(
     alpha=0.4
 )
 
-plt.xlim(0, 0.5)
+plt.xlim(0, 1)
 
 # Get existing legend entries
 handles, labels = plt.gca().get_legend_handles_labels()
