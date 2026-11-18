@@ -1,12 +1,6 @@
 
 CASES=(
-
-    # "Basak_input_PCST_P_NoM"
     "input_PCST_P_NoMatching_BothRatio"
-    "input_PCST_P_NoMatching_OneFluid"
-    # "input_PCST_P_NoMatching_ViscRatio"
-    # "input_PCST_P_NoMatching_DensRatio"
-    
 )
 make -j 10
 for INPUT in "${CASES[@]}"; do
@@ -14,7 +8,7 @@ for INPUT in "${CASES[@]}"; do
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
     # DIR="./Debugging_PostOvernight/JibbenSq_ShortTime_${CASE}"
-    DIR="./LargeBody/JibbenSq_ShortTime_${CASE}"
+    DIR="./HeightFunctionNormal/JibbenSq_ShortTime_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"
@@ -26,7 +20,7 @@ for INPUT in "${CASES[@]}"; do
     rm -rf ./vtk/
 
     echo "Running with $INPUT ..."
-    time mpiexec -n 16 ./nga.dp.gnu.opt.mpi.exe -i "$INPUT" -v 2
+    time mpiexec -n 1 ./nga.dp.gnu.opt.mpi.exe -i "$INPUT" -v 2
     
     echo "Saving monitor data"
     mkdir -p "$DIR"

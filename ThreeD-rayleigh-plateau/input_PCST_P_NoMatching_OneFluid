@@ -5,9 +5,9 @@ Partition : 2 2 4
 Lx : 1.0
 Ly : 1.0
 Lz : 1.0
-nx : 128
-ny : 128
-nz : 128
+nx : 64
+ny : 64
+nz : 64
 
 # monitor file name
 Monitor File Name : rayleigh_plateau
@@ -15,7 +15,7 @@ Monitor File Name : rayleigh_plateau
 # Ligament definiton
 Ligament radius :           0.10
 Ligament center :           0 0 0
-Perturbation amplitude :    0.02
+Perturbation amplitude :    0.08
 Perturbation mode :         1
 
 # Velocity field
@@ -37,9 +37,11 @@ Surface Tension Option : 9
 Levelset Option : 1
 Matching Option : 1
 Curvature Option : 1
+Paraboloid Option : 1
+Normal Option : 2
 PU Spread : 2.0
 # 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
-Interface Type : 5
+Interface Type : 6
 
 # Time integration
 Max time:               25

@@ -33,7 +33,7 @@ Interface Type : 6
 
 # Simulation Parameters
 Droplet Radius : 0.5
-Droplet Velocity : 0 0 0 
+Droplet Velocity : 1 0 0 
 Laplace Number : 1200
 
 # Time integration

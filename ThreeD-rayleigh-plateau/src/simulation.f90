@@ -606,19 +606,23 @@ end subroutine compute_rp_stats
          call param_read('Pressure',cst%PressureOption,default = 0.0_WP)
          call param_read('Smoothing Option',cst%SmoothingOption,default = 1)
          call param_read('Surface Tension Option',cst%SurfaceTensionOption,default = 8)
+         call param_read('Paraboloid Option',cst%ParaboloidOption,default = 1)
+         call param_read('Normal Option',cst%NormalOption,default = 2)
          call param_read('Levelset Option',cst%LevelsetOption,default = 2)
          call param_read('Matching Option',cst%MatchingOption,default = 1)
          call param_read('Curvature Option',cst%CurvatureOption,default = 1)
          call param_read('PU Spread',cst%PU_spread,default = 2.0_WP)
          call param_read('Two Dimensional',cst%TwoD,default = .false.)
          if(cfg%amRoot) then 
-            print *, "============== SURFACE TENSION INFO ================"
+            print *, "============== SURFACE TENSION INFO ================"  
             print *, "Marangoni Option = ",cst%MarangoniOption
             print *, "Pressure Option = ",cst%PressureOption
             print *, "Smoothing Option = ",cst%SmoothingOption
             print *, "Surface Tension Option = ",cst%SurfaceTensionOption
             print *, "Levelset Option = ",cst%LevelsetOption
             print *, "Matching Option = ",cst%MatchingOption
+            print *, "Paraboloid Option = ",cst%ParaboloidOption
+            print *, "Normal Option = ",cst%NormalOption
             print *, "Curvature Option = ",cst%CurvatureOption
             print *, "PU Spread = ",cst%PU_spread
             print *, "Two Dimensional = ",cst%TwoD

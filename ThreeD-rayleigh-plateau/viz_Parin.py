@@ -22,7 +22,7 @@ from scipy.special import iv
 # ligament parameters
 r0 = 0.1        # initial radius of the jet
 #eps = 0.1       # perturbation amplitude
-eps = 0.02
+eps = 0.08
 # other parameters
 Lz = 1.0        # axial domain length
 mode = 1        # perturbation mode
@@ -100,26 +100,26 @@ rmin_weber_norm = (r0 - rmin_weber) / (r0 * eps)
 # List of simulation files and labels
 sim_cases = [
     
-    (
-        "ThreeD-rayleigh-plateau/Debugging_PostOvernight/JibbenSq_ShortTime_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
-        "Both Ratio,Jibben",
-        '-'
-    ),
-    (
-        "ThreeD-rayleigh-plateau/SegFault/JibbenSq_ShortTime_PCST_P_NoMatching_DensRatio/monitor/rayleigh_plateau",
-        "Density Ratio,Jibben",
-        '-'
-    ),
-    (
-        "ThreeD-rayleigh-plateau/Debugging_PostOvernight/JibbenSq_ShortTime_PCST_P_NoMatching_ViscRatio/monitor/rayleigh_plateau",
-        "Viscosity Ratio,Jibben",
-        '-'
-    ),
-    (
-        "ThreeD-rayleigh-plateau/Debugging_PostOvernight/JibbenSq_ShortTime_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
-        "One Fluid,Jibben",
-        '-'
-    ),
+    # (
+    #     "ThreeD-rayleigh-plateau/Debugging_PostOvernight/JibbenSq_ShortTime_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
+    #     "Both Ratio,Jibben",
+    #     '-'
+    # ),
+    # (
+    #     "ThreeD-rayleigh-plateau/SegFault/JibbenSq_ShortTime_PCST_P_NoMatching_DensRatio/monitor/rayleigh_plateau",
+    #     "Density Ratio,Jibben",
+    #     '-'
+    # ),
+    # (
+    #     "ThreeD-rayleigh-plateau/Debugging_PostOvernight/JibbenSq_ShortTime_PCST_P_NoMatching_ViscRatio/monitor/rayleigh_plateau",
+    #     "Viscosity Ratio,Jibben",
+    #     '-'
+    # ),
+    # (
+    #     "ThreeD-rayleigh-plateau/Debugging_PostOvernight/JibbenSq_ShortTime_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
+    #     "One Fluid,Jibben",
+    #     '-'
+    # ),
     # (
     #     "ThreeD-rayleigh-plateau/Debugging_NewSign/Jibben_ShortTime_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
     #     "Both Ratio,Jibben"
@@ -141,10 +141,42 @@ sim_cases = [
     #     ,'--'
     # ),
     (
-        "ThreeD-rayleigh-plateau/monitor/rayleigh_plateau",
-        "LIVE,RP",
+        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_CSF_OneFluid/monitor/rayleigh_plateau",
+        "One Fluid, CSF,14 Cells/D",
         '-'
     ),
+    (
+        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
+        "Both Fluid, PCST,14 Cells/D",
+        '-'
+    ),
+    (
+        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
+        "One Fluid, PCST,14 Cells/D",
+        '-'
+    ),
+    (
+        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_Refined_CSF_OneFluid/monitor/rayleigh_plateau",
+        "One Fluid, CSF,28 Cells/D",
+        '--'
+    ),
+    (
+        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_Refined_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
+        "Both Fluid, PCST,28 Cells/D",
+        '--'
+    ),
+    (
+        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_Refined_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
+        "One Fluid, PCST,28 Cells/D",
+        '--'
+    ),
+
+    (
+        "ThreeD-rayleigh-plateau/monitor/rayleigh_plateau",
+        "LIVE",
+        '--'
+    ),
+
 
 ]
 

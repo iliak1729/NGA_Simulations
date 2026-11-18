@@ -467,12 +467,12 @@ sim_cases = [
     # ============================================================
     # Overnight No Matching
     # ============================================================
-    (
-        "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
-        "Both Ratio",
-        "xkcd:red",
-        "-"
-    ),
+    # (
+    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+    #     "Both Ratio",
+    #     "xkcd:red",
+    #     "-"
+    # ),
     # (
     #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
     #     "Density Ratio",
@@ -485,46 +485,74 @@ sim_cases = [
     #     "xkcd:burnt orange",
     #     "-"
     # ),
-    (
-        "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
-        "One Fluid",
-        "xkcd:charcoal",
-        "-"
-    ),
+    # (
+    #     "ThreeD-drop-translation/OvernightLowerCFL/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "One Fluid",
+    #     "xkcd:charcoal",
+    #     "-"
+    # ),
+    # ============================================================
+        # Flipped Laplace No Matching 
+        # ============================================================
+        # (
+        #     "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+        #     "Both Ratio",
+        #     "xkcd:red",
+        #     "--"
+        # ),
+        # (
+        #     "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
+        #     "Density Ratio",
+        #     "xkcd:azure",
+        #     "--"
+        # ),
+        # (
+        #     "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
+        #     "Viscosity Ratio",
+        #     "xkcd:burnt orange",
+        #     "--"
+        # ),
+        # (
+        #     "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+        #     "One Fluid",
+        #     "xkcd:charcoal",
+        #     "--"
+        # ),
+    
+        # (
+        #     "ThreeD-drop-translation/monitor/simulation",
+        #     "Live",
+        #     "xkcd:green",
+        #     "-"
+        # ),
+
     # ============================================================
     # Flipped Laplace No Matching 
     # ============================================================
     (
-        "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
-        "Both Ratio",
+        "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+        "D8 Both Ratio",
         "xkcd:red",
-        "--"
-    ),
-    # (
-    #     "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_DensRatio/monitor/simulation",
-    #     "Density Ratio",
-    #     "xkcd:azure",
-    #     "--"
-    # ),
-    # (
-    #     "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_ViscRatio/monitor/simulation",
-    #     "Viscosity Ratio",
-    #     "xkcd:burnt orange",
-    #     "--"
-    # ),
-    (
-        "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
-        "One Fluid",
-        "xkcd:charcoal",
-        "--"
-    ),
-
-    (
-        "ThreeD-drop-translation/monitor/simulation",
-        "Live",
-        "xkcd:green",
         "-"
     ),
+    (
+        "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+        "D8 Single Fluid",
+        "xkcd:azure",
+        "-"
+    ),
+    (
+        "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D16_P_NoMatching_BothRatio/monitor/simulation",
+        "D16 Both Ratio",
+        "xkcd:burnt orange",
+        "-"
+    ),
+    (
+        "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D16_P_NoMatching_SingleFluid/monitor/simulation",
+        "D16 Single Fluid",
+        "xkcd:blue",
+        "-"
+    )
     
 ]
 
