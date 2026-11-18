@@ -1,13 +1,8 @@
-from turtle import color
+
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import cm
-import matplotlib.collections as mcoll
-import matplotlib.path as mpath
-import matplotlib.animation as animation
 import math
-from scipy import special
 
 # Colors
 color_black = '#000000'
@@ -22,65 +17,58 @@ color_pink = '#CC79A7'
 datafile = "ThreeD-marangoni-rise/monitor/bubble"
 data1 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "ThreeD-marangoni-rise/OLD/N64-64-96-2D/monitor/bubble"
+datafile = "ThreeD-marangoni-rise/NewProperties/P_NoMatching_Jibben_64/monitor/bubble"
 data2 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "ThreeD-marangoni-rise/OLD/N128-128-192-2D/monitor/bubble"
-data3 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "ThreeD-marangoni-rise/OLD/N128-128-192-3D/monitor/bubble"
-data4 = np.loadtxt(datafile, skiprows=2)
+mug = 0.001
+mul = 0.001
 
-datafile = "ThreeD-marangoni-rise/OLD/N64-64-96-3D-NOSHIFT/monitor/bubble"
-data5 = np.loadtxt(datafile, skiprows=2)
+rhol = 1 
+rhog = 100
 
-rho1 = .2
-mu1 = 0.1
-k1 = 0.001
-sigma0 = 0.1
-sigmaT = -0.1
-a = 0.5
-dT = 2/15
+sigma0 = 0.072
+sigmaT =-0.1
+dT = 22500
 
-kr = 1
-mur = 1
-cp = 0.1
-
-U0 = -sigmaT*a*dT/mu1
+a = 0.00001/2.0
+L = mug/mul
+U0 = -sigmaT*a*dT/mul
+taup = rhog*(2*a)*(2*a)*(3+3*L)/(18*mul*(2+2*L))
 tNorm = a/U0
-
-Vygb = -2*sigmaT*dT*a/(6*mu1+9*mu1)
-
-muL = mu1 
-muG = mu1*kr
-
-kL = k1
-kG = k1*kr
+# tNorm = taup
+# Vygb = -2*sigmaT*dT*a/(6*mu1+9*mu1)
+Vygb = -2*a*dT*sigmaT/(6*mul + 9*mug)
 
 gradT = dT*a
 R = a 
 dSigmadT = sigmaT 
 
-VygbB = -2 * sigmaT * gradT * R/(2*muL + 3*muG) * ((kG+2*kL)/(2*kL+kG))
-print("VygbB = ",VygbB)
-print("Re = ",rho1*U0*a/mu1)
-print("Ca = ",mu1*U0/sigma0)
-print("Ma = ",rho1*cp*a*U0/k1)
-print("Ca Ur = ",mu1/sigma0)
-print("Re Ur = ",rho1*a/mu1)
+# VygbB = -2 * sigmaT * gradT * R/(2*muL + 3*muG) * ((kG+2*kL)/(2*kL+kG))
+# print("VygbB = ",VygbB)
+# print("Re = ",rho1*U0*a/mu1)
+# print("Ca = ",mu1*U0/sigma0)
+# print("Ma = ",rho1*cp*a*U0/k1)
+# print("Ca Ur = ",mu1/sigma0)
+# print("Re Ur = ",rho1*a/mu1)
 print("Tnorm = ",tNorm)
 print("U0 = ",U0)
 print("Vygb =",Vygb)
-
 plt.figure()
 
-x = data5[:,1]
-y = data5[:,3]/Vygb
-plt.plot(x,y,label = "3D,OLD PU,N=64",linewidth=5,color = color_teal)
+# x = data5[:,1]
+# y = data5[:,3]/Vygb
+# plt.plot(x,y,label = "3D,OLD PU,N=64",linewidth=5,color = color_teal)
 
-x = data1[:,1]
+
+x = data2[:,1]/tNorm
+y = data2[:,3]/Vygb
+plt.plot(x,y,label = "3D,Face Paraboloid,12.8 Cells/Dia.",linewidth=5,color = color_teal)
+
+x = data1[:,1]/tNorm
 y = data1[:,3]/Vygb
-plt.plot(x,y,label = "3D,Face Paraboloid,N=64",linewidth=5,color = color_red)
+plt.plot(x,y,label = "3D,Face Paraboloid,19.2 Cells/Dia.",linewidth=5,color = color_red)
+
 
 
 # x = data2[:,1]/tNorm

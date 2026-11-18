@@ -2,9 +2,9 @@
 Partition : 2 2 2
 
 # Mesh definition
-Lx : 5 !0.02 !0.2
-Ly : 7.5 !0.02 !0.2
-Lz : 5 !0.02 !0.2
+Lx : 5 ! 5e-4
+Ly : 7.5 ! 7.5e-4 
+Lz : 5 ! 5e-4 
 nx : 64    !128
 ny : 96    !128
 nz : 64    !128
@@ -13,11 +13,11 @@ nz : 64    !128
 Two Dimensional : .false. 
 # Fluid properties
 Gravity :                     0 0 0
-Liquid dynamic viscosity :    0.1
-Gas dynamic viscosity :       0.1
-Liquid density :              0.2
-Gas density :                 0.2
-Surface tension coefficient : 0.1
+Liquid dynamic viscosity :    0.1 ! 1e-5
+Gas dynamic viscosity :       0.1 ! 1e-3
+Liquid density :              0.2 ! 1
+Gas density :                 0.2 ! 1000
+Surface tension coefficient : 0.1 ! 0.072
 
 # Temperatures
 Top Temperature : 1
@@ -28,12 +28,12 @@ cp1 : 0.1 #Liquid
 cp2 : 0.1 #Gas 
 
 # Options
-Marangoni :  0 0.133 -0.1
+Marangoni :  0 0.133 -0.1 ! 0 1.62542 -0.1
 Pressure : 1
 Smoothing Option : 1
 Surface Tension Option : 9
 Levelset Option : 1
-Matching Option : 2
+Matching Option : 1
 Curvature Option : 1
 PU Spread : 2.0
 # 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
@@ -41,17 +41,17 @@ Interface Type : 2
 
 
 # Definition of single bubble (Weber)
-Bubble Radius : 0.5
-Bubble position :  0 -2.25 0
+Bubble Radius : 5e-5
+Bubble position :  0 0 0
 
 # Time integration
 Max timestep size : 1e-3
 Max cfl number :    0.5
-Max time :          1.0 ! 2.4
+Max time :          0.56 ! 2.4
 
 # Pressure solver
 Pressure tolerance : 1e-6
 Pressure iteration : 100
 
 # Ensight output
-Ensight output period : 12e-12
+Ensight output period : 2e-12

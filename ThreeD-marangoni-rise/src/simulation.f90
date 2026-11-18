@@ -182,7 +182,7 @@ contains
       end block initialize_timetracker
       
       
-      ! Initialize our VOF solver and field
+      ! Initialize our VOF solver and field 
       create_and_initialize_vof: block
          use mms_geom,  only: cube_refine_vol
          use vfs_class, only: plicnet,r2p,VFhi,VFlo,remap,flux_storage,remap_storage,lvira,jibben,jibbenPU,jibbenSq,jibbenPLIC
@@ -296,7 +296,7 @@ contains
          call fs%setup(pressure_solver=ps,implicit_solver=vs)
          ! Zero initial field
          fs%U=0.0_WP; fs%V=0.0_WP; fs%W=0.0_WP
-         ! Zero inflow velocity
+         ! Zero inflow velocity 
          Vin=0.0_WP
          ! Calculate cell-centered velocities and divergence
          call fs%interp_vel(Ui,Vi,Wi)
@@ -307,6 +307,8 @@ contains
       create_surface_tension_solver : block
          call cst%init(fs,vf,time)
          call param_read('Marangoni',cst%MarangoniOption,default = [0.0_WP,0.0_WP,0.0_WP])
+         ! print *,"Marangoni = ",cst%MarangoniOption
+         ! STOP 
          call param_read('Pressure',cst%PressureOption,default = 0.0_WP)
          call param_read('Smoothing Option',cst%SmoothingOption,default = 1)
          call param_read('Surface Tension Option',cst%SurfaceTensionOption,default = 8)

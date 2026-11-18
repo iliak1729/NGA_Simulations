@@ -1,0 +1,1083 @@
+16 Nov 2026 @ 13:02:33 => ******************** NGA APPLICATION STARTED ********************
+16 Nov 2026 @ 13:02:33 => NGA was called with 39 user-defined parameters:
+16 Nov 2026 @ 13:02:33 =>  __________________________________________________________________________________________________
+16 Nov 2026 @ 13:02:33 => | Parameter tag name             | Assigned value                 | Source                         |
+16 Nov 2026 @ 13:02:33 => | i                              | input64_P_NoMatching           | command line: short            |
+16 Nov 2026 @ 13:02:33 => | v                              | 2                              | command line: short            |
+16 Nov 2026 @ 13:02:33 => | Partition                      | 2 2 2                          | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Lx                             | 5e-5                           | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Ly                             | 7.5e-5                         | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Lz                             | 5e-5                           | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | nx                             | 64                             | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | ny                             | 96                             | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | nz                             | 64                             | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Two Dimensional                | .false.                        | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Gravity                        | 0 0 0                          | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Liquid dynamic viscosity       | 1e-3                           | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Gas dynamic viscosity          | 1e-3                           | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Liquid density                 | 1                              | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Gas density                    | 100                            | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Surface tension coefficient    | 0.072                          | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Top Temperature                | 1                              | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Bottom Temperature             | 0                              | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | k1                             | 0.001                          | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | k2                             | 0.001                          | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | cp1                            | 0.1                            | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | cp2                            | 0.1                            | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Marangoni                      | 0 22500 -0.1                   | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Pressure                       | 1                              | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Smoothing Option               | 1                              | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Surface Tension Option         | 9                              | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Levelset Option                | 1                              | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Matching Option                | 1                              | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Curvature Option               | 1                              | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | PU Spread                      | 2.0                            | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Interface Type                 | 6                              | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Bubble Radius                  | 5e-6                           | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Bubble position                | 0 0 0                          | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Max timestep size              | 1e-3                           | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Max cfl number                 | 0.25                           | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Max time                       | 2e-5                           | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Pressure tolerance             | 1e-6                           | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Pressure iteration             | 100                            | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => | Ensight output period          | 2e-12                          | file: input64_P_NoMatching     |
+16 Nov 2026 @ 13:02:33 => |________________________________|________________________________|________________________________|
+16 Nov 2026 @ 13:02:33 => Partitioned cartesian grid [MarangoniRise] on 8 processes
+16 Nov 2026 @ 13:02:33 =>  >   overlap = 3
+16 Nov 2026 @ 13:02:33 =>  >      size = 64x96x64
+16 Nov 2026 @ 13:02:33 =>  >    decomp = 2x2x2
+16 Nov 2026 @ 13:02:33 =>  >    extent = [-2.50000E-05, 2.50000E-05]x[-3.75000E-05, 3.75000E-05]x[-2.50000E-05, 2.50000E-05]
+16 Nov 2026 @ 13:02:33 =>  >   uniform = TxTxT
+16 Nov 2026 @ 13:02:33 =>  >  periodic = TxFxT
+16 Nov 2026 @ 13:02:33 =>  >    volume =  1.87500E-13
+16 Nov 2026 @ 13:02:33 => Partitioned cartesian grid [MarangoniRiseX] on 8 processes
+16 Nov 2026 @ 13:02:33 =>  >   overlap = 3
+16 Nov 2026 @ 13:02:33 =>  >      size = 64x96x64
+16 Nov 2026 @ 13:02:33 =>  >    decomp = 2x2x2
+16 Nov 2026 @ 13:02:33 =>  >    extent = [-2.53906E-05, 2.46094E-05]x[-3.75000E-05, 3.75000E-05]x[-2.50000E-05, 2.50000E-05]
+16 Nov 2026 @ 13:02:33 =>  >   uniform = TxTxT
+16 Nov 2026 @ 13:02:33 =>  >  periodic = TxTxT
+16 Nov 2026 @ 13:02:33 =>  >    volume =  1.87500E-13
+16 Nov 2026 @ 13:02:33 => Partitioned cartesian grid [MarangoniRiseY] on 8 processes
+16 Nov 2026 @ 13:02:33 =>  >   overlap = 3
+16 Nov 2026 @ 13:02:33 =>  >      size = 64x96x64
+16 Nov 2026 @ 13:02:33 =>  >    decomp = 2x2x2
+16 Nov 2026 @ 13:02:33 =>  >    extent = [-2.50000E-05, 2.50000E-05]x[-3.78906E-05, 3.71094E-05]x[-2.50000E-05, 2.50000E-05]
+16 Nov 2026 @ 13:02:33 =>  >   uniform = TxTxT
+16 Nov 2026 @ 13:02:33 =>  >  periodic = TxTxT
+16 Nov 2026 @ 13:02:33 =>  >    volume =  1.87500E-13
+16 Nov 2026 @ 13:02:33 => Partitioned cartesian grid [MarangoniRiseZ] on 8 processes
+16 Nov 2026 @ 13:02:33 =>  >   overlap = 3
+16 Nov 2026 @ 13:02:33 =>  >      size = 64x96x64
+16 Nov 2026 @ 13:02:33 =>  >    decomp = 2x2x2
+16 Nov 2026 @ 13:02:33 =>  >    extent = [-2.50000E-05, 2.50000E-05]x[-3.75000E-05, 3.75000E-05]x[-2.53906E-05, 2.46094E-05]
+16 Nov 2026 @ 13:02:33 =>  >   uniform = TxTxT
+16 Nov 2026 @ 13:02:33 =>  >  periodic = TxTxT
+16 Nov 2026 @ 13:02:33 =>  >    volume =  1.87500E-13
+16 Nov 2026 @ 13:02:37 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:02:37 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:02:37 =>  >   n/  nmax = 1/2147483647
+16 Nov 2026 @ 13:02:37 =>  >   t/  tmax =  1.82396E-09/ 2.00000E-05
+16 Nov 2026 @ 13:02:37 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:02:37 =>  > cfl/cflmax =  1.37065E+05/ 2.50000E-01
+16 Nov 2026 @ 13:02:37 =>  >  wt/ wtmax =  3.64093E+00/ 1.79769+308
+16 Nov 2026 @ 13:02:38 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:38 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:38 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:39 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:39 =>  >     method = 9
+16 Nov 2026 @ 13:02:39 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:39 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:39 =>  >  rerr/rcvg =  4.43607E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:39 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:39 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:39 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:39 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:39 =>  >     method = 9
+16 Nov 2026 @ 13:02:39 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:39 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:39 =>  >  rerr/rcvg =  5.65076E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:40 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:02:40 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:02:40 =>  >   n/  nmax = 2/2147483647
+16 Nov 2026 @ 13:02:40 =>  >   t/  tmax =  3.64791E-09/ 2.00000E-05
+16 Nov 2026 @ 13:02:40 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:02:40 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:02:40 =>  >  wt/ wtmax =  6.39074E+00/ 1.79769+308
+16 Nov 2026 @ 13:02:40 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:40 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:40 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:41 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:41 =>  >     method = 9
+16 Nov 2026 @ 13:02:41 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:41 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:41 =>  >  rerr/rcvg =  6.93242E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:41 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:41 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:41 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:42 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:42 =>  >     method = 9
+16 Nov 2026 @ 13:02:42 =>  >   it/maxit = 12/100
+16 Nov 2026 @ 13:02:42 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:42 =>  >  rerr/rcvg =  6.97051E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:42 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:02:42 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:02:42 =>  >   n/  nmax = 3/2147483647
+16 Nov 2026 @ 13:02:42 =>  >   t/  tmax =  5.47187E-09/ 2.00000E-05
+16 Nov 2026 @ 13:02:42 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:02:42 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:02:42 =>  >  wt/ wtmax =  8.93112E+00/ 1.79769+308
+16 Nov 2026 @ 13:02:43 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:43 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:43 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:44 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:44 =>  >     method = 9
+16 Nov 2026 @ 13:02:44 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:44 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:44 =>  >  rerr/rcvg =  6.71860E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:44 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:44 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:44 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:44 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:44 =>  >     method = 9
+16 Nov 2026 @ 13:02:44 =>  >   it/maxit = 12/100
+16 Nov 2026 @ 13:02:44 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:44 =>  >  rerr/rcvg =  9.24560E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:45 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:02:45 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:02:45 =>  >   n/  nmax = 4/2147483647
+16 Nov 2026 @ 13:02:45 =>  >   t/  tmax =  7.29583E-09/ 2.00000E-05
+16 Nov 2026 @ 13:02:45 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:02:45 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:02:45 =>  >  wt/ wtmax =  1.12822E+01/ 1.79769+308
+16 Nov 2026 @ 13:02:45 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:45 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:45 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:46 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:46 =>  >     method = 9
+16 Nov 2026 @ 13:02:46 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:46 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:46 =>  >  rerr/rcvg =  6.71969E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:46 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:46 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:46 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:47 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:47 =>  >     method = 9
+16 Nov 2026 @ 13:02:47 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:47 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:47 =>  >  rerr/rcvg =  4.52658E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:47 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:02:47 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:02:47 =>  >   n/  nmax = 5/2147483647
+16 Nov 2026 @ 13:02:47 =>  >   t/  tmax =  9.11978E-09/ 2.00000E-05
+16 Nov 2026 @ 13:02:47 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:02:47 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:02:47 =>  >  wt/ wtmax =  1.37127E+01/ 1.79769+308
+16 Nov 2026 @ 13:02:48 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:48 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:48 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:48 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:48 =>  >     method = 9
+16 Nov 2026 @ 13:02:48 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:48 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:48 =>  >  rerr/rcvg =  6.65881E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:48 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:49 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:49 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:49 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:49 =>  >     method = 9
+16 Nov 2026 @ 13:02:49 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:49 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:49 =>  >  rerr/rcvg =  4.90904E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:49 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:02:49 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:02:49 =>  >   n/  nmax = 6/2147483647
+16 Nov 2026 @ 13:02:49 =>  >   t/  tmax =  1.09437E-08/ 2.00000E-05
+16 Nov 2026 @ 13:02:49 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:02:49 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:02:49 =>  >  wt/ wtmax =  1.59010E+01/ 1.79769+308
+16 Nov 2026 @ 13:02:50 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:50 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:50 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:50 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:50 =>  >     method = 9
+16 Nov 2026 @ 13:02:50 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:50 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:50 =>  >  rerr/rcvg =  6.67123E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:51 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:51 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:51 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:51 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:51 =>  >     method = 9
+16 Nov 2026 @ 13:02:51 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:51 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:51 =>  >  rerr/rcvg =  5.09167E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:52 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:02:52 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:02:52 =>  >   n/  nmax = 7/2147483647
+16 Nov 2026 @ 13:02:52 =>  >   t/  tmax =  1.27677E-08/ 2.00000E-05
+16 Nov 2026 @ 13:02:52 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:02:52 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:02:52 =>  >  wt/ wtmax =  1.83065E+01/ 1.79769+308
+16 Nov 2026 @ 13:02:52 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:52 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:52 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:53 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:53 =>  >     method = 9
+16 Nov 2026 @ 13:02:53 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:53 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:53 =>  >  rerr/rcvg =  6.69467E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:53 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:53 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:53 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:54 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:54 =>  >     method = 9
+16 Nov 2026 @ 13:02:54 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:54 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:54 =>  >  rerr/rcvg =  4.71485E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:54 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:02:54 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:02:54 =>  >   n/  nmax = 8/2147483647
+16 Nov 2026 @ 13:02:54 =>  >   t/  tmax =  1.45917E-08/ 2.00000E-05
+16 Nov 2026 @ 13:02:54 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:02:54 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:02:54 =>  >  wt/ wtmax =  2.06881E+01/ 1.79769+308
+16 Nov 2026 @ 13:02:55 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:55 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:55 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:55 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:55 =>  >     method = 9
+16 Nov 2026 @ 13:02:55 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:55 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:55 =>  >  rerr/rcvg =  6.75920E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:55 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:55 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:56 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:56 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:56 =>  >     method = 9
+16 Nov 2026 @ 13:02:56 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:56 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:56 =>  >  rerr/rcvg =  5.42929E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:57 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:02:57 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:02:57 =>  >   n/  nmax = 9/2147483647
+16 Nov 2026 @ 13:02:57 =>  >   t/  tmax =  1.64156E-08/ 2.00000E-05
+16 Nov 2026 @ 13:02:57 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:02:57 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:02:57 =>  >  wt/ wtmax =  2.31668E+01/ 1.79769+308
+16 Nov 2026 @ 13:02:57 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:57 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:57 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:58 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:58 =>  >     method = 9
+16 Nov 2026 @ 13:02:58 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:58 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:58 =>  >  rerr/rcvg =  6.81230E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:58 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:58 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:58 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:59 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:59 =>  >     method = 9
+16 Nov 2026 @ 13:02:59 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:02:59 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:02:59 =>  >  rerr/rcvg =  6.14893E-07/ 1.00000E-06
+16 Nov 2026 @ 13:02:59 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:02:59 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:02:59 =>  >   n/  nmax = 10/2147483647
+16 Nov 2026 @ 13:02:59 =>  >   t/  tmax =  1.82396E-08/ 2.00000E-05
+16 Nov 2026 @ 13:02:59 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:02:59 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:02:59 =>  >  wt/ wtmax =  2.55226E+01/ 1.79769+308
+16 Nov 2026 @ 13:02:59 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:02:59 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:00 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:00 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:00 =>  >     method = 9
+16 Nov 2026 @ 13:03:00 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:00 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:00 =>  >  rerr/rcvg =  6.90949E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:00 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:00 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:00 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:01 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:01 =>  >     method = 9
+16 Nov 2026 @ 13:03:01 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:01 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:01 =>  >  rerr/rcvg =  6.48432E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:01 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:01 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:01 =>  >   n/  nmax = 11/2147483647
+16 Nov 2026 @ 13:03:01 =>  >   t/  tmax =  2.00635E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:01 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:01 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:01 =>  >  wt/ wtmax =  2.77955E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:02 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:02 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:02 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:02 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:02 =>  >     method = 9
+16 Nov 2026 @ 13:03:02 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:02 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:02 =>  >  rerr/rcvg =  6.95894E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:03 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:03 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:03 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:03 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:03 =>  >     method = 9
+16 Nov 2026 @ 13:03:03 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:03 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:03 =>  >  rerr/rcvg =  6.79029E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:04 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:04 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:04 =>  >   n/  nmax = 12/2147483647
+16 Nov 2026 @ 13:03:04 =>  >   t/  tmax =  2.18875E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:04 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:04 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:04 =>  >  wt/ wtmax =  3.01727E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:04 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:04 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:04 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:05 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:05 =>  >     method = 9
+16 Nov 2026 @ 13:03:05 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:05 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:05 =>  >  rerr/rcvg =  7.01098E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:05 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:05 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:05 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:06 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:06 =>  >     method = 9
+16 Nov 2026 @ 13:03:06 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:06 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:06 =>  >  rerr/rcvg =  6.97700E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:06 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:06 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:06 =>  >   n/  nmax = 13/2147483647
+16 Nov 2026 @ 13:03:06 =>  >   t/  tmax =  2.37114E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:06 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:06 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:06 =>  >  wt/ wtmax =  3.27085E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:07 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:07 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:07 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:07 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:07 =>  >     method = 9
+16 Nov 2026 @ 13:03:07 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:07 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:07 =>  >  rerr/rcvg =  7.01734E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:07 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:08 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:08 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:08 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:08 =>  >     method = 9
+16 Nov 2026 @ 13:03:08 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:08 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:08 =>  >  rerr/rcvg =  7.22142E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:09 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:09 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:09 =>  >   n/  nmax = 14/2147483647
+16 Nov 2026 @ 13:03:09 =>  >   t/  tmax =  2.55354E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:09 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:09 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:09 =>  >  wt/ wtmax =  3.50418E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:09 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:09 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:09 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:10 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:10 =>  >     method = 9
+16 Nov 2026 @ 13:03:10 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:10 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:10 =>  >  rerr/rcvg =  6.99070E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:10 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:10 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:10 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:10 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:10 =>  >     method = 9
+16 Nov 2026 @ 13:03:10 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:10 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:10 =>  >  rerr/rcvg =  7.30229E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:11 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:11 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:11 =>  >   n/  nmax = 15/2147483647
+16 Nov 2026 @ 13:03:11 =>  >   t/  tmax =  2.73594E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:11 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:11 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:11 =>  >  wt/ wtmax =  3.73485E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:11 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:11 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:11 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:12 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:12 =>  >     method = 9
+16 Nov 2026 @ 13:03:12 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:12 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:12 =>  >  rerr/rcvg =  7.09814E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:12 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:12 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:12 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:13 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:13 =>  >     method = 9
+16 Nov 2026 @ 13:03:13 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:13 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:13 =>  >  rerr/rcvg =  7.54458E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:13 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:13 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:13 =>  >   n/  nmax = 16/2147483647
+16 Nov 2026 @ 13:03:13 =>  >   t/  tmax =  2.91833E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:13 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:13 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:13 =>  >  wt/ wtmax =  3.97075E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:14 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:14 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:14 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:14 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:14 =>  >     method = 9
+16 Nov 2026 @ 13:03:14 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:14 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:14 =>  >  rerr/rcvg =  6.88804E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:14 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:14 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:15 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:15 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:15 =>  >     method = 9
+16 Nov 2026 @ 13:03:15 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:15 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:15 =>  >  rerr/rcvg =  7.65917E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:15 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:15 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:15 =>  >   n/  nmax = 17/2147483647
+16 Nov 2026 @ 13:03:15 =>  >   t/  tmax =  3.10073E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:15 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:15 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:15 =>  >  wt/ wtmax =  4.20152E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:16 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:16 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:16 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:16 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:16 =>  >     method = 9
+16 Nov 2026 @ 13:03:16 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:16 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:16 =>  >  rerr/rcvg =  7.15728E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:17 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:17 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:17 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:17 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:17 =>  >     method = 9
+16 Nov 2026 @ 13:03:17 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:17 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:17 =>  >  rerr/rcvg =  7.75113E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:17 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:17 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:17 =>  >   n/  nmax = 18/2147483647
+16 Nov 2026 @ 13:03:17 =>  >   t/  tmax =  3.28312E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:17 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:17 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:17 =>  >  wt/ wtmax =  4.39730E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:18 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:18 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:18 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:18 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:18 =>  >     method = 9
+16 Nov 2026 @ 13:03:18 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:18 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:18 =>  >  rerr/rcvg =  7.14136E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:19 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:19 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:19 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:19 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:19 =>  >     method = 9
+16 Nov 2026 @ 13:03:19 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:19 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:19 =>  >  rerr/rcvg =  8.00986E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:19 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:19 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:19 =>  >   n/  nmax = 19/2147483647
+16 Nov 2026 @ 13:03:19 =>  >   t/  tmax =  3.46552E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:19 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:19 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:19 =>  >  wt/ wtmax =  4.58502E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:20 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:20 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:20 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:20 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:20 =>  >     method = 9
+16 Nov 2026 @ 13:03:20 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:20 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:20 =>  >  rerr/rcvg =  7.14451E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:20 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:21 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:21 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:21 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:21 =>  >     method = 9
+16 Nov 2026 @ 13:03:21 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:21 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:21 =>  >  rerr/rcvg =  8.13360E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:21 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:21 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:21 =>  >   n/  nmax = 20/2147483647
+16 Nov 2026 @ 13:03:21 =>  >   t/  tmax =  3.64791E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:21 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:21 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:21 =>  >  wt/ wtmax =  4.77107E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:22 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:22 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:22 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:22 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:22 =>  >     method = 9
+16 Nov 2026 @ 13:03:22 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:22 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:22 =>  >  rerr/rcvg =  7.12912E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:22 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:22 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:22 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:23 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:23 =>  >     method = 9
+16 Nov 2026 @ 13:03:23 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:23 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:23 =>  >  rerr/rcvg =  8.21848E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:23 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:23 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:23 =>  >   n/  nmax = 21/2147483647
+16 Nov 2026 @ 13:03:23 =>  >   t/  tmax =  3.83031E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:23 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:23 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:23 =>  >  wt/ wtmax =  4.95788E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:23 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:24 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:24 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:24 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:24 =>  >     method = 9
+16 Nov 2026 @ 13:03:24 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:24 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:24 =>  >  rerr/rcvg =  7.16322E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:24 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:24 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:24 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:25 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:25 =>  >     method = 9
+16 Nov 2026 @ 13:03:25 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:25 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:25 =>  >  rerr/rcvg =  8.32029E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:25 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:25 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:25 =>  >   n/  nmax = 22/2147483647
+16 Nov 2026 @ 13:03:25 =>  >   t/  tmax =  4.01271E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:25 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:25 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:25 =>  >  wt/ wtmax =  5.14624E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:25 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:25 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:25 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:26 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:26 =>  >     method = 9
+16 Nov 2026 @ 13:03:26 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:26 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:26 =>  >  rerr/rcvg =  7.15704E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:26 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:26 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:26 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:27 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:27 =>  >     method = 9
+16 Nov 2026 @ 13:03:27 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:27 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:27 =>  >  rerr/rcvg =  8.36352E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:27 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:27 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:27 =>  >   n/  nmax = 23/2147483647
+16 Nov 2026 @ 13:03:27 =>  >   t/  tmax =  4.19510E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:27 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:27 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:27 =>  >  wt/ wtmax =  5.33962E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:27 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:27 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:27 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:28 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:28 =>  >     method = 9
+16 Nov 2026 @ 13:03:28 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:28 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:28 =>  >  rerr/rcvg =  7.15964E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:28 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:28 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:28 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:28 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:28 =>  >     method = 9
+16 Nov 2026 @ 13:03:28 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:28 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:28 =>  >  rerr/rcvg =  8.34099E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:29 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:29 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:29 =>  >   n/  nmax = 24/2147483647
+16 Nov 2026 @ 13:03:29 =>  >   t/  tmax =  4.37750E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:29 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:29 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:29 =>  >  wt/ wtmax =  5.51632E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:29 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:29 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:29 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:30 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:30 =>  >     method = 9
+16 Nov 2026 @ 13:03:30 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:30 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:30 =>  >  rerr/rcvg =  7.14064E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:30 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:30 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:30 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:31 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:31 =>  >     method = 9
+16 Nov 2026 @ 13:03:31 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:31 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:31 =>  >  rerr/rcvg =  8.33750E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:31 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:31 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:31 =>  >   n/  nmax = 25/2147483647
+16 Nov 2026 @ 13:03:31 =>  >   t/  tmax =  4.55989E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:31 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:31 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:31 =>  >  wt/ wtmax =  5.76289E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:32 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:32 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:32 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:32 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:32 =>  >     method = 9
+16 Nov 2026 @ 13:03:32 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:32 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:32 =>  >  rerr/rcvg =  7.04970E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:32 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:32 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:32 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:33 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:33 =>  >     method = 9
+16 Nov 2026 @ 13:03:33 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:33 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:33 =>  >  rerr/rcvg =  8.25933E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:33 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:33 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:33 =>  >   n/  nmax = 26/2147483647
+16 Nov 2026 @ 13:03:33 =>  >   t/  tmax =  4.74229E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:33 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:33 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:33 =>  >  wt/ wtmax =  5.95206E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:33 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:33 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:33 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:34 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:34 =>  >     method = 9
+16 Nov 2026 @ 13:03:34 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:34 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:34 =>  >  rerr/rcvg =  7.14360E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:34 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:34 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:34 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:35 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:35 =>  >     method = 9
+16 Nov 2026 @ 13:03:35 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:35 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:35 =>  >  rerr/rcvg =  8.18741E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:35 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:35 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:35 =>  >   n/  nmax = 27/2147483647
+16 Nov 2026 @ 13:03:35 =>  >   t/  tmax =  4.92468E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:35 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:35 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:35 =>  >  wt/ wtmax =  6.13912E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:35 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:35 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:35 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:36 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:36 =>  >     method = 9
+16 Nov 2026 @ 13:03:36 =>  >   it/maxit = 11/100
+16 Nov 2026 @ 13:03:36 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:36 =>  >  rerr/rcvg =  7.08177E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:36 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:36 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:36 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:36 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:36 =>  >     method = 9
+16 Nov 2026 @ 13:03:36 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:36 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:36 =>  >  rerr/rcvg =  8.27702E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:37 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:37 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:37 =>  >   n/  nmax = 28/2147483647
+16 Nov 2026 @ 13:03:37 =>  >   t/  tmax =  5.10708E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:37 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:37 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:37 =>  >  wt/ wtmax =  6.33485E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:37 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:37 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:37 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:38 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:38 =>  >     method = 9
+16 Nov 2026 @ 13:03:38 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:38 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:38 =>  >  rerr/rcvg =  7.11444E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:38 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:38 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:38 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:39 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:39 =>  >     method = 9
+16 Nov 2026 @ 13:03:39 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:39 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:39 =>  >  rerr/rcvg =  8.28586E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:39 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:39 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:39 =>  >   n/  nmax = 29/2147483647
+16 Nov 2026 @ 13:03:39 =>  >   t/  tmax =  5.28947E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:39 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:39 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:39 =>  >  wt/ wtmax =  6.53708E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:39 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:39 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:39 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:40 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:40 =>  >     method = 9
+16 Nov 2026 @ 13:03:40 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:40 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:40 =>  >  rerr/rcvg =  7.12030E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:40 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:40 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:40 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:41 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:41 =>  >     method = 9
+16 Nov 2026 @ 13:03:41 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:41 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:41 =>  >  rerr/rcvg =  8.26310E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:41 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:41 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:41 =>  >   n/  nmax = 30/2147483647
+16 Nov 2026 @ 13:03:41 =>  >   t/  tmax =  5.47187E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:41 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:41 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:41 =>  >  wt/ wtmax =  6.77284E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:42 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:42 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:42 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:42 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:42 =>  >     method = 9
+16 Nov 2026 @ 13:03:42 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:42 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:42 =>  >  rerr/rcvg =  7.02496E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:42 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:42 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:42 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:43 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:43 =>  >     method = 9
+16 Nov 2026 @ 13:03:43 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:43 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:43 =>  >  rerr/rcvg =  8.23961E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:43 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:43 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:43 =>  >   n/  nmax = 31/2147483647
+16 Nov 2026 @ 13:03:43 =>  >   t/  tmax =  5.65427E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:43 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:43 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:43 =>  >  wt/ wtmax =  6.97295E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:44 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:44 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:44 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:44 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:44 =>  >     method = 9
+16 Nov 2026 @ 13:03:44 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:44 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:44 =>  >  rerr/rcvg =  6.31977E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:44 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:44 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:44 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:45 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:45 =>  >     method = 9
+16 Nov 2026 @ 13:03:45 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:45 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:45 =>  >  rerr/rcvg =  8.03460E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:45 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:45 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:45 =>  >   n/  nmax = 32/2147483647
+16 Nov 2026 @ 13:03:45 =>  >   t/  tmax =  5.83666E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:45 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:45 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:45 =>  >  wt/ wtmax =  7.17852E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:46 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:46 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:46 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:46 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:46 =>  >     method = 9
+16 Nov 2026 @ 13:03:46 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:46 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:46 =>  >  rerr/rcvg =  5.48430E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:46 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:46 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:46 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:47 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:47 =>  >     method = 9
+16 Nov 2026 @ 13:03:47 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:47 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:47 =>  >  rerr/rcvg =  6.69128E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:47 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:47 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:47 =>  >   n/  nmax = 33/2147483647
+16 Nov 2026 @ 13:03:47 =>  >   t/  tmax =  6.01906E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:47 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:47 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:47 =>  >  wt/ wtmax =  7.37050E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:48 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:48 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:48 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:48 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:48 =>  >     method = 9
+16 Nov 2026 @ 13:03:48 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:48 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:48 =>  >  rerr/rcvg =  6.73521E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:48 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:48 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:48 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:49 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:49 =>  >     method = 9
+16 Nov 2026 @ 13:03:49 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:49 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:49 =>  >  rerr/rcvg =  7.99038E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:49 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:49 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:49 =>  >   n/  nmax = 34/2147483647
+16 Nov 2026 @ 13:03:49 =>  >   t/  tmax =  6.20145E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:49 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:49 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:49 =>  >  wt/ wtmax =  7.55182E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:49 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:49 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:49 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:50 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:50 =>  >     method = 9
+16 Nov 2026 @ 13:03:50 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:50 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:50 =>  >  rerr/rcvg =  6.98152E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:50 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:50 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:50 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:51 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:51 =>  >     method = 9
+16 Nov 2026 @ 13:03:51 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:51 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:51 =>  >  rerr/rcvg =  8.08268E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:51 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:51 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:51 =>  >   n/  nmax = 35/2147483647
+16 Nov 2026 @ 13:03:51 =>  >   t/  tmax =  6.38385E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:51 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:51 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:51 =>  >  wt/ wtmax =  7.75436E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:51 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:51 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:51 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:52 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:52 =>  >     method = 9
+16 Nov 2026 @ 13:03:52 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:52 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:52 =>  >  rerr/rcvg =  7.03594E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:52 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:52 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:52 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:53 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:53 =>  >     method = 9
+16 Nov 2026 @ 13:03:53 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:53 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:53 =>  >  rerr/rcvg =  8.17835E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:53 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:53 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:53 =>  >   n/  nmax = 36/2147483647
+16 Nov 2026 @ 13:03:53 =>  >   t/  tmax =  6.56624E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:53 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:53 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:53 =>  >  wt/ wtmax =  7.94462E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:53 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:53 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:53 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:54 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:54 =>  >     method = 9
+16 Nov 2026 @ 13:03:54 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:54 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:54 =>  >  rerr/rcvg =  6.89444E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:54 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:54 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:54 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:55 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:55 =>  >     method = 9
+16 Nov 2026 @ 13:03:55 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:55 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:55 =>  >  rerr/rcvg =  8.06710E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:55 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:55 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:55 =>  >   n/  nmax = 37/2147483647
+16 Nov 2026 @ 13:03:55 =>  >   t/  tmax =  6.74864E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:55 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:55 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:55 =>  >  wt/ wtmax =  8.15883E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:56 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:56 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:56 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:56 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:56 =>  >     method = 9
+16 Nov 2026 @ 13:03:56 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:56 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:56 =>  >  rerr/rcvg =  6.57576E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:56 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:56 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:56 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:57 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:57 =>  >     method = 9
+16 Nov 2026 @ 13:03:57 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:03:57 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:03:57 =>  >  rerr/rcvg =  7.81647E-07/ 1.00000E-06
+16 Nov 2026 @ 13:03:58 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:03:58 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:03:58 =>  >   n/  nmax = 38/2147483647
+16 Nov 2026 @ 13:03:58 =>  >   t/  tmax =  6.93104E-08/ 2.00000E-05
+16 Nov 2026 @ 13:03:58 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:03:58 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:03:58 =>  >  wt/ wtmax =  8.47637E+01/ 1.79769+308
+16 Nov 2026 @ 13:03:59 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:59 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:03:59 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:00 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:00 =>  >     method = 9
+16 Nov 2026 @ 13:04:00 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:00 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:00 =>  >  rerr/rcvg =  4.58398E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:00 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:00 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:00 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:00 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:00 =>  >     method = 9
+16 Nov 2026 @ 13:04:00 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:00 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:00 =>  >  rerr/rcvg =  7.38396E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:01 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:04:01 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:04:01 =>  >   n/  nmax = 39/2147483647
+16 Nov 2026 @ 13:04:01 =>  >   t/  tmax =  7.11343E-08/ 2.00000E-05
+16 Nov 2026 @ 13:04:01 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:04:01 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:04:01 =>  >  wt/ wtmax =  8.70520E+01/ 1.79769+308
+16 Nov 2026 @ 13:04:01 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:01 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:01 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:02 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:02 =>  >     method = 9
+16 Nov 2026 @ 13:04:02 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:02 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:02 =>  >  rerr/rcvg =  3.33003E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:02 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:02 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:02 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:03 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:03 =>  >     method = 9
+16 Nov 2026 @ 13:04:03 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:03 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:03 =>  >  rerr/rcvg =  5.38560E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:03 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:04:03 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:04:03 =>  >   n/  nmax = 40/2147483647
+16 Nov 2026 @ 13:04:03 =>  >   t/  tmax =  7.29583E-08/ 2.00000E-05
+16 Nov 2026 @ 13:04:03 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:04:03 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:04:03 =>  >  wt/ wtmax =  8.95396E+01/ 1.79769+308
+16 Nov 2026 @ 13:04:04 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:04 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:04 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:04 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:04 =>  >     method = 9
+16 Nov 2026 @ 13:04:04 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:04 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:04 =>  >  rerr/rcvg =  6.32321E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:05 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:05 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:05 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:05 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:05 =>  >     method = 9
+16 Nov 2026 @ 13:04:05 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:05 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:05 =>  >  rerr/rcvg =  5.67115E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:06 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:04:06 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:04:06 =>  >   n/  nmax = 41/2147483647
+16 Nov 2026 @ 13:04:06 =>  >   t/  tmax =  7.47822E-08/ 2.00000E-05
+16 Nov 2026 @ 13:04:06 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:04:06 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:04:06 =>  >  wt/ wtmax =  9.26285E+01/ 1.79769+308
+16 Nov 2026 @ 13:04:07 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:07 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:07 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:07 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:07 =>  >     method = 9
+16 Nov 2026 @ 13:04:07 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:07 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:07 =>  >  rerr/rcvg =  6.83861E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:07 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:07 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:07 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:08 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:08 =>  >     method = 9
+16 Nov 2026 @ 13:04:08 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:08 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:08 =>  >  rerr/rcvg =  7.26905E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:09 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:04:09 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:04:09 =>  >   n/  nmax = 42/2147483647
+16 Nov 2026 @ 13:04:09 =>  >   t/  tmax =  7.66062E-08/ 2.00000E-05
+16 Nov 2026 @ 13:04:09 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:04:09 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:04:09 =>  >  wt/ wtmax =  9.51315E+01/ 1.79769+308
+16 Nov 2026 @ 13:04:09 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:09 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:09 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:10 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:10 =>  >     method = 9
+16 Nov 2026 @ 13:04:10 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:10 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:10 =>  >  rerr/rcvg =  6.42724E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:10 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:10 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:10 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:11 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:11 =>  >     method = 9
+16 Nov 2026 @ 13:04:11 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:11 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:11 =>  >  rerr/rcvg =  7.26235E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:11 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:04:11 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:04:11 =>  >   n/  nmax = 43/2147483647
+16 Nov 2026 @ 13:04:11 =>  >   t/  tmax =  7.84301E-08/ 2.00000E-05
+16 Nov 2026 @ 13:04:11 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:04:11 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:04:11 =>  >  wt/ wtmax =  9.78151E+01/ 1.79769+308
+16 Nov 2026 @ 13:04:12 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:12 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:12 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:12 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:12 =>  >     method = 9
+16 Nov 2026 @ 13:04:12 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:12 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:12 =>  >  rerr/rcvg =  6.66234E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:13 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:13 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:13 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:13 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:13 =>  >     method = 9
+16 Nov 2026 @ 13:04:13 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:13 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:13 =>  >  rerr/rcvg =  7.54866E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:13 => Timetracker [UNNAMED_TIME] status
+16 Nov 2026 @ 13:04:13 =>  >  it/ itmax = 1/2
+16 Nov 2026 @ 13:04:13 =>  >   n/  nmax = 44/2147483647
+16 Nov 2026 @ 13:04:13 =>  >   t/  tmax =  8.02541E-08/ 2.00000E-05
+16 Nov 2026 @ 13:04:13 =>  >  dt/ dtmax =  1.82396E-09/ 1.00000E-03
+16 Nov 2026 @ 13:04:13 =>  > cfl/cflmax =  2.50000E-01/ 2.50000E-01
+16 Nov 2026 @ 13:04:13 =>  >  wt/ wtmax =  9.98000E+01/ 1.79769+308
+16 Nov 2026 @ 13:04:14 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:14 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:14 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:14 => Structured HYPRE solver [Pressure] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:14 =>  >     method = 9
+16 Nov 2026 @ 13:04:14 =>  >   it/maxit = 13/100
+16 Nov 2026 @ 13:04:14 =>  >  aerr/acvg =  1.79769+308/ 0.00000E+00
+16 Nov 2026 @ 13:04:14 =>  >  rerr/rcvg =  6.74646E-07/ 1.00000E-06
+16 Nov 2026 @ 13:04:14 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:14 => ddadi solver [Velocity] for config [MarangoniRise]
+16 Nov 2026 @ 13:04:14 => ddadi solver [Velocity] for config [MarangoniRise]
