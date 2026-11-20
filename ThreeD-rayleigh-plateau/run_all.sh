@@ -8,7 +8,7 @@ for INPUT in "${CASES[@]}"; do
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
     # DIR="./Debugging_PostOvernight/JibbenSq_ShortTime_${CASE}"
-    DIR="./HeightFunctionNormal/JibbenSq_ShortTime_${CASE}"
+    DIR="./APS2026FINAL_DEBUG/Domain64_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"
@@ -20,7 +20,7 @@ for INPUT in "${CASES[@]}"; do
     rm -rf ./vtk/
 
     echo "Running with $INPUT ..."
-    time mpiexec -n 1 ./nga.dp.gnu.opt.mpi.exe -i "$INPUT" -v 2
+    time mpiexec -n 8 ./nga.dp.gnu.opt.mpi.exe -i "$INPUT" -v 2
     
     echo "Saving monitor data"
     mkdir -p "$DIR"

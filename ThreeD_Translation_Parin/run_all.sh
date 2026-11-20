@@ -2,9 +2,14 @@ CASES=(
     # ========================================
     # D8
     # ========================================
+
     "input_La120_We04_D8"
     "input_La1200_We04_D8"
     "input_La12000_We04_D8"
+
+    # "input_La120_We04_D16"
+    # "input_La1200_We04_D16"
+    # "input_La12000_We04_D16"    
 )
 make -j 10
 for INPUT in "${CASES[@]}"; do

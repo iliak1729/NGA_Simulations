@@ -5,11 +5,11 @@ Partition : 2 2 2
 Lx :    1.0
 Ly :    1.0
 Lz :  1.0
-nx :    20
-ny :    20
-nz :    20
+nx :    32
+ny :    32
+nz :    32
 
-Monitor File Name : PCST_La1200_We04_D8
+Monitor File Name : CSF_La1200_We04_D32
 
 # Are we using a moving domain?
 Two Dimensional : .false. 
@@ -32,7 +32,7 @@ Weber Number : 0.4
 Marangoni :  0 0 0
 Pressure : 1
 Smoothing Option : 1
-Surface Tension Option : 9
+Surface Tension Option : 1
 Levelset Option : 1
 Matching Option : 1
 Curvature Option : 1

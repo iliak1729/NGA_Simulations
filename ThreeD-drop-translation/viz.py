@@ -19,15 +19,20 @@ color_pink = '#CC79A7'
 # Physics
 # ============================================================
 
-sigma = 1.0
-rho = 1.0
-D = 1
+sigma = 0.1
+rho = 300.0
+D = 0.4
 La = 1200
 
 mu = np.sqrt(sigma * rho * D / La)
 
-Usigma = sigma / mu
+
 Tmu = rho * D**2 / mu
+Tmu = 22
+mu = 3.1622776601683791*10**(-2)
+Usigma = sigma / mu
+Uadv = 1.8257418583505540*10**(-2)
+Usigma = Uadv
 print("mu = ", mu)
 print("Usigma = ", Usigma)
 print("Tmu = ", Tmu)
@@ -529,30 +534,84 @@ sim_cases = [
     # ============================================================
     # Flipped Laplace No Matching 
     # ============================================================
+    # (
+    #     "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
+    #     "D8 Both Ratio",
+    #     "xkcd:red",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "D8 Single Fluid",
+    #     "xkcd:azure",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D16_P_NoMatching_BothRatio/monitor/simulation",
+    #     "D16 Both Ratio",
+    #     "xkcd:burnt orange",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D16_P_NoMatching_SingleFluid/monitor/simulation",
+    #     "D16 Single Fluid",
+    #     "xkcd:blue",
+    #     "-"
+    # )
     (
-        "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_BothRatio/monitor/simulation",
-        "D8 Both Ratio",
-        "xkcd:red",
+        "ThreeD_Translation_Parin/monitor/PCST_LA120_We04_D32",
+        "La 120,PST",
+        "tab:blue",
         "-"
     ),
     (
-        "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
-        "D8 Single Fluid",
-        "xkcd:azure",
+        "ThreeD_Translation_Parin/monitor/PCST_LA1200_We04_D32",
+        "La 1200,PST",
+        "tab:orange",
         "-"
     ),
     (
-        "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D16_P_NoMatching_BothRatio/monitor/simulation",
-        "D16 Both Ratio",
-        "xkcd:burnt orange",
+        "ThreeD_Translation_Parin/monitor/PCST_LA12000_We04_D32",
+        "La 12000,PST",
+        "tab:green",
         "-"
     ),
     (
-        "ThreeD-drop-translation/GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D16_P_NoMatching_SingleFluid/monitor/simulation",
-        "D16 Single Fluid",
-        "xkcd:blue",
-        "-"
-    )
+        "ThreeD_Translation_Parin/monitor/PUST_LA120_We04_D32",
+        "La 120,PUST",
+        "tab:blue",
+        "--"
+    ),
+    (
+        "ThreeD_Translation_Parin/monitor/PUST_LA1200_We04_D32",
+        "La 1200,PUST",
+        "tab:orange",
+        "--"
+    ),
+    (
+        "ThreeD_Translation_Parin/monitor/PUST_LA12000_We04_D32",
+        "La 12000,PUST",
+        "tab:green",
+        "--"
+    ),
+    (
+        "ThreeD_Translation_Parin/monitor/CSF_LA120_We04_D32",
+        "La 120,PUST",
+        "tab:blue",
+        ":"
+    ),
+    (
+        "ThreeD_Translation_Parin/monitor/CSF_LA1200_We04_D32",
+        "La 1200,PUST",
+        "tab:orange",
+        ":"
+    ),
+    (
+        "ThreeD_Translation_Parin/monitor/CSF_LA12000_We04_D32",
+        "La 12000,PUST",
+        "tab:green",
+        ":"
+    ),
     
 ]
 
@@ -612,29 +671,29 @@ for filename, label, color, linestyle in sim_cases:
 # Basak Reference Data
 # ============================================================
 
-basak_rms = np.loadtxt(
-    "ThreeD-drop-translation/Basak_Jibben_1200/BasakRMSVelocity_D8.csv",
-    delimiter=",",
-    skiprows=1
-)
+# basak_rms = np.loadtxt(
+#     "ThreeD-drop-translation/Basak_Jibben_1200/BasakRMSVelocity_D8.csv",
+#     delimiter=",",
+#     skiprows=1
+# )
 
-basak_max = np.loadtxt(
-    "ThreeD-drop-translation/Basak_Jibben_1200/BasakMaxVelocity_D8.csv",
-    delimiter=",",
-    skiprows=1
-)
+# basak_max = np.loadtxt(
+#     "ThreeD-drop-translation/Basak_Jibben_1200/BasakMaxVelocity_D8.csv",
+#     delimiter=",",
+#     skiprows=1
+# )
 
-basak_rms_ratio = np.loadtxt(
-    "ThreeD-drop-translation/Basak_Jibben_1200/BasakRatio_D8_RMS.csv",
-    delimiter=",",
-    skiprows=1
-)
+# basak_rms_ratio = np.loadtxt(
+#     "ThreeD-drop-translation/Basak_Jibben_1200/BasakRatio_D8_RMS.csv",
+#     delimiter=",",
+#     skiprows=1
+# )
 
-basak_max_ratio = np.loadtxt(
-    "ThreeD-drop-translation/Basak_Jibben_1200/BasakRatio_D8_MAX.csv",
-    delimiter=",",
-    skiprows=1
-)
+# basak_max_ratio = np.loadtxt(
+#     "ThreeD-drop-translation/Basak_Jibben_1200/BasakRatio_D8_MAX.csv",
+#     delimiter=",",
+#     skiprows=1
+# )
 
 
 # ============================================================
@@ -652,24 +711,24 @@ for case in sim_data:
         color=case["color"],
         linestyle=case["linestyle"]
     )
-# Basak reference RMS velocity
-plt.semilogy(
-    basak_rms[:, 0],
-    basak_rms[:, 1],
-    label="Basak Reference - One Fluid",
-    linewidth=4,
-    color="xkcd:dark grey",
-    linestyle=":"
-)
+# # Basak reference RMS velocity
+# plt.semilogy(
+#     basak_rms[:, 0],
+#     basak_rms[:, 1],
+#     label="Basak Reference - One Fluid",
+#     linewidth=4,
+#     color="xkcd:dark grey",
+#     linestyle=":"
+# )
 
-plt.semilogy(
-    basak_rms_ratio[:, 0],
-    basak_rms_ratio[:, 1],
-    label="Basak Reference - Two Fluid",
-    linewidth=4,
-    color="xkcd:dark grey",
-    linestyle="-."
-)
+# plt.semilogy(
+#     basak_rms_ratio[:, 0],
+#     basak_rms_ratio[:, 1],
+#     label="Basak Reference - Two Fluid",
+#     linewidth=4,
+#     color="xkcd:dark grey",
+#     linestyle="-."
+# )
 plt.title("Laplace Eq")
 
 plt.xlabel(r"$t/T_\mu$")
@@ -690,7 +749,7 @@ plt.grid(
     linewidth=0.5,
     alpha=0.4
 )
-plt.xlim(0,1)
+plt.xlim(0,0.5)
 # Get existing legend entries
 handles, labels = plt.gca().get_legend_handles_labels()
 
@@ -716,103 +775,103 @@ plt.show()
 # Maximum Velocity
 # ============================================================
 
-plt.figure(figsize=(12, 9))
+# plt.figure(figsize=(12, 9))
 
-for filename, label, color, linestyle in sim_cases:
+# for filename, label, color, linestyle in sim_cases:
 
-    data = np.loadtxt(
-        filename,
-        skiprows=2,
-        converters=safe_float,
-        ndmin=2
-    )
+#     data = np.loadtxt(
+#         filename,
+#         skiprows=2,
+#         converters=safe_float,
+#         ndmin=2
+#     )
 
-    # Columns
-    time = data[:, 1]
-    Vmax = data[:, 4]
+#     # Columns
+#     time = data[:, 1]
+#     Vmax = data[:, 4]
 
-    # Remove invalid data
-    valid = (
-        np.isfinite(time)
-        & np.isfinite(Vmax)
-        & (Vmax > 0.0)
-    )
+#     # Remove invalid data
+#     valid = (
+#         np.isfinite(time)
+#         & np.isfinite(Vmax)
+#         & (Vmax > 0.0)
+#     )
 
-    time = time[valid]
-    Vmax = Vmax[valid]
+#     time = time[valid]
+#     Vmax = Vmax[valid]
 
-    # Normalize
-    time_norm = time / Tmu
-    Vmax_norm = Vmax / Usigma
+#     # Normalize
+#     time_norm = time / Tmu
+#     Vmax_norm = Vmax / Usigma
 
-    # Apply optional smoothing
-    Vmax_norm = smooth_data(Vmax_norm)
+#     # Apply optional smoothing
+#     Vmax_norm = smooth_data(Vmax_norm)
 
-    plt.semilogy(
-        time_norm,
-        Vmax_norm,
-        label=label,
-        linewidth=5,
-        color=color,
-        linestyle=linestyle
-    )
-# Basak reference maximum velocity
-plt.semilogy(
-    basak_max[:, 0],
-    basak_max[:, 1],
-    label="Basak Reference - One Fluid",
-    linewidth=4,
-    color="xkcd:dark grey",
-    linestyle=":"
-)
-plt.semilogy(
-    basak_max_ratio[:, 0],
-    basak_max_ratio[:, 1],
-    label="Basak Reference - Two Fluid",
-    linewidth=4,
-    color="xkcd:dark grey",
-    linestyle="-."
-)
-plt.title("Laplace Eq")
+#     plt.semilogy(
+#         time_norm,
+#         Vmax_norm,
+#         label=label,
+#         linewidth=5,
+#         color=color,
+#         linestyle=linestyle
+#     )
+# # Basak reference maximum velocity
+# # plt.semilogy(
+# #     basak_max[:, 0],
+# #     basak_max[:, 1],
+# #     label="Basak Reference - One Fluid",
+# #     linewidth=4,
+# #     color="xkcd:dark grey",
+# #     linestyle=":"
+# # )
+# # plt.semilogy(
+# #     basak_max_ratio[:, 0],
+# #     basak_max_ratio[:, 1],
+# #     label="Basak Reference - Two Fluid",
+# #     linewidth=4,
+# #     color="xkcd:dark grey",
+# #     linestyle="-."
+# # )
+# plt.title("Laplace Eq")
 
-plt.xlabel(r"$t/T_\mu$")
-plt.ylabel(r"$V_{\mathrm{max}}/U_\sigma$")
+# plt.xlabel(r"$t/T_\mu$")
+# plt.ylabel(r"$V_{\mathrm{max}}/U_\sigma$")
 
-plt.minorticks_on()
+# plt.minorticks_on()
 
-plt.grid(
-    which='major',
-    linestyle='-',
-    linewidth=0.8,
-    alpha=0.7
-)
+# plt.grid(
+#     which='major',
+#     linestyle='-',
+#     linewidth=0.8,
+#     alpha=0.7
+# )
 
-plt.grid(
-    which='minor',
-    linestyle=':',
-    linewidth=0.5,
-    alpha=0.4
-)
+# plt.grid(
+#     which='minor',
+#     linestyle=':',
+#     linewidth=0.5,
+#     alpha=0.4
+# )
 
-plt.xlim(0, 1)
+# plt.xlim(0, 1)
 
-# Get existing legend entries
-handles, labels = plt.gca().get_legend_handles_labels()
+# # Get existing legend entries
+# handles, labels = plt.gca().get_legend_handles_labels()
 
-# Add boundary condition legend entries
-# handles += [
-#     Line2D([0], [0], color='black', linewidth=3, linestyle='-',
-#            label='Slip BC'),
-#     Line2D([0], [0], color='black', linewidth=3, linestyle='--',
-#            label='Periodic BC')
-# ]
+# # Add boundary condition legend entries
+# # handles += [
+# #     Line2D([0], [0], color='black', linewidth=3, linestyle='-',
+# #            label='Slip BC'),
+# #     Line2D([0], [0], color='black', linewidth=3, linestyle='--',
+# #            label='Periodic BC')
+# # ]
 
-plt.legend(
-    handles=handles,
-    loc='center left',
-    bbox_to_anchor=(1.02, 0.5),
-    handlelength=5
-)
+# plt.legend(
+#     handles=handles,
+#     loc='center left',
+#     bbox_to_anchor=(1.02, 0.5),
+#     handlelength=5
+# )
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()

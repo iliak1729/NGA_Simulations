@@ -1,5 +1,5 @@
 # Parallelization
-Partition : 1 1 1
+Partition : 2 2 2
 
 # Mesh definition
 Lx : 1.0
@@ -22,10 +22,10 @@ Perturbation mode :         1
 Initial velocity :           0 0 0
 
 # Fluid properties
-Liquid dynamic viscosity:    0.175
-Gas dynamic viscosity:       0.0031325 ! 0.0031325
+Liquid dynamic viscosity:    1e-3
+Gas dynamic viscosity:       1.8e-5 ! 0.0031325
 Liquid density:              1000
-Gas density:                 1.2 ! 1.2
+Gas density:                 1 ! 1.2
 Surface tension coefficient: 0.072
 
 # Options
@@ -38,22 +38,22 @@ Levelset Option : 1
 Matching Option : 1
 Curvature Option : 1
 Paraboloid Option : 1
-Normal Option : 1
+Normal Option : 2
 PU Spread : 2.0
 # 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
-Interface Type : 6
+Interface Type : 3
 
 # Time integration
-Max time:               25
+Max time:               60
 Max timestep size:      0.05
-Max cfl number:         0.5
+Max cfl number:         0.25
 
 # Pressure solver
-Pressure tolerance : 1e-12
+Pressure tolerance : 1e-6
 Pressure iteration : 100
 
 # Implicit velocity solver
-Implicit tolerance : 1e-12
+Implicit tolerance : 1e-6
 Implicit iteration : 100
 
 # Ensight output

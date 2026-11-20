@@ -5,11 +5,11 @@ Partition : 2 2 2
 Lx :    1.0
 Ly :    1.0
 Lz :  1.0
-nx :    20
-ny :    20
-nz :    20
+nx :    64
+ny :    64
+nz :    64
 
-Monitor File Name : PCST_La1200_We04_D16
+Monitor File Name : PUST_La1200_We04_D64
 
 # Are we using a moving domain?
 Two Dimensional : .false. 
@@ -32,7 +32,7 @@ Weber Number : 0.4
 Marangoni :  0 0 0
 Pressure : 1
 Smoothing Option : 1
-Surface Tension Option : 9
+Surface Tension Option : 8
 Levelset Option : 1
 Matching Option : 1
 Curvature Option : 1
