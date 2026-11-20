@@ -5,10 +5,7 @@
 NPROCS=${1:-16}
 
 CASES=(
-    # "input_PCST_NoP"
-    "input_PCST_NoP_PPIC"
-    # "input_PCST_NoP_Laplacian"
-    # "input_PCST_NoP_PPIC_Laplacian"
+    ""
 )
 make -j 10
 

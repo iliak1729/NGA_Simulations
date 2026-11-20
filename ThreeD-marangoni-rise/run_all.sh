@@ -1,17 +1,36 @@
-#!/bin/bash
 
+CASES=(
+    "input96_P_NoMatching"
+    "input64_P_NoMatching"
+)
+make -j 10
+for INPUT in "${CASES[@]}"; do
 
+    # Remove "input_" from the name for the output directory
+    CASE="${INPUT#input_}"
+    # DIR="./Debugging_PostOvernight/JibbenSq_ShortTime_${CASE}"
+    DIR="./APS_FINAL/JibbenSqPLIC_${CASE}"
 
-# Run 64 Cases
-echo "Running with input64 ..."
-rm -rf ./vtk
-time mpiexec -n 8 ./nga.dp.gnu.opt.mpi.exe -i input64_P_NoMatching -v 2
-echo "Complete"
+    echo "========================================"
+    echo "Running case: $CASE"
+    echo "Input file:   $INPUT"
+    echo "Output dir:   $DIR"
+    echo "========================================"
 
-echo "Copying DATA to OLD file"
-cp -r ./monitor ./NewProperties/P_NoMatching_Jibben_96/
-cp -r ./vtk ./NewProperties/P_NoMatching_Jibben_96/
+    echo "Removing old Viz Data"
+    rm -rf ./vtk/
 
-echo "COPY COMPLETE"
+    echo "Running with $INPUT ..."
+    time mpiexec -n 8 ./nga.dp.gnu.opt.mpi.exe -i "$INPUT" -v 0
+    
+    echo "Saving monitor data"
+    mkdir -p "$DIR"
+    cp -r ./monitor "$DIR/"
+    cp -r ./vtk "$DIR/"
 
-echo "All runs complete."
+    echo "Case $CASE complete"
+    echo
+
+done
+
+echo "All simulations complete."

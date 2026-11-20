@@ -27,6 +27,8 @@ Surface Tension Option : 9
 Levelset Option : 1
 Matching Option : 1
 Curvature Option : 1
+Paraboloid Option : 1
+Normal Option : 2
 PU Spread : 2.0
 # 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
 Interface Type : 6
@@ -51,4 +53,4 @@ Pressure tolerance : 1e-12
 Pressure iteration : 100
 
 # Ensight output
-Ensight output period : 5e-2
+Ensight output period :5e-2

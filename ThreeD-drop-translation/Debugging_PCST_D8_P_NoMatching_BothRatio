@@ -14,7 +14,7 @@ nz : 32    !128
 Two Dimensional : .false. 
 # Fluid properties
 Gravity :                     0 0 0
-Liquid density :              1000
+Liquid density :              1
 Density Ratio :               1000
 Viscosity Ratio :             100
 Surface tension coefficient : 1
@@ -27,6 +27,8 @@ Surface Tension Option : 9
 Levelset Option : 1
 Matching Option : 1
 Curvature Option : 1
+Paraboloid Option : 1
+Normal Option : 2
 PU Spread : 2.0
 # 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
 Interface Type : 6

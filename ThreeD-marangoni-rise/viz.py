@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import math
 
 # Colors
-color_black = '#000000'
+color_black = "#000000"
 color_orange = '#E69F00'
 color_skyblue = '#56B4E9'
 color_teal = '#009E73'
@@ -14,11 +14,12 @@ color_blue = '#0072B2'
 color_red = '#D55E00'
 color_pink = '#CC79A7'
 # Data
-datafile = "ThreeD-marangoni-rise/monitor/bubble"
+datafile = "ThreeD-marangoni-rise/Reran/JibbenSqPLIC_input96_P_NoMatching/monitor/bubble"
+data2 = np.loadtxt(datafile, skiprows=2)
+
+datafile = "ThreeD-marangoni-rise/Reran/JibbenSqPLIC_input64_P_NoMatching/monitor/bubble"
 data1 = np.loadtxt(datafile, skiprows=2)
 
-datafile = "ThreeD-marangoni-rise/NewProperties/P_NoMatching_Jibben_64/monitor/bubble"
-data2 = np.loadtxt(datafile, skiprows=2)
 
 
 mug = 0.001
@@ -36,7 +37,7 @@ L = mug/mul
 U0 = -sigmaT*a*dT/mul
 taup = rhog*(2*a)*(2*a)*(3+3*L)/(18*mul*(2+2*L))
 tNorm = a/U0
-# tNorm = taup
+tNorm = taup
 # Vygb = -2*sigmaT*dT*a/(6*mu1+9*mu1)
 Vygb = -2*a*dT*sigmaT/(6*mul + 9*mug)
 
@@ -60,14 +61,15 @@ plt.figure()
 # y = data5[:,3]/Vygb
 # plt.plot(x,y,label = "3D,OLD PU,N=64",linewidth=5,color = color_teal)
 
+x = data1[:,1]/tNorm
+y = data1[:,3]/Vygb
+plt.plot(x,y,label = "3D,Face Paraboloid,12.8 Cells/Dia.",linewidth=5,color = color_red)
 
 x = data2[:,1]/tNorm
 y = data2[:,3]/Vygb
-plt.plot(x,y,label = "3D,Face Paraboloid,12.8 Cells/Dia.",linewidth=5,color = color_teal)
+plt.plot(x,y,label = "3D,Face Paraboloid,19.2 Cells/Dia.",linewidth=5,color = color_teal)
 
-x = data1[:,1]/tNorm
-y = data1[:,3]/Vygb
-plt.plot(x,y,label = "3D,Face Paraboloid,19.2 Cells/Dia.",linewidth=5,color = color_red)
+
 
 
 
@@ -85,7 +87,7 @@ plt.plot(x,y,label = "3D,Face Paraboloid,19.2 Cells/Dia.",linewidth=5,color = co
 
 
 plt.legend()
-
+plt.ylim(0.75,1.1)
 plt.title("Marangoni Rise Case")
 plt.xlabel("t/tnorm")
 plt.ylabel("V/Vygb")

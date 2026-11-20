@@ -140,40 +140,40 @@ sim_cases = [
     #     "One Fluid,Jibben"
     #     ,'--'
     # ),
-    (
-        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_CSF_OneFluid/monitor/rayleigh_plateau",
-        "One Fluid, CSF,14 Cells/D",
-        '-'
-    ),
+    # (
+    #     "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_CSF_OneFluid/monitor/rayleigh_plateau",
+    #     "One Fluid, CSF,14 Cells/D",
+    #     '-'
+    # ),
     (
         "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
         "Both Fluid, PCST,14 Cells/D",
         '-'
     ),
-    (
-        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
-        "One Fluid, PCST,14 Cells/D",
-        '-'
-    ),
-    (
-        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_Refined_CSF_OneFluid/monitor/rayleigh_plateau",
-        "One Fluid, CSF,28 Cells/D",
-        '--'
-    ),
-    (
-        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_Refined_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
-        "Both Fluid, PCST,28 Cells/D",
-        '--'
-    ),
-    (
-        "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_Refined_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
-        "One Fluid, PCST,28 Cells/D",
-        '--'
-    ),
+    # (
+    #     "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
+    #     "One Fluid, PCST,14 Cells/D",
+    #     '-'
+    # ),
+    # (
+    #     "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_Refined_CSF_OneFluid/monitor/rayleigh_plateau",
+    #     "One Fluid, CSF,28 Cells/D",
+    #     '--'
+    # ),
+    # (
+    #     "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_Refined_PCST_P_NoMatching_BothRatio/monitor/rayleigh_plateau",
+    #     "Both Fluid, PCST,28 Cells/D",
+    #     '--'
+    # ),
+    # (
+    #     "ThreeD-rayleigh-plateau/LargerAmplitude/JibbenSq_ShortTime_Refined_PCST_P_NoMatching_OneFluid/monitor/rayleigh_plateau",
+    #     "One Fluid, PCST,28 Cells/D",
+    #     '--'
+    # ),
 
     (
-        "ThreeD-rayleigh-plateau/monitor/rayleigh_plateau",
-        "LIVE",
+        "amr_rayleigh_plateau/monitor/rayleigh_plateau",
+        "Both Fluid, AMR-PCST,14 Cells/D",
         '--'
     ),
 
@@ -261,8 +261,8 @@ plt.legend(
 )
 plt.tight_layout(rect=[0, 0, 1, 0.95])
 
-plt.ylim(1, 10)
-plt.xlim(0, 7)
+# plt.ylim(1, 10)
+# plt.xlim(0, 7)
 plt.title('Maximum radius growth comparison')
 plt.show()
 

@@ -588,6 +588,8 @@ contains
          call param_read('Levelset Option',cst%LevelsetOption,default=2)
          call param_read('Surface Tension Option',cst%SurfaceTensionOption,default=1)
          call param_read('Curvature Option',cst%CurvatureOption,default=1)
+         call param_read('Normal Option',cst%NormalOption,default=2)
+         call param_read('Matching Option',cst%MatchingOption,default=1)
          call param_read('PU Spread',cst%PU_spread,default=2.0_WP)
          call param_read('Two Dimensional',cst%TwoD,default=.false.)
       end block create_surface_tension_solver
@@ -626,11 +628,11 @@ contains
 
             SELECT CASE (InterfaceTypes)
                case (1)
-                  call fs%build_ppic(time%t)
+                  call fs%build_plic(time%t)
                case (2) 
-                  call fs%build_ppic(time%t)
+                  call fs%build_plic(time%t)
                case default 
-                  call fs%build_ppic(time%t)
+                  call fs%build_plic(time%t)
             END SELECT
 
             call fs%build_subVF()

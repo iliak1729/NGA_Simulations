@@ -86,7 +86,7 @@ for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#Basak_input_}"
-    DIR="./GasLaplaceNumber_Translation/StaticDrop_JibbenSq_VFWeights_CFL01_${CASE}"
+    DIR="./Final2026APS_Translation/JibbenPU_${CASE}"
     # DIR="./Debugging/StaticDrop_${CASE}"
 
     echo "========================================"

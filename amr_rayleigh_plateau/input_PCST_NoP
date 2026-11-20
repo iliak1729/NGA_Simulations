@@ -12,7 +12,7 @@ Max grid size:          8
 # Rayleigh-Plateau parameters
 Ligament radius:        0.10
 Ligament center:        0 0 0
-Perturbation amplitude: 0.01
+Perturbation amplitude: 0.08
 Perturbation mode:      1
 
 # CST Options
@@ -21,8 +21,10 @@ Pressure : 0
 Smoothing Option : 1
 Levelset Option : 2
 # 1 For CSF, 2 for integral, 3 for CSF shift, 4 for PCell
-Surface Tension Option : 4
+Surface Tension Option : 5
 Curvature Option : 1
+Normal Option : 2
+Matching Option : 1
 PU Spread : 2.0
 Interface Type : 1
 
@@ -30,10 +32,10 @@ Interface Type : 1
 Initial velocity:       0 0 0
 
 # Fluid properties
-Liquid dynamic viscosity:    1.0e-3
-Gas dynamic viscosity:       1.0e-3
+Liquid dynamic viscosity:    0.175
+Gas dynamic viscosity:       0.0031325 ! 0.0031325
 Liquid density:              1000
-Gas density:                 1000
+Gas density:                 1.2
 Surface tension coefficient: 0.072
 
 

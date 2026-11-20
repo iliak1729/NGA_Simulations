@@ -307,24 +307,26 @@ contains
       create_surface_tension_solver : block
          call cst%init(fs,vf,time)
          call param_read('Marangoni',cst%MarangoniOption,default = [0.0_WP,0.0_WP,0.0_WP])
-         ! print *,"Marangoni = ",cst%MarangoniOption
-         ! STOP 
          call param_read('Pressure',cst%PressureOption,default = 0.0_WP)
          call param_read('Smoothing Option',cst%SmoothingOption,default = 1)
          call param_read('Surface Tension Option',cst%SurfaceTensionOption,default = 8)
+         call param_read('Paraboloid Option',cst%ParaboloidOption,default = 1)
+         call param_read('Normal Option',cst%NormalOption,default = 2)
          call param_read('Levelset Option',cst%LevelsetOption,default = 2)
          call param_read('Matching Option',cst%MatchingOption,default = 1)
          call param_read('Curvature Option',cst%CurvatureOption,default = 1)
          call param_read('PU Spread',cst%PU_spread,default = 2.0_WP)
          call param_read('Two Dimensional',cst%TwoD,default = .false.)
          if(cfg%amRoot) then 
-            print *, "============== SURFACE TENSION INFO ================"
+            print *, "============== SURFACE TENSION INFO ================"  
             print *, "Marangoni Option = ",cst%MarangoniOption
             print *, "Pressure Option = ",cst%PressureOption
             print *, "Smoothing Option = ",cst%SmoothingOption
             print *, "Surface Tension Option = ",cst%SurfaceTensionOption
             print *, "Levelset Option = ",cst%LevelsetOption
             print *, "Matching Option = ",cst%MatchingOption
+            print *, "Paraboloid Option = ",cst%ParaboloidOption
+            print *, "Normal Option = ",cst%NormalOption
             print *, "Curvature Option = ",cst%CurvatureOption
             print *, "PU Spread = ",cst%PU_spread
             print *, "Two Dimensional = ",cst%TwoD
@@ -398,17 +400,17 @@ contains
          call ens_out%add_vector('sigma_3d_y',cst%sigma_3D(:,:,:,2,1),cst%sigma_3D(:,:,:,2,2),cst%sigma_3D(:,:,:,2,3))
          call ens_out%add_vector('sigma_3d_z',cst%sigma_3D(:,:,:,3,1),cst%sigma_3D(:,:,:,3,2),cst%sigma_3D(:,:,:,3,3))
 
-         call ens_out%add_vector('sigma_3d_P_x',cst%sigma_3D_P(:,:,:,1,1),cst%sigma_3D_P(:,:,:,1,2),cst%sigma_3D_P(:,:,:,1,3))
-         call ens_out%add_vector('sigma_3d_P_y',cst%sigma_3D_P(:,:,:,2,1),cst%sigma_3D_P(:,:,:,2,2),cst%sigma_3D_P(:,:,:,2,3))
-         call ens_out%add_vector('sigma_3d_P_z',cst%sigma_3D_P(:,:,:,3,1),cst%sigma_3D_P(:,:,:,3,2),cst%sigma_3D_P(:,:,:,3,3))
+         ! call ens_out%add_vector('sigma_3d_P_x',cst%sigma_3D_P(:,:,:,1,1),cst%sigma_3D_P(:,:,:,1,2),cst%sigma_3D_P(:,:,:,1,3))
+         ! call ens_out%add_vector('sigma_3d_P_y',cst%sigma_3D_P(:,:,:,2,1),cst%sigma_3D_P(:,:,:,2,2),cst%sigma_3D_P(:,:,:,2,3))
+         ! call ens_out%add_vector('sigma_3d_P_z',cst%sigma_3D_P(:,:,:,3,1),cst%sigma_3D_P(:,:,:,3,2),cst%sigma_3D_P(:,:,:,3,3))
 
-         call ens_out%add_vector('sigma_3d_NoP_x',cst%sigma_3D_NoP(:,:,:,1,1),cst%sigma_3D_NoP(:,:,:,1,2),cst%sigma_3D_NoP(:,:,:,1,3))
-         call ens_out%add_vector('sigma_3d_NoP_y',cst%sigma_3D_NoP(:,:,:,2,1),cst%sigma_3D_NoP(:,:,:,2,2),cst%sigma_3D_NoP(:,:,:,2,3))
-         call ens_out%add_vector('sigma_3d_NoP_z',cst%sigma_3D_NoP(:,:,:,3,1),cst%sigma_3D_NoP(:,:,:,3,2),cst%sigma_3D_NoP(:,:,:,3,3))
+         ! call ens_out%add_vector('sigma_3d_NoP_x',cst%sigma_3D_NoP(:,:,:,1,1),cst%sigma_3D_NoP(:,:,:,1,2),cst%sigma_3D_NoP(:,:,:,1,3))
+         ! call ens_out%add_vector('sigma_3d_NoP_y',cst%sigma_3D_NoP(:,:,:,2,1),cst%sigma_3D_NoP(:,:,:,2,2),cst%sigma_3D_NoP(:,:,:,2,3))
+         ! call ens_out%add_vector('sigma_3d_NoP_z',cst%sigma_3D_NoP(:,:,:,3,1),cst%sigma_3D_NoP(:,:,:,3,2),cst%sigma_3D_NoP(:,:,:,3,3))
 
-         call ens_out%add_vector('sigma_3d_DP_x',cst%sigma_3D_DP(:,:,:,1,1),cst%sigma_3D_DP(:,:,:,1,2),cst%sigma_3D_DP(:,:,:,1,3))
-         call ens_out%add_vector('sigma_3d_DP_y',cst%sigma_3D_DP(:,:,:,2,1),cst%sigma_3D_DP(:,:,:,2,2),cst%sigma_3D_DP(:,:,:,2,3))
-         call ens_out%add_vector('sigma_3d_DP_z',cst%sigma_3D_DP(:,:,:,3,1),cst%sigma_3D_DP(:,:,:,3,2),cst%sigma_3D_DP(:,:,:,3,3))
+         ! call ens_out%add_vector('sigma_3d_DP_x',cst%sigma_3D_DP(:,:,:,1,1),cst%sigma_3D_DP(:,:,:,1,2),cst%sigma_3D_DP(:,:,:,1,3))
+         ! call ens_out%add_vector('sigma_3d_DP_y',cst%sigma_3D_DP(:,:,:,2,1),cst%sigma_3D_DP(:,:,:,2,2),cst%sigma_3D_DP(:,:,:,2,3))
+         ! call ens_out%add_vector('sigma_3d_DP_z',cst%sigma_3D_DP(:,:,:,3,1),cst%sigma_3D_DP(:,:,:,3,2),cst%sigma_3D_DP(:,:,:,3,3))
 
          call ens_out%add_scalar('sigma_xx_NoP',cst%sigma_xx_NoP)
          call ens_out%add_scalar('sigma_xy_NoP',cst%sigma_xy_NoP)
