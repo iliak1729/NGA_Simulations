@@ -1,0 +1,59 @@
+# Parallelization
+Partition : 2 2 2
+
+# Mesh definition
+Lx :    1.0
+Ly :    1.0
+Lz :  1.0
+nx :    20
+ny :    20
+nz :    20
+
+Monitor File Name : PCST_La1200_We04_D16
+
+# Are we using a moving domain?
+Two Dimensional : .false. 
+# Droplet definiton
+Droplet Radius :           0.2
+#Droplet velocity :           0.5 1.0 1.5
+Droplet velocity :           0.0048795 0.0097590 0.0146385
+
+# Fluid properties
+Liquid dynamic viscosity :    0.1
+Gas dynamic viscosity :       0.1
+Liquid density :              300
+Gas density :                 300
+Surface tension coefficient : 0.1
+# Dimensionless Numbers for Overriding
+Laplace Number : 1200
+Weber Number : 0.4
+
+# Options
+Marangoni :  0 0 0
+Pressure : 1
+Smoothing Option : 1
+Surface Tension Option : 9
+Levelset Option : 1
+Matching Option : 1
+Curvature Option : 1
+Paraboloid Option : 1
+Normal Option : 2
+PU Spread : 2.0
+# 1 For LVIRA, 2 for Jibben, 3 for PLICNET, 4 for Hybrid, 5 for Jibben Squared, default LVIRA
+Interface Type : 6
+
+# Time integration
+Max timestep size : 1e-2
+Max cfl number :    1.0
+Max time :          11
+
+# Pressure solver
+Pressure tolerance : 1e-6
+Pressure iteration : 100
+
+# Implicit velocity solver
+Implicit tolerance : 1e-6
+Implicit iteration : 100
+
+# Ensight output
+Ensight output period : 4e-1
