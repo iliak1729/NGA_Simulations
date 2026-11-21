@@ -9,8 +9,6 @@ Ly : 240
 Lz : 160
 
 
-
-
 # Regridding parameters
 Regrid nsteps:          10
 Blocking factor:        4

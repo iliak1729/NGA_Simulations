@@ -5,9 +5,9 @@ Base ny:                12
 Base nz:                8
 Max level:              9
 # Mesh definition
-Lx : 160
-Ly : 240
-Lz : 160
+Lx : 160e-5
+Ly : 240e-5
+Lz : 160e-5
 
 
 
@@ -19,35 +19,38 @@ Max grid size:          32
 # Options
 
 # Marangoni :  0 0.133 -0.1
-Marangoni :  0 0.133 -0.1
-Pressure : 0
+Marangoni : 0 22500 -0.1
+Pressure : 1
 Smoothing Option : 1
-# 1 For CSF, 2 for integral, 3 for CSF shift 
-Surface Tension Option : 2
+Levelset Option : 1
+# 1 For CSF, 2 for integral, 3 for CSF shift, 4 for PCell
+Surface Tension Option : 5
 Curvature Option : 1
+Normal Option : 2
+Matching Option : 1
 PU Spread : 2.0
 Interface Type : 1
 
 # Flow parameters
 Gravity :                     0 0 0
-Liquid dynamic viscosity :    0.1
-Gas dynamic viscosity :       0.1
-Liquid density :              0.2
-Gas density :                 0.2
-Surface tension coefficient : 0.1
+Liquid dynamic viscosity :    1e-3
+Gas dynamic viscosity :       1e-3
+Liquid density :              1
+Gas density :                 100
+Surface tension coefficient : 0.072
 Droplet stretching :          1 1 1
 Droplet velocity :            0 0 0
 
 # Definition of single bubble (Weber)
-Bubble Radius : 0.5
-Bubble position :  0 -2.25 0
+Bubble Radius : 5e-6
+Bubble position :  0 0 0
 
 # Time integration
-Max time:               1.875
-Max dt:                 3.81470e-04
+Max time:               5e-6
+Max dt:                 1e-3
 Max CFL:                0.25
 
 # Output
-Output period:          5e-3
+Output period:          5e-12
 
 

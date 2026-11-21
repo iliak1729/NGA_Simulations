@@ -171,9 +171,19 @@ sim_cases = [
     #     '--'
     # ),
 
+    # (
+    #     "amr_rayleigh_plateau/APS2026FINAL_Saved/amr_PCST_NoP/monitor/rayleigh_plateau",
+    #     "Both Fluid, AMR-PCST,14 Cells/D",
+    #     '--'
+    # ),
+    # (
+    #     "amr_rayleigh_plateau/Baseline_Runs_PCellForm_SameFluid_ParaboloidLevelset/amr_PCST_NoP/monitor/rayleigh_plateau",
+    #     "Both Fluid, AMR-PCST-OLD,14 Cells/D",
+    #     '--'
+    # ),
     (
-        "ThreeD-rayleigh-plateau/monitor/rayleigh_plateau",
-        "Both Fluid, PCST,14 Cells/D",
+        "amr_rayleigh_plateau/monitor/rayleigh_plateau",
+        "Both Fluid, AMR-PCST,28 Cells/D",
         '--'
     ),
     # (

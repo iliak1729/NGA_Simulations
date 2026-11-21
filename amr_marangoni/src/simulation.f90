@@ -186,9 +186,9 @@ contains
          do k=bx%lo(3),bx%hi(3); do j=bx%lo(2),bx%hi(2); do i=bx%lo(1),bx%hi(1)
             xyz = (/solver%amr%xlo+(real(i,WP)+0.5_WP)*dx,solver%amr%ylo+(real(j,WP)+0.5_WP)*dy,solver%amr%zlo+(real(k,WP)+0.5_WP)*dz/)
             halfdiag = 0.5_WP*sqrt(dx**2 + dy**2 + dz**2)
-            near_drop = (abs(xyz(1)-center(1)) < 1.0_WP + halfdiag) .and. &
-                        (abs(xyz(2)-center(2)) < 1.0_WP + halfdiag) .and. &
-                        (abs(xyz(3)-center(3)) < 1.0_WP + halfdiag)
+            near_drop = (abs(xyz(1)-center(1)) < 2.0_WP*radius + halfdiag) .and. &
+                        (abs(xyz(2)-center(2)) < 2.0_WP*radius + halfdiag) .and. &
+                        (abs(xyz(3)-center(3)) < 2.0_WP*radius + halfdiag)
             if (near_drop .and. lvl .lt. solver%amr%maxlvl) then 
                tagarr(i,j,k,1)=SETtag
             else
@@ -395,8 +395,11 @@ contains
          call param_read('Marangoni',cst%MarangoniOption,default=[0.0_WP,0.0_WP,0.0_WP])
          call param_read('Pressure',cst%PressureOption,default=0.0_WP)
          call param_read('Smoothing Option',cst%SmoothingOption,default=1)
+         call param_read('Levelset Option',cst%LevelsetOption,default=2)
          call param_read('Surface Tension Option',cst%SurfaceTensionOption,default=1)
          call param_read('Curvature Option',cst%CurvatureOption,default=1)
+         call param_read('Normal Option',cst%NormalOption,default=2)
+         call param_read('Matching Option',cst%MatchingOption,default=1)
          call param_read('PU Spread',cst%PU_spread,default=2.0_WP)
          call param_read('Two Dimensional',cst%TwoD,default=.false.)
       end block create_surface_tension_solver

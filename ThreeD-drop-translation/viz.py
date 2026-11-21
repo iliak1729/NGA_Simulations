@@ -19,20 +19,19 @@ color_pink = '#CC79A7'
 # Physics
 # ============================================================
 
-sigma = 0.1
-rho = 300.0
-D = 0.4
+sigma = 1
+rho = 1.0*10**(-3)
+# rho = 1.0
+D = 1
 La = 1200
 
 mu = np.sqrt(sigma * rho * D / La)
 
 
 Tmu = rho * D**2 / mu
-Tmu = 22
-mu = 3.1622776601683791*10**(-2)
 Usigma = sigma / mu
-Uadv = 1.8257418583505540*10**(-2)
-Usigma = Uadv
+# Uadv = 1.8257418583505540*10**(-2)
+# Usigma = Uadv
 print("mu = ", mu)
 print("Usigma = ", Usigma)
 print("Tmu = ", Tmu)
@@ -518,12 +517,7 @@ sim_cases = [
         #     "--"
         # ),
         # (
-        #     "ThreeD-drop-translation/GasLaplaceNumber/StaticDrop_JibbenSq_VFWeights_CFL01_Debugging_PCST_D8_P_NoMatching_SingleFluid/monitor/simulation",
-        #     "One Fluid",
-        #     "xkcd:charcoal",
-        #     "--"
-        # ),
-    
+            
         # (
         #     "ThreeD-drop-translation/monitor/simulation",
         #     "Live",
@@ -557,62 +551,89 @@ sim_cases = [
     #     "D16 Single Fluid",
     #     "xkcd:blue",
     #     "-"
-    # )
+    # ),
+    # (
+    #     "ThreeD_Translation_Parin/monitor/PCST_LA120_We04_D32",
+    #     "La 120,PST",
+    #     "tab:blue",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD_Translation_Parin/monitor/PCST_LA1200_We04_D32",
+    #     "La 1200,PST",
+    #     "tab:orange",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD_Translation_Parin/monitor/PCST_LA12000_We04_D32",
+    #     "La 12000,PST",
+    #     "tab:green",
+    #     "-"
+    # ),
+    # (
+    #     "ThreeD_Translation_Parin/monitor/PUST_LA120_We04_D32",
+    #     "La 120,PUST",
+    #     "tab:blue",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD_Translation_Parin/monitor/PUST_LA1200_We04_D32",
+    #     "La 1200,PUST",
+    #     "tab:orange",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD_Translation_Parin/monitor/PUST_LA12000_We04_D32",
+    #     "La 12000,PUST",
+    #     "tab:green",
+    #     "--"
+    # ),
+    # (
+    #     "ThreeD_Translation_Parin/monitor/CSF_LA120_We04_D32",
+    #     "La 120,PUST",
+    #     "tab:blue",
+    #     ":"
+    # ),
+    # (
+    #     "ThreeD_Translation_Parin/monitor/CSF_LA1200_We04_D32",
+    #     "La 1200,PUST",
+    #     "tab:orange",
+    #     ":"
+    # ),
+    # (
+    #     "ThreeD_Translation_Parin/monitor/CSF_LA12000_We04_D32",
+    #     "La 12000,PUST",
+    #     "tab:green",
+    #     ":"
+    # ),
+    # === 
+    # More sad
+    # ===
+
     (
-        "ThreeD_Translation_Parin/monitor/PCST_LA120_We04_D32",
-        "La 120,PST",
-        "tab:blue",
+        "ThreeD-drop-translation/GasLaplaceNumber/FromCluster/StaticDrop_D32_BothRatio",
+        "Both Fluid,D32",
+        "xkcd:green",
         "-"
     ),
+    # (
+    #     "ThreeD-drop-translation/GasLaplaceNumber/FromCluster/StaticDrop_D32_SingleFluid",
+    #     "One Fluid,D32",
+    #     "xkcd:green",
+    #     "-"
+    # ),
     (
-        "ThreeD_Translation_Parin/monitor/PCST_LA1200_We04_D32",
-        "La 1200,PST",
-        "tab:orange",
+        "ThreeD-drop-translation/GasLaplaceNumber/FromCluster/D8_BothRatio",
+        "Both Fluid,D8",
+        "xkcd:burnt orange",
         "-"
     ),
-    (
-        "ThreeD_Translation_Parin/monitor/PCST_LA12000_We04_D32",
-        "La 12000,PST",
-        "tab:green",
-        "-"
-    ),
-    (
-        "ThreeD_Translation_Parin/monitor/PUST_LA120_We04_D32",
-        "La 120,PUST",
-        "tab:blue",
-        "--"
-    ),
-    (
-        "ThreeD_Translation_Parin/monitor/PUST_LA1200_We04_D32",
-        "La 1200,PUST",
-        "tab:orange",
-        "--"
-    ),
-    (
-        "ThreeD_Translation_Parin/monitor/PUST_LA12000_We04_D32",
-        "La 12000,PUST",
-        "tab:green",
-        "--"
-    ),
-    (
-        "ThreeD_Translation_Parin/monitor/CSF_LA120_We04_D32",
-        "La 120,PUST",
-        "tab:blue",
-        ":"
-    ),
-    (
-        "ThreeD_Translation_Parin/monitor/CSF_LA1200_We04_D32",
-        "La 1200,PUST",
-        "tab:orange",
-        ":"
-    ),
-    (
-        "ThreeD_Translation_Parin/monitor/CSF_LA12000_We04_D32",
-        "La 12000,PUST",
-        "tab:green",
-        ":"
-    ),
-    
+    # (
+    #     "ThreeD-drop-translation/GasLaplaceNumber/FromCluster/D8_SingleFluid",
+    #     "One Fluid,D8",
+    #     "xkcd:burnt orange",
+    #     "-"
+    # ),
 ]
 
 
@@ -749,7 +770,7 @@ plt.grid(
     linewidth=0.5,
     alpha=0.4
 )
-plt.xlim(0,0.5)
+plt.xlim(0,1)
 # Get existing legend entries
 handles, labels = plt.gca().get_legend_handles_labels()
 

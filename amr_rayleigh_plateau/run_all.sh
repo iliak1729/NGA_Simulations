@@ -5,7 +5,7 @@
 NPROCS=${1:-16}
 
 CASES=(
-    ""
+    "input_PCST_NoP"
 )
 make -j 10
 
@@ -13,7 +13,7 @@ for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./Baseline_Runs_PCellForm_SameFluid_ParaboloidLevelset/amr_${CASE}"
+    DIR="./APS2026FINAL/amr_26_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"

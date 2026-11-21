@@ -20,7 +20,8 @@ data2 = np.loadtxt(datafile, skiprows=2)
 datafile = "ThreeD-marangoni-rise/Reran/JibbenSqPLIC_input64_P_NoMatching/monitor/bubble"
 data1 = np.loadtxt(datafile, skiprows=2)
 
-
+datafile = "amr_marangoni/monitor/statistics"
+data3 = np.loadtxt(datafile, skiprows=2)
 
 mug = 0.001
 mul = 0.001
@@ -45,9 +46,11 @@ gradT = dT*a
 R = a 
 dSigmadT = sigmaT 
 
+rho1 = rhol
+mu1 = mul
 # VygbB = -2 * sigmaT * gradT * R/(2*muL + 3*muG) * ((kG+2*kL)/(2*kL+kG))
 # print("VygbB = ",VygbB)
-# print("Re = ",rho1*U0*a/mu1)
+print("Re = ",rho1*U0*a/mu1)
 # print("Ca = ",mu1*U0/sigma0)
 # print("Ma = ",rho1*cp*a*U0/k1)
 # print("Ca Ur = ",mu1/sigma0)
@@ -68,6 +71,11 @@ plt.plot(x,y,label = "3D,Face Paraboloid,12.8 Cells/Dia.",linewidth=5,color = co
 x = data2[:,1]/tNorm
 y = data2[:,3]/Vygb
 plt.plot(x,y,label = "3D,Face Paraboloid,19.2 Cells/Dia.",linewidth=5,color = color_teal)
+
+
+x = data3[:,1]/tNorm
+y = data3[:,7]/Vygb
+plt.plot(x,y,label = "3D,Face Paraboloid,25.6 Cells/Dia.",linewidth=5,color = color_yellow)
 
 
 

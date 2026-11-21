@@ -1,17 +1,13 @@
 
 CASES=(
-    "input_Level5NoP"
     "input_Level5P"
-    "input_Level5NoP_PPIC"
-    "input_Level5P_PPIC"
-    
 )
 
 for INPUT in "${CASES[@]}"; do
 
     # Remove "input_" from the name for the output directory
     CASE="${INPUT#input_}"
-    DIR="./Domain_160_240_160_Level9/amr_${CASE}"
+    DIR="./APS2026FINAL/amr_${CASE}"
 
     echo "========================================"
     echo "Running case: $CASE"
@@ -23,7 +19,7 @@ for INPUT in "${CASES[@]}"; do
     rm -rf ./amrviz/
 
     echo "Running with $INPUT ..."
-    time mpiexec -n 16 ./nga2.dp.gnu.opt.mpi.exe -i "$INPUT" -v 0
+    time mpiexec -n 8 ./nga2.dp.gnu.opt.mpi.exe -i "$INPUT" -v 0
 
     echo "Saving monitor data"
     mkdir -p "$DIR"

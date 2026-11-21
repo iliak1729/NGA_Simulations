@@ -819,13 +819,13 @@ contains
             ! Rebuild interface 
             SELECT CASE (InterfaceTypes)
                case (1)
-                  call fs%build_ppic(time%t)
+                  call fs%build_plic(time%t)
                   ! print *,"BUILDING PLIC"
                case (2) 
-                  call fs%build_ppic(time%t)
+                  call fs%build_plic(time%t)
                   ! print *,"BUILDING PPIC"
                case default 
-                  call fs%build_ppic(time%t)
+                  call fs%build_plic(time%t)
                   ! print *,"BUILDING DEFAULT"
             END SELECT
 
